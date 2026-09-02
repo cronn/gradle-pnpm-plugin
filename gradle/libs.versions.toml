@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.0"
+kotlin = "2.4.10"
 spotless = "7.0.4"
 pluginPublish = "2.0.0"
 junit = "5.13.4"
