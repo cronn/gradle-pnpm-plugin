@@ -1,9 +1,7 @@
 package de.cronn.pnpm.task
 
 import java.io.File
-import java.math.BigInteger
 import java.net.URI
-import java.security.MessageDigest
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -13,7 +11,6 @@ import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
@@ -31,9 +28,6 @@ public abstract class PnpmSetupTask : DefaultTask() {
 
   /** URL of the pnpm release archive to download. */
   @get:Input public abstract val archiveUrl: Property<String>
-
-  /** Expected SHA-256 checksum of the archive. Verified after download when present. */
-  @get:Input @get:Optional public abstract val archiveSha256: Property<String>
 
   /** Name of the pnpm executable inside the archive. */
   @get:Input public abstract val executableName: Property<String>
@@ -57,7 +51,6 @@ public abstract class PnpmSetupTask : DefaultTask() {
     val archive = File(temporaryDir, url.substringAfterLast('/'))
 
     download(url, archive)
-    verifyChecksum(url, archive)
     extract(archive)
     archive.delete()
 
@@ -90,26 +83,6 @@ public abstract class PnpmSetupTask : DefaultTask() {
     archive.delete()
     if (!partial.renameTo(archive)) {
       throw GradleException("Failed to move $partial to $archive")
-    }
-  }
-
-  private fun verifyChecksum(url: String, archive: File) {
-    val expected = archiveSha256.orNull?.lowercase() ?: return
-    val digest = MessageDigest.getInstance("SHA-256")
-    archive.inputStream().use { input ->
-      val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-      while (true) {
-        val read = input.read(buffer)
-        if (read < 0) break
-        digest.update(buffer, 0, read)
-      }
-    }
-    val actual = BigInteger(1, digest.digest()).toString(HEX_RADIX).padStart(SHA256_LENGTH, '0')
-    if (actual != expected) {
-      archive.delete()
-      throw GradleException(
-        "Checksum mismatch for $url: expected SHA-256 $expected but was $actual"
-      )
     }
   }
 
@@ -161,7 +134,5 @@ public abstract class PnpmSetupTask : DefaultTask() {
   private companion object {
     const val CONNECT_TIMEOUT_MILLIS = 30_000
     const val READ_TIMEOUT_MILLIS = 120_000
-    const val HEX_RADIX = 16
-    const val SHA256_LENGTH = 64
   }
 }

@@ -1,7 +1,6 @@
 package de.cronn.pnpm
 
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
 /**
@@ -18,12 +17,9 @@ import org.gradle.api.provider.Property
 public abstract class PnpmExtension {
 
   /**
-   * The `package.json` the pnpm [version] is read from. Defaults to the `package.json` in the
-   * directory of the workspace root.
+   * The pnpm version to use. Defaults to `devEngines.packageManager.version` of the `package.json`
+   * in the directory of the workspace root.
    */
-  public abstract val packageJson: RegularFileProperty
-
-  /** The pnpm version to use. Defaults to `devEngines.packageManager.version` of [packageJson]. */
   public abstract val version: Property<String>
 
   /**
@@ -31,18 +27,6 @@ public abstract class PnpmExtension {
    * `<workspaceRootDir>/.gradle/pnpm/<version>`.
    */
   public abstract val installDirectory: DirectoryProperty
-
-  /**
-   * Base URL pnpm release archives are downloaded from. Defaults to
-   * `https://github.com/pnpm/pnpm/releases/download`.
-   */
-  public abstract val downloadBaseUrl: Property<String>
-
-  /** URL of the pnpm release archive. Defaults to a URL derived from [downloadBaseUrl]. */
-  public abstract val archiveUrl: Property<String>
-
-  /** Expected SHA-256 checksum of the pnpm release archive. Not verified when absent. */
-  public abstract val archiveSha256: Property<String>
 
   /**
    * The pnpm executable to use. When set, no pnpm is downloaded and the `PATH` is not consulted.

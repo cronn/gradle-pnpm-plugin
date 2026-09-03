@@ -48,7 +48,7 @@ public class PnpmPlugin : Plugin<Project> {
 
     val layout = PnpmWorkspaceLayout.discover(target)
     val platform = PnpmPlatform.current()
-    val workspace = workspaceExtension(target, layout, platform)
+    val workspace = workspaceExtension(target, layout)
     val resolution = resolution(target, workspace, platform)
 
     target.extensions.add(PnpmResolution::class.java, RESOLUTION_NAME, resolution)
@@ -68,7 +68,9 @@ public class PnpmPlugin : Plugin<Project> {
     }
 
     if (layout.isWorkspaceRoot) {
-      PnpmWorkspaceTasks(target, workspace, resolution, TASK_GROUP).register()
+      val archiveUrl =
+        workspace.version.map { version -> PnpmPlatform.archiveUrl(version, platform) }
+      PnpmWorkspaceTasks(target, workspace, resolution, archiveUrl, TASK_GROUP).register()
     }
 
     registerToolTasks(target)
@@ -81,11 +83,7 @@ public class PnpmPlugin : Plugin<Project> {
    * evaluates a project's ancestors before the project itself. Reading it is why the plugin is not
    * compatible with project isolation.
    */
-  private fun workspaceExtension(
-    target: Project,
-    layout: PnpmWorkspaceLayout,
-    platform: PnpmPlatform,
-  ): PnpmExtension {
+  private fun workspaceExtension(target: Project, layout: PnpmWorkspaceLayout): PnpmExtension {
     val root = layout.workspaceRoot
     val existing = root.extensions.findByType(PnpmExtension::class.java)
     if (existing != null) {
@@ -101,7 +99,7 @@ public class PnpmPlugin : Plugin<Project> {
     }
 
     val created = root.extensions.create(EXTENSION_NAME, PnpmExtension::class.java)
-    applyWorkspaceConventions(root, layout, created, platform)
+    applyWorkspaceConventions(root, layout, created)
     return created
   }
 
@@ -109,14 +107,11 @@ public class PnpmPlugin : Plugin<Project> {
     target: Project,
     layout: PnpmWorkspaceLayout,
     extension: PnpmExtension,
-    platform: PnpmPlatform,
   ) {
     val workspaceDirectory = target.layout.projectDirectory
     val providers = target.providers
     val taskPathPrefix = layout.taskPathPrefix()
 
-    extension.packageJson.convention(workspaceDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON))
-    extension.downloadBaseUrl.convention(DEFAULT_DOWNLOAD_BASE_URL)
     extension.preferPnpmOnPath.convention(true)
     extension.setupTaskPath.convention(taskPathPrefix + PnpmWorkspaceTasks.SETUP_TASK_NAME)
     extension.installTaskPath.convention(taskPathPrefix + PnpmWorkspaceTasks.INSTALL_TASK_NAME)
@@ -136,10 +131,11 @@ public class PnpmPlugin : Plugin<Project> {
     //    obtained while the build is being configured;
     //  - the fallback must not throw, because storing the configuration cache evaluates both
     //    branches of orElse. A missing file therefore surfaces as empty content.
-    val packageJsonText = providers.fileContents(extension.packageJson).asText.orElse("")
+    val packageJson = workspaceDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON)
+    val packageJsonText = providers.fileContents(packageJson).asText.orElse("")
 
     extension.version.convention(
-      extension.packageJson.zip(packageJsonText) { packageJson, text ->
+      packageJsonText.map { text ->
         if (text.isBlank()) {
           throw GradleException(
             "Expected a package.json pinning the pnpm version in " +
@@ -153,12 +149,6 @@ public class PnpmPlugin : Plugin<Project> {
 
     extension.installDirectory.convention(
       extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") }
-    )
-
-    extension.archiveUrl.convention(
-      extension.downloadBaseUrl.zip(extension.version) { baseUrl, version ->
-        PnpmPlatform.archiveUrl(baseUrl, version, platform)
-      }
     )
   }
 
@@ -261,7 +251,6 @@ public class PnpmPlugin : Plugin<Project> {
     const val PRETTIER_EXTENSION_NAME: String = "prettier"
     const val ESLINT_EXTENSION_NAME: String = "eslint"
     const val TASK_GROUP: String = "pnpm"
-    const val DEFAULT_DOWNLOAD_BASE_URL: String = "https://github.com/pnpm/pnpm/releases/download"
     const val RESOLUTION_NAME: String = "pnpmResolution"
     private const val PATH_VARIABLE = "PATH"
     private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")

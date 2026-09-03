@@ -19,8 +19,9 @@ following changes over that original:
 - A `typescript`, `prettier` and `eslint` extension per project, each with `enabled`, `include(…)`,
   `exclude(…)` and `extraArguments(…)`. The pnpm installation is configured separately, through the
   `pnpm` extension of the workspace root.
-- Configurable `downloadBaseUrl`, `archiveUrl`, `archiveSha256`, `installDirectory`, `version`,
-  `packageJson`, `executable` and `preferPnpmOnPath` on the `pnpm` extension.
+- Configurable `version`, `installDirectory`, `executable` and `preferPnpmOnPath` on the `pnpm`
+  extension. The pnpm release to download is derived from the pinned version and can be overridden
+  through the `archiveUrl` of the `pnpmSetup` task.
 - `workingDirectory`, `ignoreExitValue` and `pnpmVersion` on `PnpmTask`.
 - Unit and Gradle TestKit test suites, including a cross-Gradle-version tier.
 

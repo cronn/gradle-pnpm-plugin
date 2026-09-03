@@ -82,11 +82,10 @@ class PnpmPluginTest {
     @TempDir directory: File
   ) {
     val project = workspaceProject(directory)
-    val extension = extension(project)
 
-    assertThat(extension.installDirectory.get().asFile)
+    assertThat(extension(project).installDirectory.get().asFile)
       .isEqualTo(File(project.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
-    assertThat(extension.archiveUrl.get())
+    assertThat(setupTask(project).archiveUrl.get())
       .startsWith("https://github.com/pnpm/pnpm/releases/download/v$PNPM_VERSION/pnpm-")
   }
 
@@ -291,6 +290,9 @@ class PnpmPluginTest {
     assertThat(typescript(project).enabled.get()).isTrue()
     assertThat(dependencyNames(project.tasks.getByName("check"))).contains("compileTypescript")
   }
+
+  private fun setupTask(project: Project): PnpmSetupTask =
+    project.tasks.getByName("pnpmSetup") as PnpmSetupTask
 
   private fun extension(project: Project): PnpmExtension =
     project.extensions.getByType(PnpmExtension::class.java)
