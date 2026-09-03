@@ -150,8 +150,15 @@ spotless {
     endWithNewline()
   }
 
+  flexmark {
+    target("*.md")
+    flexmark()
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
   format("misc") {
-    target("*.md", "*.properties", ".gitignore", ".github/**/*.yml", "gradle/*.toml")
+    target("*.properties", ".gitignore", ".github/**/*.yml", "gradle/*.toml")
     trimTrailingWhitespace()
     endWithNewline()
   }

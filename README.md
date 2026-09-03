@@ -14,11 +14,11 @@ Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 
 Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm build. There is
 only one plugin id: the plugin works out what each project is from the files in its directory.
 
-| The project's directory has | The project is | It gets |
-| --- | --- | --- |
-| a `pnpm-workspace.yaml` | the **workspace root** | the pnpm lifecycle tasks, the `pnpm` extension, and the tool tasks |
-| no `pnpm-workspace.yaml`, but an ancestor project has one | a **package** of that workspace | the tool tasks |
-| only a `package.json` | a **standalone package**, its own workspace root | the same as a workspace root |
+|                The project's directory has                |                  The project is                  |                              It gets                               |
+|-----------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------|
+| a `pnpm-workspace.yaml`                                   | the **workspace root**                           | the pnpm lifecycle tasks, the `pnpm` extension, and the tool tasks |
+| no `pnpm-workspace.yaml`, but an ancestor project has one | a **package** of that workspace                  | the tool tasks                                                     |
+| only a `package.json`                                     | a **standalone package**, its own workspace root | the same as a workspace root                                       |
 
 The workspace root does not have to be the Gradle root project — a Gradle build that only embeds a
 pnpm workspace in, say, `frontend/` works the same way, and its root project takes no part in the
@@ -71,12 +71,12 @@ already cache) to avoid downloading pnpm on every run.
 
 Registered on the workspace root, in the `pnpm` group:
 
-| Task | Description |
-| --- | --- |
-| `pnpmSetup` | Downloads and extracts the pinned pnpm. Skipped when a matching pnpm is available. |
+|     Task      |                                                                Description                                                                |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `pnpmSetup`   | Downloads and extracts the pinned pnpm. Skipped when a matching pnpm is available.                                                        |
 | `pnpmInstall` | Runs `pnpm install`. Up to date as long as the workspace root's `pnpm-lock.yaml`, `pnpm-workspace.yaml` and `package.json` are unchanged. |
-| `pnpmDedupe` | Runs `pnpm dedupe`. Never up to date. |
-| `pnpmClean` | Runs `pnpm clean`. Never up to date. |
+| `pnpmDedupe`  | Runs `pnpm dedupe`. Never up to date.                                                                                                     |
+| `pnpmClean`   | Runs `pnpm clean`. Never up to date.                                                                                                      |
 
 Every `PnpmTask` in the build automatically depends on `pnpmSetup`, and every `PnpmExecTask` and
 `PnpmRunTask` additionally depends on `pnpmInstall`.
@@ -115,11 +115,11 @@ tasks.named<PnpmSetupTask>("pnpmSetup") {
 Registered in every project, in the `verification` group. The workspace root gets them too, because a
 workspace root is a pnpm package like any other:
 
-| Tool | Enabled by | Tasks |
-| --- | --- | --- |
-| TypeScript | `tsconfig.json` | `compileTypescript` (part of `check`) |
-| ESLint | `eslint.config.*` (the flat config; `.eslintrc.*` is not detected) | `eslintCheck` (part of `check`), `eslintFix` (part of `fix`) |
-| Prettier | `prettier.config.*` or `.prettierrc*` | `prettierCheck` (part of `check`), `prettierFix` (part of `fix`) |
+|    Tool    |                             Enabled by                             |                              Tasks                               |
+|------------|--------------------------------------------------------------------|------------------------------------------------------------------|
+| TypeScript | `tsconfig.json`                                                    | `compileTypescript` (part of `check`)                            |
+| ESLint     | `eslint.config.*` (the flat config; `.eslintrc.*` is not detected) | `eslintCheck` (part of `check`), `eslintFix` (part of `fix`)     |
+| Prettier   | `prettier.config.*` or `.prettierrc*`                              | `prettierCheck` (part of `check`), `prettierFix` (part of `fix`) |
 
 `eslintCheck` and `eslintFix` depend on `compileTypescript`, and `prettierFix` runs after
 `eslintFix` so that formatting has the final say.
@@ -197,12 +197,12 @@ tasks.register<PnpmRunTask>("buildFrontend") {
 
 Both types support:
 
-| Property | Purpose |
-| --- | --- |
-| `arguments` | Arguments appended after the task's own command |
+|      Property      |                          Purpose                          |
+|--------------------|-----------------------------------------------------------|
+| `arguments`        | Arguments appended after the task's own command           |
 | `workingDirectory` | Directory pnpm runs in; defaults to the project directory |
-| `ignoreExitValue` | Tolerate a non-zero pnpm exit code; defaults to `false` |
-| `executable` | Override the pnpm executable for a single task |
+| `ignoreExitValue`  | Tolerate a non-zero pnpm exit code; defaults to `false`   |
+| `executable`       | Override the pnpm executable for a single task            |
 
 ## Configuration cache and project isolation
 
