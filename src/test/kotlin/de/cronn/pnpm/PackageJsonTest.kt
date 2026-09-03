@@ -74,6 +74,43 @@ class PackageJsonTest {
   }
 
   @ParameterizedTest
+  @ValueSource(strings = ["11.23.0", "11.23.0-alpha.1", "11.23.0+build.5", "0.0.1"])
+  fun `accepts fixed versions`(version: String) {
+    val content =
+      """{ "devEngines": { "packageManager": { "name": "pnpm", "version": "$version" } } }"""
+
+    assertThat(PackageJson.pnpmVersion(content, ORIGIN)).isEqualTo(version)
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+    strings =
+      [
+        "^11.23.0",
+        "~11.23.0",
+        ">=11.23.0",
+        "11.23.x",
+        "11.23",
+        "11",
+        "*",
+        "latest",
+        "11.23.0 || 12.0.0",
+        " 11.23.0",
+      ]
+  )
+  fun `fails when the version is not fixed`(version: String) {
+    val content =
+      """{ "devEngines": { "packageManager": { "name": "pnpm", "version": "$version" } } }"""
+
+    assertThatThrownBy { PackageJson.pnpmVersion(content, ORIGIN) }
+      .isInstanceOf(GradleException::class.java)
+      .hasMessage(
+        "Expected 'devEngines.packageManager.version' to be a fixed version but was " +
+          "'$version' in $ORIGIN. Version ranges are not supported."
+      )
+  }
+
+  @ParameterizedTest
   @ValueSource(strings = ["", "   ", "not json", "{", "[]", "\"a string\""])
   fun `fails for content that is not a json object`(content: String) {
     assertThatThrownBy { PackageJson.pnpmVersion(content, ORIGIN) }
