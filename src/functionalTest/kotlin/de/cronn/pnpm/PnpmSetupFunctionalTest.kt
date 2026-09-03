@@ -105,14 +105,29 @@ class PnpmSetupFunctionalTest {
   fun `uses the downloaded pnpm for the workspace tasks`() {
     val fixture = workspaceWithLocalRelease()
 
-    val result = fixture.runner("pnpmInstall").build()
+    if (PnpmStub.isWindows) {
+      // A `pnpm.exe` inside the archive cannot be faked by a script, so pnpmInstall only gets as
+      // far as starting it. That it tries to start the downloaded executable is the point here.
+      val result = fixture.runner("pnpmInstall").buildAndFail()
 
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    if (!PnpmStub.isWindows) {
+      assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+      assertThat(result.output)
+        .contains("A problem occurred starting process")
+        .contains(downloadedExecutablePath)
+    } else {
+      val result = fixture.runner("pnpmInstall").build()
+
+      assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
       // The extracted stub echoes its arguments, which proves the managed pnpm was invoked.
       assertThat(result.output).contains("installed pnpm called with: install")
     }
   }
+
+  /** Tail of the path of the pnpm the plugin downloads, independent of the temporary directory. */
+  private val downloadedExecutablePath: String
+    get() =
+      listOf(".gradle", "pnpm", GradleProjectFixture.PNPM_VERSION, executableName)
+        .joinToString(File.separator)
 
   private val executableName: String
     get() = if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
