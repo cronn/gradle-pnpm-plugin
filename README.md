@@ -137,7 +137,8 @@ Only the existence of these files is checked, which Gradle tracks as a configura
 adding one enables the tool on the next build.
 
 Note that `prettier .` and `eslint .` at a workspace root descend into the package directories too.
-A root that has its own config usually wants an ignore file, or `exclude(…)` for the Gradle inputs.
+A root that has its own config usually wants an ignore file, or `additionalExcludes(…)` for the
+Gradle inputs.
 
 ### Configuration
 
@@ -145,12 +146,12 @@ Each tool has its own extension:
 
 ```kotlin
 typescript {
-  include("src/**")
+  additionalIncludes("types/**")
 }
 
 prettier {
-  include("src/**", "docs/**")
-  exclude("src/generated")
+  additionalIncludes("docs/**")
+  additionalExcludes("src/generated/**")
   extraArguments("--cache")
 }
 
@@ -160,10 +161,10 @@ eslint {
 }
 ```
 
-- `include(…)` adds Ant-style patterns to the tool's inputs, on top of its defaults
-  (`eslint.config.ts` and `prettier.config.ts` for TypeScript, `*.ts`, `*.json` and `*.md` for
-  Prettier, `*.ts` for ESLint).
-- `exclude(…)` removes patterns from the inputs.
+- `additionalIncludes(…)` adds Ant-style patterns to the tool's inputs, on top of its defaults
+  (`*.ts`, `src/**/*.ts` and `src/**/*.tsx` for every tool, plus `*.json` and `*.md` for Prettier).
+- `additionalExcludes(…)` removes patterns from the inputs, on top of the patterns excluded from
+  every tool: `node_modules`, `.gradle`, `.git` and the Gradle build directory.
 - `extraArguments(…)` appends arguments to the tool's command line.
 - `enabled` overrides the auto-detection above, in both directions.
 

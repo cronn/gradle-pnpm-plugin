@@ -130,11 +130,33 @@ internal class PnpmToolTasks(
    * The files the tool inspects, resolved from the extension when the task is configured so that
    * `pnpm { ... }` blocks anywhere in the build script are taken into account.
    */
-  private fun sourceFiles(tool: PnpmToolExtension, defaultIncludes: List<String>): FileTree =
-    target.fileTree(target.projectDir) { tree ->
-      tree.include(defaultIncludes + tool.include.get())
-      tree.exclude(tool.exclude.get())
+  private fun sourceFiles(tool: PnpmToolExtension, defaultIncludes: List<String>): FileTree {
+    val includes = defaultIncludes + tool.additionalIncludes.get()
+    val excludes = DEFAULT_EXCLUDES + buildDirectoryExcludes() + tool.additionalExcludes.get()
+    target.logger.debug(
+      "Sources of {}: including {}, excluding {}",
+      target.path,
+      includes,
+      excludes,
+    )
+    return target.fileTree(target.projectDir) { tree ->
+      tree.include(includes)
+      tree.exclude(excludes)
     }
+  }
+
+  /**
+   * Excludes the Gradle build directory, by its name so that the build directories of nested
+   * packages are covered too. A build directory outside the project needs no exclusion.
+   */
+  private fun buildDirectoryExcludes(): List<String> {
+    val buildDirectory = target.layout.buildDirectory.get().asFile
+    return if (buildDirectory.startsWith(target.projectDir)) {
+      listOf("**/${buildDirectory.name}/**")
+    } else {
+      emptyList()
+    }
+  }
 
   private fun wireCheck(
     compileTypescript: TaskProvider<PnpmExecTask>,
@@ -172,6 +194,9 @@ internal class PnpmToolTasks(
 
   companion object {
     const val FIX_TASK_NAME: String = "fix"
+
+    /** Excluded from every tool's inputs, on top of the Gradle build directory. */
+    val DEFAULT_EXCLUDES: List<String> = listOf("**/node_modules/**", "**/.gradle/**", "**/.git/**")
     val BASE_INCLUDES: Array<String> = arrayOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
     val TYPESCRIPT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
     val PRETTIER_INCLUDES: List<String> = listOf(*BASE_INCLUDES, "*.json", "*.md")

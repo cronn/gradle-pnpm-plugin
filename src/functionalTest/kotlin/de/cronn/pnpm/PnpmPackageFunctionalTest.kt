@@ -117,14 +117,30 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
+  fun `ignores the node_modules and build directories`() {
+    val fixture = workspaceWithFrontend()
+    fixture.write("frontend/node_modules/dependency/index.ts", "export const dependency = 1")
+    fixture.write("frontend/build/generated.ts", "export const generated = 1")
+
+    fixture.runner(":frontend:eslintCheck").build()
+    val second = fixture.runner(":frontend:eslintCheck").build()
+    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("frontend/node_modules/dependency/index.ts", "export const dependency = 2")
+    fixture.write("frontend/build/generated.ts", "export const generated = 2")
+    val third = fixture.runner(":frontend:eslintCheck").build()
+    assertThat(third.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
+  @Test
   fun `honours the include and exclude patterns of a tool`() {
     val fixture =
       workspaceWithFrontend(
         packageBuildScript =
           """
           eslint {
-            include("sources/**")
-            exclude("sources/generated/**")
+            additionalIncludes("sources/**")
+            additionalExcludes("sources/generated/**")
           }
           """
       )
