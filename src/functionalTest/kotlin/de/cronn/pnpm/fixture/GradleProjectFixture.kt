@@ -12,7 +12,7 @@ class GradleProjectFixture(val rootDirectory: File) {
 
   /**
    * Writes a workspace whose root project is the pnpm workspace root and whose [packages] are its
-   * pnpm packages. Every project applies `de.cronn.pnpm`.
+   * pnpm packages. Every project applies `de.cronn.gradle-pnpm-plugin`.
    */
   fun writeWorkspace(
     packages: List<String> = emptyList(),
@@ -29,7 +29,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "build.gradle.kts",
       """
-      plugins { id("de.cronn.pnpm") }
+      plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       pnpm {
         ${pnpmConfiguration ?: "executable = ${quoted(stubExecutable)}"}
@@ -61,7 +61,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "$workspaceRoot/build.gradle.kts",
       """
-      plugins { id("de.cronn.pnpm") }
+      plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       pnpm {
         executable = ${quoted(stubExecutable)}
@@ -105,7 +105,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "$path/build.gradle.kts",
       """
-      plugins { id("de.cronn.pnpm") }
+      plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       $buildScript
       """,

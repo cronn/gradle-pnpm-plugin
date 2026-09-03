@@ -167,7 +167,7 @@ class PnpmWorkspaceFunctionalTest {
 
     assertThat(result.output)
       .contains("it is the pnpm workspace root of :frontend:app")
-      .contains("""Apply id("de.cronn.pnpm") in the build script of :frontend""")
+      .contains("""Apply id("de.cronn.gradle-pnpm-plugin") in the build script of :frontend""")
   }
 
   @Test

@@ -173,7 +173,7 @@ class PnpmPluginTest {
       .hasRootCauseInstanceOf(GradleException::class.java)
       .rootCause()
       .hasMessageContaining("it is the pnpm workspace root of :frontend")
-      .hasMessageContaining("""Apply id("de.cronn.pnpm") in the build script of :""")
+      .hasMessageContaining("""Apply id("de.cronn.gradle-pnpm-plugin") in the build script of :""")
   }
 
   // Tool tasks
@@ -315,7 +315,7 @@ class PnpmPluginTest {
 
   internal companion object {
     const val PNPM_VERSION = "11.23.0"
-    const val PLUGIN_ID = "de.cronn.pnpm"
+    const val PLUGIN_ID = "de.cronn.gradle-pnpm-plugin"
 
     fun writePackageJson(directory: File, version: String = PNPM_VERSION) {
       directory.mkdirs()

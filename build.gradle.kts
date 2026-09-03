@@ -86,7 +86,7 @@ gradlePlugin {
 
   plugins {
     register("pnpm") {
-      id = "de.cronn.pnpm"
+      id = "de.cronn.gradle-pnpm-plugin"
       implementationClass = "de.cronn.pnpm.PnpmPlugin"
       displayName = "pnpm plugin"
       description =

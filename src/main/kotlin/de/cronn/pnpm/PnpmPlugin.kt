@@ -255,7 +255,7 @@ public class PnpmPlugin : Plugin<Project> {
   }
 
   internal companion object {
-    const val PLUGIN_ID: String = "de.cronn.pnpm"
+    const val PLUGIN_ID: String = "de.cronn.gradle-pnpm-plugin"
     const val EXTENSION_NAME: String = "pnpm"
     const val TYPESCRIPT_EXTENSION_NAME: String = "typescript"
     const val PRETTIER_EXTENSION_NAME: String = "prettier"
