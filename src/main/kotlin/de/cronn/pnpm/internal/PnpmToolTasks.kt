@@ -1,62 +1,46 @@
-package de.cronn.pnpm
+package de.cronn.pnpm.internal
 
+import de.cronn.pnpm.EslintExtension
+import de.cronn.pnpm.PnpmToolExtension
+import de.cronn.pnpm.PrettierExtension
+import de.cronn.pnpm.TypescriptExtension
 import de.cronn.pnpm.task.PnpmExecTask
-import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
-import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
- * Adds the TypeScript, Prettier and ESLint tasks of a single pnpm workspace package and wires them
- * into the Gradle lifecycle.
+ * Registers the TypeScript, Prettier and ESLint tasks of a single pnpm package and wires them into
+ * the Gradle lifecycle.
  *
- * Each tool can be configured, and switched off, through the `pnpmPackage` extension:
- * ```
- * pnpmPackage {
- *   typescript { include("sources") }
- *   prettier {
- *     include("sources")
- *     exclude("generated")
- *     extraArguments("--cache")
- *   }
- *   eslint { enabled = false }
- * }
- * ```
- *
- * The patterns are Ant-style include and exclude patterns, resolved against the project directory,
- * and are added to the default patterns of the respective tool.
+ * A pnpm workspace root is a package like any other, so it gets the same tasks.
  */
-public class PnpmPackagePlugin : Plugin<Project> {
+internal class PnpmToolTasks(
+  private val target: Project,
+  private val typescript: TypescriptExtension,
+  private val prettier: PrettierExtension,
+  private val eslint: EslintExtension,
+) {
 
-  override fun apply(target: Project) {
-    target.pluginManager.apply(PnpmBasePlugin::class.java)
-    target.pluginManager.apply(BasePlugin::class.java)
-
-    val extension = target.extensions.create(EXTENSION_NAME, PnpmPackageExtension::class.java)
-
-    val compileTypescript = registerCompileTypescript(target, extension)
-    val prettierCheck = registerPrettierCheck(target, extension)
-    val prettierFix = registerPrettierFix(target, extension)
-    val eslintCheck = registerEslintCheck(target, extension, compileTypescript)
-    val eslintFix = registerEslintFix(target, extension, compileTypescript)
+  fun register() {
+    val compileTypescript = registerCompileTypescript()
+    val prettierCheck = registerPrettierCheck()
+    val prettierFix = registerPrettierFix()
+    val eslintCheck = registerEslintCheck(compileTypescript)
+    val eslintFix = registerEslintFix(compileTypescript)
 
     // Prettier has the final say on formatting, so it must not run before ESLint's --fix.
     prettierFix.configure { task -> task.mustRunAfter(eslintFix) }
 
-    wireCheck(target, extension, compileTypescript, prettierCheck, eslintCheck)
-    registerFixTask(target, extension, prettierFix, eslintFix)
+    wireCheck(compileTypescript, prettierCheck, eslintCheck)
+    registerFixTask(prettierFix, eslintFix)
   }
 
-  private fun registerCompileTypescript(
-    target: Project,
-    extension: PnpmPackageExtension,
-  ): TaskProvider<PnpmExecTask> =
+  private fun registerCompileTypescript(): TaskProvider<PnpmExecTask> =
     registerToolTask(
-      target,
-      extension.typescript,
+      typescript,
       name = "compileTypescript",
       description = "Checks the TypeScript sources with tsc",
       command = "tsc",
@@ -64,13 +48,9 @@ public class PnpmPackagePlugin : Plugin<Project> {
       defaultIncludes = TYPESCRIPT_INCLUDES,
     )
 
-  private fun registerPrettierCheck(
-    target: Project,
-    extension: PnpmPackageExtension,
-  ): TaskProvider<PnpmExecTask> =
+  private fun registerPrettierCheck(): TaskProvider<PnpmExecTask> =
     registerToolTask(
-      target,
-      extension.prettier,
+      prettier,
       name = "prettierCheck",
       description = "Checks the formatting of the sources with Prettier",
       command = "prettier",
@@ -78,13 +58,9 @@ public class PnpmPackagePlugin : Plugin<Project> {
       defaultIncludes = PRETTIER_INCLUDES,
     )
 
-  private fun registerPrettierFix(
-    target: Project,
-    extension: PnpmPackageExtension,
-  ): TaskProvider<PnpmExecTask> =
+  private fun registerPrettierFix(): TaskProvider<PnpmExecTask> =
     registerToolTask(
-      target,
-      extension.prettier,
+      prettier,
       name = "prettierFix",
       description = "Reformats the sources with Prettier",
       command = "prettier",
@@ -94,13 +70,10 @@ public class PnpmPackagePlugin : Plugin<Project> {
     )
 
   private fun registerEslintCheck(
-    target: Project,
-    extension: PnpmPackageExtension,
-    compileTypescript: TaskProvider<PnpmExecTask>,
+    compileTypescript: TaskProvider<PnpmExecTask>
   ): TaskProvider<PnpmExecTask> =
     registerToolTask(
-      target,
-      extension.eslint,
+      eslint,
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
       command = "eslint",
@@ -110,13 +83,10 @@ public class PnpmPackagePlugin : Plugin<Project> {
     )
 
   private fun registerEslintFix(
-    target: Project,
-    extension: PnpmPackageExtension,
-    compileTypescript: TaskProvider<PnpmExecTask>,
+    compileTypescript: TaskProvider<PnpmExecTask>
   ): TaskProvider<PnpmExecTask> =
     registerToolTask(
-      target,
-      extension.eslint,
+      eslint,
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
       command = "eslint",
@@ -128,7 +98,6 @@ public class PnpmPackagePlugin : Plugin<Project> {
 
   @Suppress("LongParameterList")
   private fun registerToolTask(
-    target: Project,
     tool: PnpmToolExtension,
     name: String,
     description: String,
@@ -148,7 +117,7 @@ public class PnpmPackagePlugin : Plugin<Project> {
         task.dependsOn(dependsOn)
       }
 
-      val sources = sourceFiles(target, tool, defaultIncludes)
+      val sources = sourceFiles(tool, defaultIncludes)
       task.inputs.files(sources).withPropertyName("sources")
       if (mutatesSources) {
         // A formatter rewrites its own inputs, so declaring them as outputs too would make the
@@ -163,43 +132,35 @@ public class PnpmPackagePlugin : Plugin<Project> {
 
   /**
    * The files the tool inspects, resolved from the extension when the task is configured so that
-   * `pnpmPackage { ... }` blocks anywhere in the build script are taken into account.
+   * `pnpm { ... }` blocks anywhere in the build script are taken into account.
    */
-  private fun sourceFiles(
-    target: Project,
-    tool: PnpmToolExtension,
-    defaultIncludes: List<String>,
-  ): FileTree =
+  private fun sourceFiles(tool: PnpmToolExtension, defaultIncludes: List<String>): FileTree =
     target.fileTree(target.projectDir) { tree ->
       tree.include(defaultIncludes + tool.include.get())
       tree.exclude(tool.exclude.get())
     }
 
   private fun wireCheck(
-    target: Project,
-    extension: PnpmPackageExtension,
     compileTypescript: TaskProvider<PnpmExecTask>,
     prettierCheck: TaskProvider<PnpmExecTask>,
     eslintCheck: TaskProvider<PnpmExecTask>,
   ) {
     target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure { task ->
-      task.dependsOn(enabledTasks(extension.typescript, compileTypescript))
-      task.dependsOn(enabledTasks(extension.prettier, prettierCheck))
-      task.dependsOn(enabledTasks(extension.eslint, eslintCheck))
+      task.dependsOn(enabledTasks(typescript, compileTypescript))
+      task.dependsOn(enabledTasks(prettier, prettierCheck))
+      task.dependsOn(enabledTasks(eslint, eslintCheck))
     }
   }
 
   private fun registerFixTask(
-    target: Project,
-    extension: PnpmPackageExtension,
     prettierFix: TaskProvider<PnpmExecTask>,
     eslintFix: TaskProvider<PnpmExecTask>,
   ) {
     target.tasks.register(FIX_TASK_NAME) { task ->
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.description = "Applies all automatic source fixes of the configured tools"
-      task.dependsOn(enabledTasks(extension.prettier, prettierFix))
-      task.dependsOn(enabledTasks(extension.eslint, eslintFix))
+      task.dependsOn(enabledTasks(prettier, prettierFix))
+      task.dependsOn(enabledTasks(eslint, eslintFix))
     }
   }
 
@@ -213,8 +174,7 @@ public class PnpmPackagePlugin : Plugin<Project> {
   ): Provider<List<TaskProvider<PnpmExecTask>>> =
     tool.enabled.map { enabled -> if (enabled) listOf(task) else emptyList() }
 
-  internal companion object {
-    const val EXTENSION_NAME: String = "pnpmPackage"
+  companion object {
     const val FIX_TASK_NAME: String = "fix"
     val TYPESCRIPT_INCLUDES: List<String> = listOf("eslint.config.ts", "prettier.config.ts")
     val PRETTIER_INCLUDES: List<String> = listOf("*.ts", "*.json", "*.md")

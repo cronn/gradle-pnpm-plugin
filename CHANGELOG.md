@@ -7,9 +7,18 @@ following changes over that original:
 
 ### Added
 
-- `de.cronn.pnpm-base` plugin for projects that only need the pnpm task types.
-- `pnpmPackage` extension with `enabled`, `include(…)`, `exclude(…)` and `extraArguments(…)` per
-  tool, replacing the three separate top-level extensions.
+- A single `de.cronn.pnpm` plugin, applied to the workspace root and to every package alike. It
+  discovers the pnpm workspace root from the `pnpm-workspace.yaml`, so the workspace root no longer
+  has to be the Gradle root project, and a project with only a `package.json` works as a standalone
+  package. This replaces the separate `de.cronn.pnpm-workspace`, `de.cronn.pnpm-package` and
+  `de.cronn.pnpm-base` plugins.
+- The workspace root gets the TypeScript, Prettier and ESLint tasks too, because a workspace root is
+  a pnpm package like any other.
+- Each tool is enabled by default exactly when the project holds a config file for it
+  (`tsconfig.json`, `eslint.config.*` or `prettier.config.*`/`.prettierrc*`).
+- A `typescript`, `prettier` and `eslint` extension per project, each with `enabled`, `include(…)`,
+  `exclude(…)` and `extraArguments(…)`. The pnpm installation is configured separately, through the
+  `pnpm` extension of the workspace root.
 - Configurable `downloadBaseUrl`, `archiveUrl`, `archiveSha256`, `installDirectory`, `version`,
   `packageJson`, `executable` and `preferPnpmOnPath` on the `pnpm` extension.
 - `workingDirectory`, `ignoreExitValue` and `pnpmVersion` on `PnpmTask`.

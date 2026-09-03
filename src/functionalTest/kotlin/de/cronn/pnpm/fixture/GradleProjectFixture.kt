@@ -11,42 +11,25 @@ class GradleProjectFixture(val rootDirectory: File) {
   private lateinit var stubExecutable: File
 
   /**
-   * Writes a workspace whose root project applies `de.cronn.pnpm-workspace` and whose [packages]
-   * each apply `de.cronn.pnpm-package`.
+   * Writes a workspace whose root project is the pnpm workspace root and whose [packages] are its
+   * pnpm packages. Every project applies `de.cronn.pnpm`.
    */
   fun writeWorkspace(
     packages: List<String> = emptyList(),
     rootBuildScript: String = "",
     packageBuildScript: String = "",
     pnpmVersion: String = PNPM_VERSION,
-    /** Body of the `pnpm { }` block; defaults to pointing the build at the recording stub. */
+    /** Body of the `pnpm { }` block; defaults to pointing the build at the stub. */
     pnpmConfiguration: String? = null,
   ) {
     stubExecutable = stub.install()
 
-    write(
-      "settings.gradle.kts",
-      """
-      rootProject.name = "workspace"
-      ${packages.joinToString("\n") { "include(\"$it\")" }}
-      """,
-    )
-    write(
-      "package.json",
-      """
-      {
-        "name": "root",
-        "private": true,
-        "devEngines": { "packageManager": { "name": "pnpm", "version": "$pnpmVersion" } }
-      }
-      """,
-    )
-    write("pnpm-lock.yaml", "lockfileVersion: '9.0'")
-    write("pnpm-workspace.yaml", "packages:\n${packages.joinToString("\n") { "  - $it" }}")
+    writeSettings(rootProjectName = "workspace", projects = packages)
+    writePackageRoot("", pnpmVersion, packages)
     write(
       "build.gradle.kts",
       """
-      plugins { id("de.cronn.pnpm-workspace") }
+      plugins { id("de.cronn.pnpm") }
 
       pnpm {
         ${pnpmConfiguration ?: "executable = ${quoted(stubExecutable)}"}
@@ -56,17 +39,90 @@ class GradleProjectFixture(val rootDirectory: File) {
       """,
     )
 
-    packages.forEach { name ->
-      write(
-        "$name/build.gradle.kts",
-        """
-        plugins { id("de.cronn.pnpm-package") }
+    packages.forEach { name -> writePackage(name, packageBuildScript) }
+  }
 
-        $packageBuildScript
-        """,
-      )
-      write("$name/package.json", """{ "name": "$name" }""")
-    }
+  /**
+   * Writes a build whose Gradle root project holds no pnpm files at all, and whose pnpm workspace
+   * root is the [workspaceRoot] project. Covers the layout where a Gradle build only embeds a pnpm
+   * workspace.
+   */
+  fun writeNestedWorkspace(
+    workspaceRoot: String = "frontend",
+    packages: List<String> = listOf("app"),
+    pnpmVersion: String = PNPM_VERSION,
+  ) {
+    stubExecutable = stub.install()
+
+    val packagePaths = packages.map { "$workspaceRoot:$it" }
+    writeSettings(rootProjectName = "build", projects = listOf(workspaceRoot) + packagePaths)
+    write("build.gradle.kts", "// no pnpm files here")
+    writePackageRoot(workspaceRoot, pnpmVersion, packages)
+    write(
+      "$workspaceRoot/build.gradle.kts",
+      """
+      plugins { id("de.cronn.pnpm") }
+
+      pnpm {
+        executable = ${quoted(stubExecutable)}
+      }
+      """,
+    )
+
+    packages.forEach { name -> writePackage("$workspaceRoot/$name") }
+  }
+
+  private fun writeSettings(rootProjectName: String, projects: List<String>) {
+    write(
+      "settings.gradle.kts",
+      """
+      rootProject.name = "$rootProjectName"
+      ${projects.joinToString("\n") { "include(\"$it\")" }}
+      """,
+    )
+  }
+
+  /** The files that make [directory] a pnpm workspace root. */
+  private fun writePackageRoot(directory: String, pnpmVersion: String, packages: List<String>) {
+    val prefix = if (directory.isEmpty()) "" else "$directory/"
+    write(
+      "${prefix}package.json",
+      """
+      {
+        "name": "root",
+        "private": true,
+        "devEngines": { "packageManager": { "name": "pnpm", "version": "$pnpmVersion" } }
+      }
+      """,
+    )
+    write("${prefix}pnpm-lock.yaml", "lockfileVersion: '9.0'")
+    write("${prefix}pnpm-workspace.yaml", "packages:\n${packages.joinToString("\n") { "  - $it" }}")
+    writeToolConfigs(directory)
+  }
+
+  /** A pnpm package at [path], with a config file for every tool so all of them are enabled. */
+  private fun writePackage(path: String, buildScript: String = "") {
+    write(
+      "$path/build.gradle.kts",
+      """
+      plugins { id("de.cronn.pnpm") }
+
+      $buildScript
+      """,
+    )
+    write("$path/package.json", """{ "name": "${path.substringAfterLast('/')}" }""")
+    writeToolConfigs(path)
+  }
+
+  /**
+   * Writes a config file for TypeScript, ESLint and Prettier, which is what makes the plugin enable
+   * those tools for a project.
+   */
+  fun writeToolConfigs(directory: String) {
+    val prefix = if (directory.isEmpty()) "" else "$directory/"
+    write("${prefix}tsconfig.json", "{}")
+    write("${prefix}eslint.config.ts", "export default []")
+    write("${prefix}prettier.config.ts", "export default {}")
   }
 
   fun write(path: String, content: String) {

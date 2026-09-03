@@ -137,19 +137,49 @@ class PnpmWorkspaceFunctionalTest {
   }
 
   @Test
-  fun `fails when the workspace plugin is applied to a subproject`() {
+  fun `discovers a workspace root below the gradle root project`() {
     val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(packages = listOf("frontend"))
-    fixture.write(
-      "frontend/build.gradle.kts",
-      """
-      plugins { id("de.cronn.pnpm-workspace") }
-      """,
-    )
+    fixture.writeNestedWorkspace()
 
-    val result = fixture.runner("tasks").buildAndFail()
+    val result = fixture.runner(":frontend:app:prettierCheck").build()
 
-    assertThat(result.output).contains("must be applied to the root project")
+    assertThat(result.task(":frontend:pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(result.task(":frontend:app:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    // The gradle root project holds no pnpm files, so it takes no part in the pnpm build.
+    assertThat(result.task(":pnpmInstall")).isNull()
+
+    val invocations = fixture.stub.invocations()
+    assertThat(invocations.first().arguments).containsExactly("install")
+    assertThat(invocations.first().workingDirectory)
+      .isEqualTo(fixture.directory("frontend").canonicalPath)
+    assertThat(invocations.last().arguments).containsExactly("exec", "prettier", ".", "--check")
+    assertThat(invocations.last().workingDirectory)
+      .isEqualTo(fixture.directory("frontend/app").canonicalPath)
+  }
+
+  @Test
+  fun `fails when the workspace root does not apply the plugin`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeNestedWorkspace()
+    fixture.write("frontend/build.gradle.kts", "// forgot to apply the plugin")
+
+    val result = fixture.runner(":frontend:app:tasks").buildAndFail()
+
+    assertThat(result.output)
+      .contains("it is the pnpm workspace root of :frontend:app")
+      .contains("""Apply id("de.cronn.pnpm") in the build script of :frontend""")
+  }
+
+  @Test
+  fun `treats a single package without a workspace file as its own workspace root`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace()
+    fixture.directory("pnpm-workspace.yaml").delete()
+
+    val result = fixture.runner("pnpmInstall", "prettierCheck").build()
+
+    assertThat(result.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(result.task(":prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test

@@ -3,10 +3,21 @@ package de.cronn.pnpm
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 
-/** Configuration of a single Node tool wired into the Gradle lifecycle by [PnpmPackagePlugin]. */
+/**
+ * Configuration shared by every Node tool wired into the Gradle lifecycle by [PnpmPlugin].
+ *
+ * Each tool has its own extension deriving from this one: [TypescriptExtension],
+ * [PrettierExtension] and [EslintExtension].
+ */
 public abstract class PnpmToolExtension {
 
-  /** Whether the tasks of this tool run and take part in `check` and `fix`. Defaults to `true`. */
+  /**
+   * Whether the tasks of this tool run and take part in `check` and `fix`.
+   *
+   * Defaults to whether the project contains a configuration file for the tool; the extension of
+   * each tool documents which files those are. Set it explicitly to enable a tool that is
+   * configured some other way, or to switch one off.
+   */
   public abstract val enabled: Property<Boolean>
 
   /**
