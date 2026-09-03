@@ -21,9 +21,7 @@ jobs:
       matrix:
         include:
           # The lowest supported JDK is the one that catches accidental use of newer JDK APIs in
-          # bytecode that claims to target Java 17.
-          - os: ubuntu-latest
-            java: '17'
+          # bytecode that claims to target Java 21.
           - os: ubuntu-latest
             java: '21'
           - os: ubuntu-latest
@@ -60,7 +58,7 @@ jobs:
 
       - uses: actions/setup-java@v6.0.0
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: temurin
 
       - uses: gradle/actions/setup-gradle@v6.3.0
