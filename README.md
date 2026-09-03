@@ -85,18 +85,10 @@ Every `PnpmTask` in the build automatically depends on `pnpmSetup`, and every `P
 
 ```kotlin
 pnpm {
-  // Defaults to the package.json next to the pnpm-workspace.yaml
-  packageJson = layout.projectDirectory.file("package.json")
-  // Defaults to devEngines.packageManager.version of the package.json above
+  // Defaults to devEngines.packageManager.version of the workspace root's package.json
   version = "11.23.0"
   // Defaults to <workspaceRootDir>/.gradle/pnpm/<version>
   installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.23.0")
-  // Defaults to https://github.com/pnpm/pnpm/releases/download
-  downloadBaseUrl = "https://my-mirror.example.com/pnpm"
-  // Defaults to <downloadBaseUrl>/v<version>/pnpm-<platform>.<tar.gz|zip>
-  archiveUrl = "https://my-mirror.example.com/pnpm-linux-x64.tar.gz"
-  // Verified after download when set
-  archiveSha256 = "…"
   // Skips provisioning entirely
   executable = "/usr/local/bin/pnpm"
   // Reuse a matching pnpm from the PATH; defaults to true
@@ -106,6 +98,17 @@ pnpm {
 
 The `pnpm` extension is created on the workspace root and shared by the whole workspace, so
 configure it once, in the build script of the workspace root.
+
+pnpm is downloaded from `https://github.com/pnpm/pnpm/releases/download`. To download it from
+elsewhere, for example a mirror, set the `archiveUrl` of the `pnpmSetup` task:
+
+```kotlin
+import de.cronn.pnpm.task.PnpmSetupTask
+
+tasks.named<PnpmSetupTask>("pnpmSetup") {
+  archiveUrl = "https://my-mirror.example.com/pnpm-linux-x64.tar.gz"
+}
+```
 
 ## Tool tasks
 

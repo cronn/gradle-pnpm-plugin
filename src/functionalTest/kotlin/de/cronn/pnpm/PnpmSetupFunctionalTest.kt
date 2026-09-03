@@ -62,27 +62,14 @@ class PnpmSetupFunctionalTest {
   }
 
   @Test
-  fun `fails when the checksum does not match`() {
-    val fixture =
-      workspaceWithLocalRelease(
-        extraConfiguration = """archiveSha256 = "${"0".repeat(SHA256_LENGTH)}""""
-      )
-
-    val result = fixture.runner("pnpmSetup").buildAndFail()
-
-    assertThat(result.output).contains("Checksum mismatch for")
-    assertThat(result.output).contains("expected SHA-256 ${"0".repeat(SHA256_LENGTH)}")
-  }
-
-  @Test
   fun `reports what the archive contained when pnpm is missing from it`() {
-    val baseUrl =
+    val archiveUrl =
       PnpmArchiveFixture.writeRelease(
         releaseDirectory,
         GradleProjectFixture.PNPM_VERSION,
         entries = mapOf("README.md" to "no pnpm here\n", "bin/other" to "nope\n"),
       )
-    val fixture = workspaceWithLocalRelease(baseUrl = baseUrl)
+    val fixture = workspaceWithLocalRelease(archiveUrl)
 
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
@@ -94,7 +81,7 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `fails with a readable message when the archive cannot be downloaded`() {
     val fixture =
-      workspaceWithLocalRelease(baseUrl = File(releaseDirectory, "missing").toURI().toString())
+      workspaceWithLocalRelease(File(releaseDirectory, "missing.tar.gz").toURI().toString())
 
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
@@ -132,27 +119,24 @@ class PnpmSetupFunctionalTest {
   private val executableName: String
     get() = if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
 
-  private fun workspaceWithLocalRelease(
-    baseUrl: String? = null,
-    extraConfiguration: String = "",
-  ): GradleProjectFixture {
+  /**
+   * A workspace whose `pnpmSetup` downloads from a local archive. The archive URL is configured on
+   * the task, which is where a build overrides the pnpm release the plugin derives from the pinned
+   * version.
+   */
+  private fun workspaceWithLocalRelease(archiveUrl: String? = null): GradleProjectFixture {
     val url =
-      baseUrl
+      archiveUrl
         ?: PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(
-      pnpmConfiguration =
+      rootBuildScript =
         """
-        downloadBaseUrl = "$url"
-        preferPnpmOnPath = false
-        $extraConfiguration
+        tasks.named<de.cronn.pnpm.task.PnpmSetupTask>("pnpmSetup") { archiveUrl = "$url" }
         """
-          .trimIndent()
+          .trimIndent(),
+      pnpmConfiguration = "preferPnpmOnPath = false",
     )
     return fixture
-  }
-
-  private companion object {
-    const val SHA256_LENGTH = 64
   }
 }

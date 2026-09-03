@@ -73,31 +73,15 @@ class PnpmPlatformTest {
 
   @ParameterizedTest
   @CsvSource(
-    "Linux, amd64, https://example.test/download/v11.23.0/pnpm-linux-x64.tar.gz",
-    "Mac OS X, aarch64, https://example.test/download/v11.23.0/pnpm-darwin-arm64.tar.gz",
-    "Windows 11, amd64, https://example.test/download/v11.23.0/pnpm-win32-x64.zip",
+    "Linux, amd64, pnpm-linux-x64.tar.gz",
+    "Mac OS X, aarch64, pnpm-darwin-arm64.tar.gz",
+    "Windows 11, amd64, pnpm-win32-x64.zip",
   )
-  fun `builds the release archive url`(osName: String, osArch: String, expected: String) {
-    val url =
-      PnpmPlatform.archiveUrl(
-        "https://example.test/download",
-        "11.23.0",
-        PnpmPlatform(osName, osArch),
-      )
+  fun `builds the release archive url`(osName: String, osArch: String, expectedAsset: String) {
+    val url = PnpmPlatform.archiveUrl("11.23.0", PnpmPlatform(osName, osArch))
 
-    assertThat(url).isEqualTo(expected)
-  }
-
-  @Test
-  fun `tolerates a trailing slash in the download base url`() {
-    val url =
-      PnpmPlatform.archiveUrl(
-        "https://example.test/download/",
-        "1.2.3",
-        PnpmPlatform("Linux", "amd64"),
-      )
-
-    assertThat(url).isEqualTo("https://example.test/download/v1.2.3/pnpm-linux-x64.tar.gz")
+    assertThat(url)
+      .isEqualTo("https://github.com/pnpm/pnpm/releases/download/v11.23.0/$expectedAsset")
   }
 
   @Test

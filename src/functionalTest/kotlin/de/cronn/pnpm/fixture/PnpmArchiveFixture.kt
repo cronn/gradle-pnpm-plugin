@@ -8,21 +8,16 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 
 /**
- * Creates local pnpm "release" archives, so that [de.cronn.pnpm.task.PnpmSetupTask] can be tested
+ * Creates a local pnpm "release" archive, so that [de.cronn.pnpm.task.PnpmSetupTask] can be tested
  * against a `file:` URL instead of downloading a real pnpm distribution.
  */
 object PnpmArchiveFixture {
 
-  /** Every pnpm release asset name the plugin may ask for. */
-  private val PLATFORMS =
-    listOf("linux-x64", "linux-arm64", "darwin-x64", "darwin-arm64", "win32-x64", "win32-arm64")
-
   /**
-   * Writes a release directory for [version] containing an archive for every platform, so the test
-   * does not have to know which one the plugin resolves.
+   * Writes an archive for [version] in the archive format the plugin expects on this platform.
    *
    * @param entries file name to content; defaults to a recording pnpm stub.
-   * @return the base URL to configure as `pnpm.downloadBaseUrl`.
+   * @return the URL to configure as the `archiveUrl` of the `pnpmSetup` task.
    */
   fun writeRelease(
     directory: File,
@@ -30,14 +25,13 @@ object PnpmArchiveFixture {
     entries: Map<String, String> = defaultEntries(),
   ): String {
     val releaseDirectory = File(directory, "v$version").apply { mkdirs() }
-    PLATFORMS.forEach { platform ->
-      if (platform.startsWith("win32")) {
-        writeZip(File(releaseDirectory, "pnpm-$platform.zip"), entries)
+    val archive =
+      if (PnpmStub.isWindows) {
+        File(releaseDirectory, "pnpm-win32.zip").also { writeZip(it, entries) }
       } else {
-        writeTarGz(File(releaseDirectory, "pnpm-$platform.tar.gz"), entries)
+        File(releaseDirectory, "pnpm-linux.tar.gz").also { writeTarGz(it, entries) }
       }
-    }
-    return directory.toURI().toString().removeSuffix("/")
+    return archive.toURI().toString()
   }
 
   /** A pnpm stub that logs its arguments next to itself, mirroring [PnpmStub]. */

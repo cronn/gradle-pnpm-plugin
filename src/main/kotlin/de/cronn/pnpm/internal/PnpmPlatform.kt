@@ -80,8 +80,9 @@ internal class PnpmPlatform(osName: String, osArch: String) {
       PnpmPlatform(System.getProperty("os.name").orEmpty(), System.getProperty("os.arch").orEmpty())
 
     /** URL of the self-contained pnpm distribution for [platform]. */
-    fun archiveUrl(downloadBaseUrl: String, version: String, platform: PnpmPlatform): String =
-      "${downloadBaseUrl.trimEnd('/')}/v$version/pnpm-${platform.identifier}." +
-        platform.archiveExtension
+    fun archiveUrl(version: String, platform: PnpmPlatform): String =
+      "$DOWNLOAD_BASE_URL/v$version/pnpm-${platform.identifier}.${platform.archiveExtension}"
+
+    private const val DOWNLOAD_BASE_URL = "https://github.com/pnpm/pnpm/releases/download"
   }
 }

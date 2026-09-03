@@ -4,6 +4,7 @@ import de.cronn.pnpm.PnpmExtension
 import de.cronn.pnpm.task.PnpmSetupTask
 import de.cronn.pnpm.task.PnpmTask
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 
 /**
  * Registers the pnpm lifecycle tasks of a workspace root: the tasks that provision pnpm and manage
@@ -11,11 +12,15 @@ import org.gradle.api.Project
  *
  * These are the tasks every other pnpm task in the build depends on, through
  * [PnpmExtension.setupTaskPath] and [PnpmExtension.installTaskPath].
+ *
+ * [archiveUrl] is passed in rather than derived here, so that no provider created by this class
+ * captures it -- and with it the project -- in the configuration cache.
  */
 internal class PnpmWorkspaceTasks(
   private val target: Project,
   private val extension: PnpmExtension,
   private val resolution: PnpmResolution,
+  private val archiveUrl: Provider<String>,
   private val taskGroup: String,
 ) {
 
@@ -33,8 +38,7 @@ internal class PnpmWorkspaceTasks(
     target.tasks.register(SETUP_TASK_NAME, PnpmSetupTask::class.java) { task ->
       task.group = taskGroup
       task.description = "Install pnpm unless a matching pnpm is already available"
-      task.archiveUrl.set(extension.archiveUrl)
-      task.archiveSha256.set(extension.archiveSha256)
+      task.archiveUrl.set(archiveUrl)
       task.executableName.set(resolution.executableName)
       task.installDirectory.set(extension.installDirectory)
       task.required.set(resolution.usesManagedPnpm)
@@ -63,7 +67,7 @@ internal class PnpmWorkspaceTasks(
         .files(
           projectDirectory.file(PnpmWorkspaceLayout.WORKSPACE_FILE),
           projectDirectory.file("pnpm-lock.yaml"),
-          extension.packageJson,
+          projectDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON),
         )
         .withPropertyName("workspaceFiles")
       // node_modules is a symlink farm pointing into a content-addressed store; snapshotting it is
