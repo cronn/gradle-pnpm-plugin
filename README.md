@@ -11,8 +11,8 @@ Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 
 
 ## Setup
 
-Apply `de.cronn.pnpm` to every project that takes part in the pnpm build. There is only one plugin
-id: the plugin works out what each project is from the files in its directory.
+Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm build. There is
+only one plugin id: the plugin works out what each project is from the files in its directory.
 
 | The project's directory has | The project is | It gets |
 | --- | --- | --- |
@@ -42,14 +42,14 @@ Then apply the plugin, in the workspace root and in every package:
 ```kotlin
 // build.gradle.kts
 plugins {
-  id("de.cronn.pnpm") version "<version>"
+  id("de.cronn.gradle-pnpm-plugin") version "<version>"
 }
 ```
 
 ```kotlin
 // frontend/build.gradle.kts
 plugins {
-  id("de.cronn.pnpm")
+  id("de.cronn.gradle-pnpm-plugin")
 }
 ```
 

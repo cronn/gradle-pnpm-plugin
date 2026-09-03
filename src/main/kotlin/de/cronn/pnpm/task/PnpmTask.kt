@@ -17,7 +17,8 @@ import org.gradle.work.DisableCachingByDefault
  * Runs a pnpm command.
  *
  * The [executable] and [pnpmVersion] of every task of this type are configured by the
- * `de.cronn.pnpm-base` plugin, so subclasses and build scripts only have to provide [arguments].
+ * `de.cronn.gradle-pnpm-plugin` plugin, so subclasses and build scripts only have to provide
+ * [arguments].
  */
 @DisableCachingByDefault(
   because =

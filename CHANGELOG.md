@@ -7,10 +7,10 @@ following changes over that original:
 
 ### Added
 
-- A single `de.cronn.pnpm` plugin, applied to the workspace root and to every package alike. It
-  discovers the pnpm workspace root from the `pnpm-workspace.yaml`, so the workspace root no longer
-  has to be the Gradle root project, and a project with only a `package.json` works as a standalone
-  package. This replaces the separate `de.cronn.pnpm-workspace`, `de.cronn.pnpm-package` and
+- A single `de.cronn.gradle-pnpm-plugin` plugin, applied to the workspace root and to every package
+  alike. It discovers the pnpm workspace root from the `pnpm-workspace.yaml`, so the workspace root
+  no longer has to be the Gradle root project, and a project with only a `package.json` works as a
+  standalone package. This replaces the separate `de.cronn.pnpm-workspace`, `de.cronn.pnpm-package` and
   `de.cronn.pnpm-base` plugins.
 - The workspace root gets the TypeScript, Prettier and ESLint tasks too, because a workspace root is
   a pnpm package like any other.
