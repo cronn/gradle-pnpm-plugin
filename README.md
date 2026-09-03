@@ -226,8 +226,35 @@ Gradle project.
 ./gradlew build                                  # spotless, unit tests, TestKit tests, validation
 ./gradlew spotlessApply                          # apply the formatting
 ./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.6.1   # cross-version tier (downloads Gradle)
-./gradlew publishToMavenLocal                    # try it out in another build
+./gradlew publishToMavenLocal                    # publish to the local Maven repository
 ```
+
+### Testing a local build in another project
+
+To try out uncommitted changes in a real build, include this repository as a composite build in the
+target project's `settings.gradle.kts`:
+
+```kotlin
+// settings.gradle.kts
+pluginManagement {
+  includeBuild("../gradle-pnpm-plugin")
+}
+```
+
+Gradle then substitutes the local build for the published plugin, so the `plugins` block stays as it
+is, only without a version:
+
+```kotlin
+// build.gradle.kts
+plugins {
+  id("de.cronn.gradle-pnpm-plugin")
+}
+```
+
+The plugin is rebuilt on demand whenever the target project's build runs, so an edit here takes
+effect in the next build there — no `publishToMavenLocal` and no version bump.
+
+### Publishing a new release
 
 Releases are published to the [Gradle Plugin Portal](https://plugins.gradle.org) by the
 `release` workflow when a `v*` tag is pushed; the version is derived from the tag.
