@@ -7,7 +7,7 @@ The pnpm version is pinned once, in `package.json`, and Gradle takes care of the
 matching pnpm from the `PATH` or downloads the pinned one, installs the workspace dependencies, and
 exposes TypeScript, Prettier and ESLint as ordinary Gradle verification tasks.
 
-Requirements: **Gradle 9.0+** and **Java 17+**. Linux, macOS and Windows on x64 and arm64.
+Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 and arm64.
 
 ## Setup
 

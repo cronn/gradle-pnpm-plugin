@@ -12,26 +12,26 @@ description = "Gradle plugin that provisions pnpm and integrates pnpm workspaces
 
 version = providers.environmentVariable("ARTIFACT_VERSION").getOrElse("0.0.0-SNAPSHOT")
 
-// Gradle 9 requires Java 17+, so 17 is the lowest useful bytecode level. The build itself runs on a
-// newer JDK, so it cross-compiles instead of provisioning a second toolchain. sourceCompatibility
-// and targetCompatibility are not redundant here: the Kotlin plugin validates its jvmTarget against
-// the JavaCompile task's targetCompatibility.
+// Java 21 is the lowest supported bytecode level. The build itself runs on a newer JDK, so it
+// cross-compiles instead of provisioning a second toolchain. sourceCompatibility and
+// targetCompatibility are not redundant here: the Kotlin plugin validates its jvmTarget against the
+// JavaCompile task's targetCompatibility.
 java {
-  sourceCompatibility = JavaVersion.VERSION_17
-  targetCompatibility = JavaVersion.VERSION_17
+  sourceCompatibility = JavaVersion.VERSION_21
+  targetCompatibility = JavaVersion.VERSION_21
 }
 
 kotlin {
   explicitApi()
 
   compilerOptions {
-    jvmTarget = JvmTarget.JVM_17
+    jvmTarget = JvmTarget.JVM_21
     // Match the Kotlin runtime embedded in the oldest supported Gradle (9.0 ships stdlib 2.2).
     apiVersion = KotlinVersion.KOTLIN_2_2
     languageVersion = KotlinVersion.KOTLIN_2_2
     freeCompilerArgs.addAll(
-      // Without this, javac-visible signatures come from the building JDK, not from Java 17.
-      "-Xjdk-release=17",
+      // Without this, javac-visible signatures come from the building JDK, not from Java 21.
+      "-Xjdk-release=21",
       // The configuration cache serializes Action/Spec instances (for example the onlyIf spec of
       // pnpmSetup) by reflecting over their fields. Invokedynamic lambdas have no stable class name
       // and cannot be restored, so SAM conversions must produce real classes.
@@ -43,7 +43,7 @@ kotlin {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-  options.release = 17
+  options.release = 21
   options.encoding = "UTF-8"
 }
 
