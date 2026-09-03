@@ -120,12 +120,8 @@ internal class PnpmToolTasks(
       val sources = sourceFiles(tool, defaultIncludes)
       task.inputs.files(sources).withPropertyName("sources")
       if (mutatesSources) {
-        // A formatter rewrites its own inputs, so declaring them as outputs too would make the
-        // task either permanently out of date or, worse, wrongly up to date.
-        task.outputs.upToDateWhen { false }
+        task.outputs.files(sources).withPropertyName("sources")
       } else {
-        // The tool only reports problems; there is nothing to restore from the build cache, but
-        // unchanged sources need not be checked twice.
         task.outputs.upToDateWhen { true }
       }
     }
