@@ -1,21 +1,29 @@
 # gradle-pnpm-plugin
 
-Gradle plugins that provision [pnpm](https://pnpm.io) and integrate a pnpm workspace into a Gradle
+A Gradle plugin that provisions [pnpm](https://pnpm.io) and integrates a pnpm workspace into a Gradle
 build.
 
 The pnpm version is pinned once, in `package.json`, and Gradle takes care of the rest: it reuses a
 matching pnpm from the `PATH` or downloads the pinned one, installs the workspace dependencies, and
 exposes TypeScript, Prettier and ESLint as ordinary Gradle verification tasks.
 
-| Plugin | Applied to | Purpose |
-| --- | --- | --- |
-| `de.cronn.pnpm-workspace` | root project | Provisions pnpm and adds the workspace lifecycle tasks |
-| `de.cronn.pnpm-package` | each workspace package | Adds the TypeScript, Prettier and ESLint tasks |
-| `de.cronn.pnpm-base` | any project | Only the pnpm task types and executable resolution |
-
 Requirements: **Gradle 9.0+** and **Java 17+**. Linux, macOS and Windows on x64 and arm64.
 
 ## Setup
+
+Apply `de.cronn.pnpm` to every project that takes part in the pnpm build. There is only one plugin
+id: the plugin works out what each project is from the files in its directory.
+
+| The project's directory has | The project is | It gets |
+| --- | --- | --- |
+| a `pnpm-workspace.yaml` | the **workspace root** | the pnpm lifecycle tasks, the `pnpm` extension, and the tool tasks |
+| no `pnpm-workspace.yaml`, but an ancestor project has one | a **package** of that workspace | the tool tasks |
+| only a `package.json` | a **standalone package**, its own workspace root | the same as a workspace root |
+
+The workspace root does not have to be the Gradle root project — a Gradle build that only embeds a
+pnpm workspace in, say, `frontend/` works the same way, and its root project takes no part in the
+pnpm build at all. A package's Gradle project has to be *below* its workspace root's Gradle project,
+which is how the plugin finds the workspace the package belongs to.
 
 Pin the pnpm version in the `package.json` of your workspace root:
 
@@ -29,21 +37,19 @@ Pin the pnpm version in the `package.json` of your workspace root:
 }
 ```
 
-Apply the workspace plugin to the root project:
+Then apply the plugin, in the workspace root and in every package:
 
 ```kotlin
 // build.gradle.kts
 plugins {
-  id("de.cronn.pnpm-workspace") version "<version>"
+  id("de.cronn.pnpm") version "<version>"
 }
 ```
-
-And the package plugin to every workspace package:
 
 ```kotlin
 // frontend/build.gradle.kts
 plugins {
-  id("de.cronn.pnpm-package")
+  id("de.cronn.pnpm")
 }
 ```
 
@@ -52,23 +58,23 @@ plugins {
 1. If `pnpm.executable` is set, that executable is used and nothing is downloaded.
 2. Otherwise, if a pnpm on the `PATH` reports exactly the pinned version, it is reused.
 3. Otherwise the pinned version is downloaded from the pnpm GitHub releases and extracted into
-   `<rootDir>/.gradle/pnpm/<version>`.
+   `<workspaceRootDir>/.gradle/pnpm/<version>`.
 
 Step 2 costs one `pnpm --version` call per build and is a configuration cache input, so installing
 or upgrading pnpm invalidates the cache. Set `preferPnpmOnPath = false` for a fully hermetic build
 that always uses the pinned version.
 
-In CI, cache `.gradle/pnpm` (or set `installDirectory` to a location you already cache) to avoid
-downloading pnpm on every run.
+In CI, cache the workspace root's `.gradle/pnpm` (or set `installDirectory` to a location you
+already cache) to avoid downloading pnpm on every run.
 
 ## Workspace tasks
 
-Registered by `de.cronn.pnpm-workspace` on the root project, in the `pnpm` group:
+Registered on the workspace root, in the `pnpm` group:
 
 | Task | Description |
 | --- | --- |
 | `pnpmSetup` | Downloads and extracts the pinned pnpm. Skipped when a matching pnpm is available. |
-| `pnpmInstall` | Runs `pnpm install`. Up to date as long as `pnpm-lock.yaml`, `pnpm-workspace.yaml` and the root `package.json` are unchanged. |
+| `pnpmInstall` | Runs `pnpm install`. Up to date as long as the workspace root's `pnpm-lock.yaml`, `pnpm-workspace.yaml` and `package.json` are unchanged. |
 | `pnpmDedupe` | Runs `pnpm dedupe`. Never up to date. |
 | `pnpmClean` | Runs `pnpm clean`. Never up to date. |
 
@@ -79,11 +85,11 @@ Every `PnpmTask` in the build automatically depends on `pnpmSetup`, and every `P
 
 ```kotlin
 pnpm {
-  // Defaults to <rootDir>/package.json
+  // Defaults to the package.json next to the pnpm-workspace.yaml
   packageJson = layout.projectDirectory.file("package.json")
   // Defaults to devEngines.packageManager.version of the package.json above
   version = "11.23.0"
-  // Defaults to <rootDir>/.gradle/pnpm/<version>
+  // Defaults to <workspaceRootDir>/.gradle/pnpm/<version>
   installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.23.0")
   // Defaults to https://github.com/pnpm/pnpm/releases/download
   downloadBaseUrl = "https://my-mirror.example.com/pnpm"
@@ -98,12 +104,13 @@ pnpm {
 }
 ```
 
-The `pnpm` extension is created on the root project and shared by the whole build, so configure it
-once, in the root build script.
+The `pnpm` extension is created on the workspace root and shared by the whole workspace, so
+configure it once, in the build script of the workspace root.
 
-## Package tasks
+## Tool tasks
 
-Registered by `de.cronn.pnpm-package`, in the `verification` group:
+Registered in every project, in the `verification` group. The workspace root gets them too, because a
+workspace root is a pnpm package like any other:
 
 | Task | Command | Wired into |
 | --- | --- | --- |
@@ -116,24 +123,40 @@ Registered by `de.cronn.pnpm-package`, in the `verification` group:
 `eslintCheck` and `eslintFix` depend on `compileTypescript`, and `prettierFix` runs after
 `eslintFix` so that formatting has the final say.
 
+A tool is enabled by default exactly when the project contains a configuration file for it:
+
+| Tool | Enabled by |
+| --- | --- |
+| `typescript` | `tsconfig.json` |
+| `eslint` | `eslint.config.*` (the flat config; `.eslintrc.*` is not detected) |
+| `prettier` | `prettier.config.*` or `.prettierrc*` |
+
+The tasks of a disabled tool are not run and drop out of `check` and `fix`, so a workspace root that
+only holds the shared `package.json` does not get a `compileTypescript` that has nothing to compile.
+Only the existence of these files is checked, which Gradle tracks as a configuration cache input, so
+adding one enables the tool on the next build.
+
+Note that `prettier .` and `eslint .` at a workspace root descend into the package directories too.
+A root that has its own config usually wants an ignore file, or `exclude(…)` for the Gradle inputs.
+
 ### Configuration
 
-Each tool is configured through the `pnpmPackage` extension:
+Each tool has its own extension:
 
 ```kotlin
-pnpmPackage {
-  typescript {
-    include("src/**")
-  }
-  prettier {
-    include("src/**", "docs/**")
-    exclude("src/generated")
-    extraArguments("--cache")
-  }
-  eslint {
-    // No eslintCheck/eslintFix tasks take part in check and fix
-    enabled = false
-  }
+typescript {
+  include("src/**")
+}
+
+prettier {
+  include("src/**", "docs/**")
+  exclude("src/generated")
+  extraArguments("--cache")
+}
+
+eslint {
+  // No eslintCheck/eslintFix tasks take part in check and fix
+  enabled = false
 }
 ```
 
@@ -142,7 +165,7 @@ pnpmPackage {
   Prettier, `*.ts` for ESLint).
 - `exclude(…)` removes patterns from the inputs.
 - `extraArguments(…)` appends arguments to the tool's command line.
-- `enabled` defaults to `true`; a disabled tool is skipped and removed from `check` and `fix`.
+- `enabled` overrides the auto-detection above, in both directions.
 
 Declaring the right inputs is what makes the check tasks skippable: a task whose sources have not
 changed is `UP-TO-DATE`.
@@ -188,14 +211,14 @@ Both types support:
 
 ## Configuration cache and project isolation
 
-The plugins are compatible with the **configuration cache**, and the test suite fails the build on
-any configuration cache problem. Reading `package.json` and probing the `PATH` are declared inputs,
-so both invalidate the cache when they change.
+The plugin is compatible with the **configuration cache**, and the test suite fails the build on any
+configuration cache problem. Reading `package.json`, probing the `PATH` and looking for the tool
+config files are declared inputs, so all of them invalidate the cache when they change.
 
-The plugins are **not** compatible with **project isolation**: the `pnpm` extension lives on the
-root project and is read by the other projects, so that one pnpm installation is shared by the whole
-build. If you need isolation today, apply `de.cronn.pnpm-base` per project and configure
-`executable` explicitly.
+The plugin is **not** compatible with **project isolation**: a package reads the `pnpm` extension of
+its workspace root, so that one pnpm installation is shared by the whole workspace.
+That cross-project read is also why a package's Gradle project has to sit below its workspace root's
+Gradle project.
 
 ## Development
 

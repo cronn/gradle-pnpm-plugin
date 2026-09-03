@@ -74,9 +74,7 @@ class PnpmPackageFunctionalTest {
       workspaceWithFrontend(
         packageBuildScript =
           """
-          pnpmPackage {
-            prettier { extraArguments("--cache") }
-          }
+          prettier { extraArguments("--cache") }
           """
       )
 
@@ -92,9 +90,7 @@ class PnpmPackageFunctionalTest {
       workspaceWithFrontend(
         packageBuildScript =
           """
-          pnpmPackage {
-            eslint { enabled = false }
-          }
+          eslint { enabled = false }
           """
       )
 
@@ -126,11 +122,9 @@ class PnpmPackageFunctionalTest {
       workspaceWithFrontend(
         packageBuildScript =
           """
-          pnpmPackage {
-            eslint {
-              include("sources/**")
-              exclude("sources/generated/**")
-            }
+          eslint {
+            include("sources/**")
+            exclude("sources/generated/**")
           }
           """
       )
@@ -184,6 +178,39 @@ class PnpmPackageFunctionalTest {
     val second = fixture.runner(":frontend:check").build()
 
     assertThat(second.output).contains("Configuration cache entry reused")
+  }
+
+  @Test
+  fun `does not register a tool task when the project is not configured for it`() {
+    val fixture = workspaceWithFrontend()
+    fixture.directory("frontend/eslint.config.ts").delete()
+
+    val result = fixture.runner(":frontend:check").build()
+
+    assertThat(result.task(":frontend:eslintCheck")).isNull()
+    assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.stub.invocations()).noneSatisfy { invocation ->
+      assertThat(invocation.arguments).contains("eslint")
+    }
+  }
+
+  @Test
+  fun `adding a tool config file invalidates the configuration cache`() {
+    val fixture = workspaceWithFrontend()
+    val config = fixture.directory("frontend/eslint.config.ts")
+    config.delete()
+
+    fixture.runner(":frontend:check").build()
+    val reused = fixture.runner(":frontend:check").build()
+    assertThat(reused.output).contains("Configuration cache entry reused")
+
+    config.writeText("export default []\n")
+    val afterAdding = fixture.runner(":frontend:check").build()
+
+    // The existence check of the config file is a tracked configuration input, so the tool is
+    // picked up without having to discard the cache by hand.
+    assertThat(afterAdding.output).contains("Configuration cache entry stored")
+    assertThat(afterAdding.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {

@@ -5,16 +5,21 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
 /**
- * Configuration of the pnpm installation, added by [PnpmBasePlugin] as the `pnpm` extension.
+ * Configuration of the pnpm installation, added by [PnpmPlugin] to the pnpm workspace root as the
+ * `pnpm` extension.
  *
- * The conventions of all properties are derived from the root directory of the build, so every
- * project resolves the same pnpm installation without reading another project's model.
+ * The workspace root is the project whose directory contains the `pnpm-workspace.yaml`. Exactly one
+ * of these extensions exists per workspace, and the packages of the workspace read it, so that one
+ * pnpm installation is shared by the whole workspace.
+ *
+ * The Node tools are configured separately, per project, through the `typescript`, `prettier` and
+ * `eslint` extensions.
  */
 public abstract class PnpmExtension {
 
   /**
-   * The `package.json` the pnpm [version] is read from. Defaults to the `package.json` in the root
-   * directory of the build.
+   * The `package.json` the pnpm [version] is read from. Defaults to the `package.json` in the
+   * directory of the workspace root.
    */
   public abstract val packageJson: RegularFileProperty
 
@@ -23,7 +28,7 @@ public abstract class PnpmExtension {
 
   /**
    * Directory a downloaded pnpm distribution is installed into. Defaults to
-   * `<rootDir>/.gradle/pnpm/<version>`.
+   * `<workspaceRootDir>/.gradle/pnpm/<version>`.
    */
   public abstract val installDirectory: DirectoryProperty
 
@@ -55,14 +60,14 @@ public abstract class PnpmExtension {
   public abstract val preferPnpmOnPath: Property<Boolean>
 
   /**
-   * Path of the task that provisions pnpm. Defaults to `:pnpmSetup`, registered by
-   * [PnpmWorkspacePlugin] on the root project.
+   * Path of the task that provisions pnpm. Defaults to the `pnpmSetup` task of the workspace root,
+   * for example `:pnpmSetup` or `:frontend:pnpmSetup`.
    */
   public abstract val setupTaskPath: Property<String>
 
   /**
-   * Path of the task that installs the workspace dependencies. Defaults to `:pnpmInstall`,
-   * registered by [PnpmWorkspacePlugin] on the root project.
+   * Path of the task that installs the workspace dependencies. Defaults to the `pnpmInstall` task
+   * of the workspace root, for example `:pnpmInstall` or `:frontend:pnpmInstall`.
    */
   public abstract val installTaskPath: Property<String>
 }

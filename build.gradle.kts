@@ -85,31 +85,27 @@ gradlePlugin {
   testSourceSets(functionalTest)
 
   plugins {
-    register("pnpmBase") {
-      id = "de.cronn.pnpm-base"
-      implementationClass = "de.cronn.pnpm.PnpmBasePlugin"
-      displayName = "pnpm base plugin"
+    register("pnpm") {
+      id = "de.cronn.pnpm"
+      implementationClass = "de.cronn.pnpm.PnpmPlugin"
+      displayName = "pnpm plugin"
       description =
-        "Registers the pnpm task types and resolves the pnpm executable for a single project"
-      tags = listOf("pnpm", "node", "npm", "javascript")
-    }
-    register("pnpmWorkspace") {
-      id = "de.cronn.pnpm-workspace"
-      implementationClass = "de.cronn.pnpm.PnpmWorkspacePlugin"
-      displayName = "pnpm workspace plugin"
-      description =
-        "Provisions the pnpm version pinned in package.json and adds pnpm lifecycle tasks to the " +
-          "root project of a pnpm workspace"
-      tags = listOf("pnpm", "node", "npm", "workspace", "monorepo")
-    }
-    register("pnpmPackage") {
-      id = "de.cronn.pnpm-package"
-      implementationClass = "de.cronn.pnpm.PnpmPackagePlugin"
-      displayName = "pnpm package plugin"
-      description =
-        "Adds TypeScript, Prettier and ESLint tasks backed by pnpm to a workspace package and " +
-          "wires them into the Gradle lifecycle"
-      tags = listOf("pnpm", "node", "typescript", "eslint", "prettier")
+        "Provisions the pnpm version pinned in package.json and integrates a pnpm workspace into " +
+          "the Gradle build. Discovers the workspace root from pnpm-workspace.yaml and adds the " +
+          "pnpm lifecycle tasks there, plus TypeScript, Prettier and ESLint tasks to every pnpm " +
+          "package"
+      tags =
+        listOf(
+          "pnpm",
+          "node",
+          "npm",
+          "javascript",
+          "typescript",
+          "eslint",
+          "prettier",
+          "workspace",
+          "monorepo",
+        )
     }
   }
 }
