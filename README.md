@@ -115,31 +115,22 @@ tasks.named<PnpmSetupTask>("pnpmSetup") {
 Registered in every project, in the `verification` group. The workspace root gets them too, because a
 workspace root is a pnpm package like any other:
 
-| Task | Command | Wired into |
+| Tool | Enabled by | Tasks |
 | --- | --- | --- |
-| `compileTypescript` | `pnpm exec tsc --noEmit` | `check` |
-| `prettierCheck` | `pnpm exec prettier . --check` | `check` |
-| `eslintCheck` | `pnpm exec eslint . --max-warnings=0` | `check` |
-| `prettierFix` | `pnpm exec prettier . --write --list-different` | `fix` |
-| `eslintFix` | `pnpm exec eslint . --max-warnings=0 --fix` | `fix` |
+| TypeScript | `tsconfig.json` | `compileTypescript` (part of `check`) |
+| ESLint | `eslint.config.*` (the flat config; `.eslintrc.*` is not detected) | `eslintCheck` (part of `check`), `eslintFix` (part of `fix`) |
+| Prettier | `prettier.config.*` or `.prettierrc*` | `prettierCheck` (part of `check`), `prettierFix` (part of `fix`) |
 
 `eslintCheck` and `eslintFix` depend on `compileTypescript`, and `prettierFix` runs after
 `eslintFix` so that formatting has the final say.
 
-A tool is enabled by default exactly when the project contains a configuration file for it:
-
-| Tool | Enabled by |
-| --- | --- |
-| `typescript` | `tsconfig.json` |
-| `eslint` | `eslint.config.*` (the flat config; `.eslintrc.*` is not detected) |
-| `prettier` | `prettier.config.*` or `.prettierrc*` |
-
-The tasks of a disabled tool are not run and drop out of `check` and `fix`, so a workspace root that
+A tool is enabled by default exactly when the project contains a configuration file for it. The
+tasks of a disabled tool are not run and drop out of `check` and `fix`, so a workspace root that
 only holds the shared `package.json` does not get a `compileTypescript` that has nothing to compile.
 Only the existence of these files is checked, which Gradle tracks as a configuration cache input, so
 adding one enables the tool on the next build.
 
-Note that `prettier .` and `eslint .` at a workspace root descend into the package directories too.
+Note that Prettier and ESLint at a workspace root descend into the package directories too.
 A root that has its own config usually wants an ignore file, or `additionalExcludes(…)` for the
 Gradle inputs.
 
