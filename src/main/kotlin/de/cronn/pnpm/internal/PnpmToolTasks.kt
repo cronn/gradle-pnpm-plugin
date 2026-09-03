@@ -172,8 +172,9 @@ internal class PnpmToolTasks(
 
   companion object {
     const val FIX_TASK_NAME: String = "fix"
-    val TYPESCRIPT_INCLUDES: List<String> = listOf("eslint.config.ts", "prettier.config.ts")
-    val PRETTIER_INCLUDES: List<String> = listOf("*.ts", "*.json", "*.md")
-    val ESLINT_INCLUDES: List<String> = listOf("*.ts")
+    val BASE_INCLUDES: Array<String> = arrayOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
+    val TYPESCRIPT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
+    val PRETTIER_INCLUDES: List<String> = listOf(*BASE_INCLUDES, "*.json", "*.md")
+    val ESLINT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
   }
 }
