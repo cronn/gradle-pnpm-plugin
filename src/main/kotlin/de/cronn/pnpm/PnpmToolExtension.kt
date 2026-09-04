@@ -24,12 +24,9 @@ public abstract class PnpmToolExtension {
    * Ant-style patterns of files that are inputs of this tool's tasks.
    *
    * Defaults to the patterns documented by the extension of the tool. Assigning it replaces those
-   * defaults; use [additionalIncludes] to keep them and add to them.
+   * defaults; the [includes] method adds to them.
    */
   public abstract val includes: ListProperty<String>
-
-  /** Ant-style patterns that are inputs of this tool's tasks, on top of [includes]. */
-  public abstract val additionalIncludes: ListProperty<String>
 
   /** Ant-style patterns excluded from this tool's inputs. */
   public abstract val excludes: ListProperty<String>
@@ -37,9 +34,9 @@ public abstract class PnpmToolExtension {
   /** Additional command line arguments appended to this tool's invocations. */
   public abstract val extraArguments: ListProperty<String>
 
-  /** Adds [patterns] to [additionalIncludes]. */
-  public fun additionalIncludes(vararg patterns: String) {
-    additionalIncludes.addAll(*patterns)
+  /** Adds [patterns] to [includes], keeping the patterns already there. */
+  public fun includes(vararg patterns: String) {
+    includes.addAll(*patterns)
   }
 
   /** Adds [patterns] to [excludes]. */
