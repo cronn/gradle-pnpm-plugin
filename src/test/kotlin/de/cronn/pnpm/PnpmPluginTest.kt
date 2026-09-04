@@ -252,6 +252,21 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `adds a list of patterns when includes and excludes are called with one`(
+    @TempDir directory: File
+  ) {
+    val project = packageProject(directory)
+    File(project.projectDir, "types").mkdirs()
+    File(project.projectDir, "types/api.d.ts").writeText("export {}\n")
+    File(project.projectDir, "generated.ts").writeText("export const generated = 1\n")
+    eslint(project).includes(listOf("types/**", "generated.ts"))
+    eslint(project).excludes(listOf("generated.ts"))
+
+    assertThat(sourceNames(toolTask(project, "eslintCheck")))
+      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
+  }
+
+  @Test
   fun `replaces the default patterns with the configured includes`(@TempDir directory: File) {
     val project = packageProject(directory)
     File(project.projectDir, "src").mkdirs()

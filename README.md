@@ -161,7 +161,7 @@ eslint {
 
 - `includes` are the Ant-style patterns of the tool's inputs. It defaults to `*.ts`, `src/**/*.ts`
   and `src/**/*.tsx` for every tool, plus `*.json` and `*.md` for Prettier. `includes(…)` adds
-  patterns to whatever is already there, assigning replaces it.
+  patterns to whatever is already there -- as arguments or as a list -- and assigning replaces it.
 - `excludes(…)` removes patterns from the inputs. Nothing is excluded by default: the include
   patterns above reach neither `node_modules` nor the Gradle build directory.
 - `extraArguments(…)` appends arguments to the tool's command line.
