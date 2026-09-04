@@ -197,9 +197,57 @@ class PnpmPackageFunctionalTest {
     val result = fixture.runner(":frontend:eslintCheck").build()
 
     // Invoking eslint without any file operand would fail instead of doing nothing.
-    assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.NO_SOURCE)
     assertThat(fixture.stub.invocations()).noneSatisfy { invocation ->
       assertThat(invocation.arguments).contains("eslint")
+    }
+  }
+
+  @Test
+  fun `supports a tool task registered by the build script`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          import de.cronn.pnpm.task.PrettierTask
+
+          prettier { extraArguments("--cache") }
+
+          tasks.register<PrettierTask>("prettierDocs") {
+            sources.setFrom(fileTree("docs") { include("**/*.md") })
+            arguments = listOf("--check")
+          }
+          """
+      )
+    fixture.write("frontend/docs/guide.md", "# Guide")
+
+    fixture.runner(":frontend:prettierDocs").build()
+
+    // The task inherits the command, the extra arguments and the pnpmInstall dependency, and only
+    // has to say which sources it works on.
+    assertThat(fixture.stub.invocations().map { it.arguments })
+      .contains(listOf("exec", "prettier", "docs/guide.md", "--check", "--cache"))
+  }
+
+  @Test
+  fun `skips a tool task of the build script when the tool is disabled`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          import de.cronn.pnpm.task.EslintTask
+
+          eslint { enabled = false }
+
+          tasks.register<EslintTask>("eslintSources")
+          """
+      )
+
+    val result = fixture.runner(":frontend:eslintSources").build()
+
+    assertThat(result.task(":frontend:eslintSources")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(fixture.stub.invocations().map { it.arguments }).noneSatisfy { arguments ->
+      assertThat(arguments).contains("eslint")
     }
   }
 

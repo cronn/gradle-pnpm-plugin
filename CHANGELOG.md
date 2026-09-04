@@ -23,6 +23,10 @@ following changes over that original:
   extension. The pnpm release to download is derived from the pinned version and can be overridden
   through the `archiveUrl` of the `pnpmSetup` task.
 - `workingDirectory`, `ignoreExitValue` and `pnpmVersion` on `PnpmTask`.
+- Public `TypescriptTask`, `PrettierTask` and `EslintTask` types, and the `PnpmToolTask` they share.
+  The predefined tasks of each tool are registered as those types, and a build script can register
+  further ones: a task of such a type takes its `sources`, its `extraArguments` and its enablement
+  from the tool's extension, so it only has to declare what is different about it.
 - Unit and Gradle TestKit test suites, including a cross-Gradle-version tier.
 
 ### Fixed
