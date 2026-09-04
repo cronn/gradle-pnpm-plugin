@@ -25,6 +25,10 @@ internal class PnpmToolTasks(
 ) {
 
   fun register() {
+    typescript.includes.convention(TYPESCRIPT_INCLUDES)
+    prettier.includes.convention(PRETTIER_INCLUDES)
+    eslint.includes.convention(ESLINT_INCLUDES)
+
     val compileTypescript = registerCompileTypescript()
     val prettierCheck = registerPrettierCheck()
     val prettierFix = registerPrettierFix()
@@ -38,6 +42,10 @@ internal class PnpmToolTasks(
     registerFixTask(prettierFix, eslintFix)
   }
 
+  /**
+   * `tsc` takes the files to compile from `tsconfig.json`; passing them on the command line would
+   * make it ignore that file, so this is the one tool that is not handed its sources.
+   */
   private fun registerCompileTypescript(): TaskProvider<PnpmExecTask> =
     registerToolTask(
       typescript,
@@ -45,7 +53,6 @@ internal class PnpmToolTasks(
       description = "Checks the TypeScript sources with tsc",
       command = "tsc",
       arguments = listOf("--noEmit"),
-      defaultIncludes = TYPESCRIPT_INCLUDES,
     )
 
   private fun registerPrettierCheck(): TaskProvider<PnpmExecTask> =
@@ -54,8 +61,8 @@ internal class PnpmToolTasks(
       name = "prettierCheck",
       description = "Checks the formatting of the sources with Prettier",
       command = "prettier",
-      arguments = listOf(".", "--check"),
-      defaultIncludes = PRETTIER_INCLUDES,
+      arguments = listOf("--check"),
+      passesSources = true,
     )
 
   private fun registerPrettierFix(): TaskProvider<PnpmExecTask> =
@@ -64,8 +71,8 @@ internal class PnpmToolTasks(
       name = "prettierFix",
       description = "Reformats the sources with Prettier",
       command = "prettier",
-      arguments = listOf(".", "--write", "--list-different"),
-      defaultIncludes = PRETTIER_INCLUDES,
+      arguments = listOf("--write", "--list-different"),
+      passesSources = true,
       mutatesSources = true,
     )
 
@@ -77,8 +84,8 @@ internal class PnpmToolTasks(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
       command = "eslint",
-      arguments = listOf(".", "--max-warnings=0"),
-      defaultIncludes = ESLINT_INCLUDES,
+      arguments = ESLINT_ARGUMENTS,
+      passesSources = true,
       dependsOn = compileTypescript,
     )
 
@@ -90,8 +97,8 @@ internal class PnpmToolTasks(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
       command = "eslint",
-      arguments = listOf(".", "--max-warnings=0", "--fix"),
-      defaultIncludes = ESLINT_INCLUDES,
+      arguments = ESLINT_ARGUMENTS + "--fix",
+      passesSources = true,
       dependsOn = compileTypescript,
       mutatesSources = true,
     )
@@ -103,7 +110,7 @@ internal class PnpmToolTasks(
     description: String,
     command: String,
     arguments: List<String>,
-    defaultIncludes: List<String>,
+    passesSources: Boolean = false,
     dependsOn: TaskProvider<PnpmExecTask>? = null,
     mutatesSources: Boolean = false,
   ): TaskProvider<PnpmExecTask> =
@@ -111,28 +118,55 @@ internal class PnpmToolTasks(
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.description = description
       task.command.set(command)
-      task.arguments.set(tool.extraArguments.map { extra -> arguments + extra })
       task.onlyIf("the tool is enabled") { tool.enabled.get() }
       if (dependsOn != null) {
         task.dependsOn(dependsOn)
       }
 
-      val sources = sourceFiles(tool, defaultIncludes)
+      val sources = sourceFiles(tool)
       task.inputs.files(sources).withPropertyName("sources")
       if (mutatesSources) {
         task.outputs.files(sources).withPropertyName("sources")
       } else {
         task.outputs.upToDateWhen { true }
       }
+
+      task.arguments.set(
+        sourceArguments(sources, passesSources).zip(tool.extraArguments) { files, extra ->
+          files + arguments + extra
+        }
+      )
+      if (passesSources) {
+        // A tool invoked without any file operand fails instead of doing nothing.
+        task.onlyIf("the tool has matching sources") { !it.inputs.files.isEmpty }
+      }
     }
+
+  /**
+   * The sources as command line operands: project-relative, so that they are understood in the
+   * working directory of the task, sorted so that the argument list is a stable task input.
+   *
+   * Resolved lazily, otherwise the configuration cache would keep serving the file listing of the
+   * run that stored it.
+   */
+  private fun sourceArguments(sources: FileTree, passesSources: Boolean): Provider<List<String>> {
+    if (!passesSources) {
+      return target.provider { emptyList() }
+    }
+    // A File is safe to capture in a provider; a Project is not.
+    val projectDirectory = target.projectDir
+    return sources.elements.map { elements ->
+      elements.map { it.asFile.relativeTo(projectDirectory).invariantSeparatorsPath }.sorted()
+    }
+  }
 
   /**
    * The files the tool inspects, resolved from the extension when the task is configured so that
    * `pnpm { ... }` blocks anywhere in the build script are taken into account.
    */
-  private fun sourceFiles(tool: PnpmToolExtension, defaultIncludes: List<String>): FileTree {
-    val includes = defaultIncludes + tool.additionalIncludes.get()
-    val excludes = DEFAULT_EXCLUDES + buildDirectoryExcludes() + tool.additionalExcludes.get()
+  private fun sourceFiles(tool: PnpmToolExtension): FileTree {
+    val includes = tool.includes.get() + tool.additionalIncludes.get()
+    val excludes = tool.excludes.get()
     target.logger.debug(
       "Sources of {}: including {}, excluding {}",
       target.path,
@@ -142,19 +176,6 @@ internal class PnpmToolTasks(
     return target.fileTree(target.projectDir) { tree ->
       tree.include(includes)
       tree.exclude(excludes)
-    }
-  }
-
-  /**
-   * Excludes the Gradle build directory, by its name so that the build directories of nested
-   * packages are covered too. A build directory outside the project needs no exclusion.
-   */
-  private fun buildDirectoryExcludes(): List<String> {
-    val buildDirectory = target.layout.buildDirectory.get().asFile
-    return if (buildDirectory.startsWith(target.projectDir)) {
-      listOf("**/${buildDirectory.name}/**")
-    } else {
-      emptyList()
     }
   }
 
@@ -195,11 +216,15 @@ internal class PnpmToolTasks(
   companion object {
     const val FIX_TASK_NAME: String = "fix"
 
-    /** Excluded from every tool's inputs, on top of the Gradle build directory. */
-    val DEFAULT_EXCLUDES: List<String> = listOf("**/node_modules/**", "**/.gradle/**", "**/.git/**")
     val BASE_INCLUDES: Array<String> = arrayOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
     val TYPESCRIPT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
     val PRETTIER_INCLUDES: List<String> = listOf(*BASE_INCLUDES, "*.json", "*.md")
     val ESLINT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
+
+    /**
+     * ESLint skips a file matched by the `ignores` of its config, but warns about it when it was
+     * named on the command line, which `--max-warnings=0` would turn into a failure.
+     */
+    val ESLINT_ARGUMENTS: List<String> = listOf("--max-warnings=0", "--no-warn-ignored")
   }
 }

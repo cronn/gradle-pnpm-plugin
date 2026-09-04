@@ -130,9 +130,8 @@ only holds the shared `package.json` does not get a `compileTypescript` that has
 Only the existence of these files is checked, which Gradle tracks as a configuration cache input, so
 adding one enables the tool on the next build.
 
-Note that Prettier and ESLint at a workspace root descend into the package directories too.
-A root that has its own config usually wants an ignore file, or `additionalExcludes(…)` for the
-Gradle inputs.
+Note that Prettier and ESLint at a workspace root would descend into the package directories too, so
+a root that has its own config usually wants `includes` narrowed to the files it actually owns.
 
 ### Configuration
 
@@ -145,22 +144,32 @@ typescript {
 
 prettier {
   additionalIncludes("docs/**")
-  additionalExcludes("src/generated/**")
+  excludes("src/generated/**")
   extraArguments("--cache")
 }
 
 eslint {
-  // No eslintCheck/eslintFix tasks take part in check and fix
-  enabled = false
+  // Replaces the default patterns instead of adding to them
+  includes = listOf("app/**/*.ts")
+
+  // Set it to false to keep eslintCheck and eslintFix out of check and fix
+  enabled = true
 }
 ```
 
-- `additionalIncludes(…)` adds Ant-style patterns to the tool's inputs, on top of its defaults
-  (`*.ts`, `src/**/*.ts` and `src/**/*.tsx` for every tool, plus `*.json` and `*.md` for Prettier).
-- `additionalExcludes(…)` removes patterns from the inputs, on top of the patterns excluded from
-  every tool: `node_modules`, `.gradle`, `.git` and the Gradle build directory.
+- `includes` are the Ant-style patterns of the tool's inputs. It defaults to `*.ts`, `src/**/*.ts`
+  and `src/**/*.tsx` for every tool, plus `*.json` and `*.md` for Prettier; assigning it replaces
+  those defaults.
+- `additionalIncludes(…)` adds patterns on top of `includes`, keeping the defaults.
+- `excludes(…)` removes patterns from the inputs. Nothing is excluded by default: the include
+  patterns above reach neither `node_modules` nor the Gradle build directory.
 - `extraArguments(…)` appends arguments to the tool's command line.
 - `enabled` overrides the auto-detection above, in both directions.
+
+Prettier and ESLint are handed exactly these files on the command line, so what Gradle tracks and
+what the tool looks at cannot drift apart, and a tool whose patterns match nothing is skipped. `tsc`
+is the exception: it takes the files to compile from `tsconfig.json`, and the patterns only describe
+its Gradle inputs.
 
 Declaring the right inputs is what makes the check tasks skippable: a task whose sources have not
 changed is `UP-TO-DATE`.

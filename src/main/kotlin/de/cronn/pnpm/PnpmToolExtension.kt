@@ -21,16 +21,18 @@ public abstract class PnpmToolExtension {
   public abstract val enabled: Property<Boolean>
 
   /**
-   * Ant-style patterns of files that are inputs of this tool's tasks, in addition to the tool's
-   * default patterns.
+   * Ant-style patterns of files that are inputs of this tool's tasks.
+   *
+   * Defaults to the patterns documented by the extension of the tool. Assigning it replaces those
+   * defaults; use [additionalIncludes] to keep them and add to them.
    */
+  public abstract val includes: ListProperty<String>
+
+  /** Ant-style patterns that are inputs of this tool's tasks, on top of [includes]. */
   public abstract val additionalIncludes: ListProperty<String>
 
-  /**
-   * Ant-style patterns excluded from this tool's inputs, in addition to the patterns excluded from
-   * every tool, such as `node_modules` and the Gradle build directory.
-   */
-  public abstract val additionalExcludes: ListProperty<String>
+  /** Ant-style patterns excluded from this tool's inputs. */
+  public abstract val excludes: ListProperty<String>
 
   /** Additional command line arguments appended to this tool's invocations. */
   public abstract val extraArguments: ListProperty<String>
@@ -40,9 +42,9 @@ public abstract class PnpmToolExtension {
     additionalIncludes.addAll(*patterns)
   }
 
-  /** Adds [patterns] to [additionalExcludes]. */
-  public fun additionalExcludes(vararg patterns: String) {
-    additionalExcludes.addAll(*patterns)
+  /** Adds [patterns] to [excludes]. */
+  public fun excludes(vararg patterns: String) {
+    excludes.addAll(*patterns)
   }
 
   /** Adds [arguments] to [extraArguments]. */

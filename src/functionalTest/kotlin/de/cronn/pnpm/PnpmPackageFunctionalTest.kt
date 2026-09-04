@@ -19,7 +19,7 @@ class PnpmPackageFunctionalTest {
 
     assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     val prettier = fixture.stub.invocations().single { it.arguments.contains("prettier") }
-    assertThat(prettier.arguments).containsExactly("exec", "prettier", ".", "--check")
+    assertThat(prettier.arguments).containsExactly("exec", "prettier", *PRETTIER_SOURCES, "--check")
     assertThat(File(prettier.workingDirectory).canonicalFile)
       .isEqualTo(fixture.directory("frontend").canonicalFile)
   }
@@ -45,8 +45,8 @@ class PnpmPackageFunctionalTest {
     assertThat(fixture.stub.invocations().map { it.arguments })
       .contains(
         listOf("exec", "tsc", "--noEmit"),
-        listOf("exec", "prettier", ".", "--check"),
-        listOf("exec", "eslint", ".", "--max-warnings=0"),
+        listOf("exec", "prettier", *PRETTIER_SOURCES, "--check"),
+        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored"),
       )
   }
 
@@ -63,8 +63,8 @@ class PnpmPackageFunctionalTest {
         .filter { it.contains("--fix") || it.contains("--write") }
     assertThat(fixes)
       .containsExactly(
-        listOf("exec", "eslint", ".", "--max-warnings=0", "--fix"),
-        listOf("exec", "prettier", ".", "--write", "--list-different"),
+        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored", "--fix"),
+        listOf("exec", "prettier", *PRETTIER_SOURCES, "--write", "--list-different"),
       )
   }
 
@@ -81,7 +81,7 @@ class PnpmPackageFunctionalTest {
     fixture.runner(":frontend:prettierCheck").build()
 
     assertThat(fixture.stub.invocations().map { it.arguments })
-      .contains(listOf("exec", "prettier", ".", "--check", "--cache"))
+      .contains(listOf("exec", "prettier", *PRETTIER_SOURCES, "--check", "--cache"))
   }
 
   @Test
@@ -117,7 +117,7 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
-  fun `ignores the node_modules and build directories`() {
+  fun `the default patterns reach neither the node_modules nor the build directory`() {
     val fixture = workspaceWithFrontend()
     fixture.write("frontend/node_modules/dependency/index.ts", "export const dependency = 1")
     fixture.write("frontend/build/generated.ts", "export const generated = 1")
@@ -140,7 +140,7 @@ class PnpmPackageFunctionalTest {
           """
           eslint {
             additionalIncludes("sources/**")
-            additionalExcludes("sources/generated/**")
+            excludes("sources/generated/**")
           }
           """
       )
@@ -160,6 +160,47 @@ class PnpmPackageFunctionalTest {
     fixture.write("frontend/sources/app.ts", "export const app = 2")
     val fourth = fixture.runner(":frontend:eslintCheck").build()
     assertThat(fourth.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
+  fun `replaces the default patterns with the configured includes`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          eslint { includes = listOf("sources/**/*.ts") }
+          """
+      )
+    fixture.write("frontend/sources/app.ts", "export const app = 1")
+
+    fixture.runner(":frontend:eslintCheck").build()
+
+    assertThat(fixture.stub.invocations().map { it.arguments })
+      .contains(listOf("exec", "eslint", "sources/app.ts", "--max-warnings=0", "--no-warn-ignored"))
+
+    // main.ts matches a default pattern, which the configured includes replaced.
+    fixture.write("frontend/main.ts", "export const main = 2")
+    val second = fixture.runner(":frontend:eslintCheck").build()
+    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
+  @Test
+  fun `skips a tool whose patterns match no file`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          eslint { includes = listOf("sources/**/*.ts") }
+          """
+      )
+
+    val result = fixture.runner(":frontend:eslintCheck").build()
+
+    // Invoking eslint without any file operand would fail instead of doing nothing.
+    assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(fixture.stub.invocations()).noneSatisfy { invocation ->
+      assertThat(invocation.arguments).contains("eslint")
+    }
   }
 
   @Test
@@ -234,5 +275,12 @@ class PnpmPackageFunctionalTest {
     fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)
     fixture.write("frontend/main.ts", "export const main = 1")
     return fixture
+  }
+
+  private companion object {
+    /** The files of the `frontend` package that match the default patterns of each tool. */
+    val ESLINT_SOURCES: Array<String> = arrayOf("eslint.config.ts", "main.ts", "prettier.config.ts")
+    val PRETTIER_SOURCES: Array<String> =
+      arrayOf("eslint.config.ts", "main.ts", "package.json", "prettier.config.ts", "tsconfig.json")
   }
 }
