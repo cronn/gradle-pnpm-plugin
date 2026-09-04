@@ -152,7 +152,16 @@ class PnpmWorkspaceFunctionalTest {
     assertThat(invocations.first().arguments).containsExactly("install")
     assertThat(invocations.first().workingDirectory)
       .isEqualTo(fixture.directory("frontend").canonicalPath)
-    assertThat(invocations.last().arguments).containsExactly("exec", "prettier", ".", "--check")
+    assertThat(invocations.last().arguments)
+      .containsExactly(
+        "exec",
+        "prettier",
+        "eslint.config.ts",
+        "package.json",
+        "prettier.config.ts",
+        "tsconfig.json",
+        "--check",
+      )
     assertThat(invocations.last().workingDirectory)
       .isEqualTo(fixture.directory("frontend/app").canonicalPath)
   }

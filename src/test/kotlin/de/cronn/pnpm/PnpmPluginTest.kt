@@ -183,13 +183,14 @@ class PnpmPluginTest {
 
     assertThat(execTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
     assertThat(execTask(project, "compileTypescript").arguments.get()).containsExactly("--noEmit")
-    assertThat(execTask(project, "prettierCheck").arguments.get()).containsExactly(".", "--check")
+    assertThat(execTask(project, "prettierCheck").arguments.get())
+      .containsExactly(*PRETTIER_SOURCES, "--check")
     assertThat(execTask(project, "prettierFix").arguments.get())
-      .containsExactly(".", "--write", "--list-different")
+      .containsExactly(*PRETTIER_SOURCES, "--write", "--list-different")
     assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly(".", "--max-warnings=0")
+      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored")
     assertThat(execTask(project, "eslintFix").arguments.get())
-      .containsExactly(".", "--max-warnings=0", "--fix")
+      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored", "--fix")
   }
 
   @Test
@@ -198,7 +199,36 @@ class PnpmPluginTest {
     prettier(project).extraArguments("--cache", "--log-level=warn")
 
     assertThat(execTask(project, "prettierCheck").arguments.get())
-      .containsExactly(".", "--check", "--cache", "--log-level=warn")
+      .containsExactly(*PRETTIER_SOURCES, "--check", "--cache", "--log-level=warn")
+  }
+
+  @Test
+  fun `passes the resolved sources to the tool`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    File(project.projectDir, "src/nested").mkdirs()
+    File(project.projectDir, "src/nested/app.ts").writeText("export const app = 1\n")
+    File(project.projectDir, "generated.ts").writeText("export const generated = 1\n")
+    eslint(project).excludes("generated.ts")
+
+    assertThat(execTask(project, "eslintCheck").arguments.get())
+      .containsExactly(
+        "eslint.config.ts",
+        "prettier.config.ts",
+        "src/nested/app.ts",
+        "--max-warnings=0",
+        "--no-warn-ignored",
+      )
+  }
+
+  @Test
+  fun `replaces the default patterns with the configured includes`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    File(project.projectDir, "src").mkdirs()
+    File(project.projectDir, "src/app.ts").writeText("export const app = 1\n")
+    eslint(project).includes.set(listOf("src/**/*.ts"))
+
+    assertThat(execTask(project, "eslintCheck").arguments.get())
+      .containsExactly("src/app.ts", "--max-warnings=0", "--no-warn-ignored")
   }
 
   @Test
@@ -318,6 +348,11 @@ class PnpmPluginTest {
   internal companion object {
     const val PNPM_VERSION = "11.23.0"
     const val PLUGIN_ID = "de.cronn.gradle-pnpm-plugin"
+
+    /** The files of a package project that match the default patterns of each tool. */
+    val ESLINT_SOURCES: Array<String> = arrayOf("eslint.config.ts", "prettier.config.ts")
+    val PRETTIER_SOURCES: Array<String> =
+      arrayOf("eslint.config.ts", "package.json", "prettier.config.ts", "tsconfig.json")
 
     fun writePackageJson(directory: File, version: String = PNPM_VERSION) {
       directory.mkdirs()
