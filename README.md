@@ -3,9 +3,16 @@
 A Gradle plugin that provisions [pnpm](https://pnpm.io) and integrates a pnpm workspace into a Gradle
 build.
 
-The pnpm version is pinned once, in `package.json`, and Gradle takes care of the rest: it reuses a
-matching pnpm from the `PATH` or downloads the pinned one, installs the workspace dependencies, and
-exposes TypeScript, Prettier and ESLint as ordinary Gradle verification tasks.
+The pnpm version is pinned once, in the `devEngines` field of `package.json`, and pnpm itself
+enforces that pin: whenever it runs, it checks the running version against `devEngines` and, if
+they differ, downloads the pinned pnpm and Node.js version and verifies them, the same way it
+verifies `pnpm-lock.yaml`. All the plugin has to do is make sure *some* pnpm is available to run in
+the first place — on a fresh checkout or a fresh CI runner, nothing is installed yet, so pnpm's own
+downloading can't kick in on its own. The plugin bootstraps a pnpm from `PATH` or a plugin-bundled
+download, hands control to it, and lets pnpm's own version resolution, lockfile checks and checksum
+verification take it from there — the same way, locally and in CI, without pnpm ever having to be
+preinstalled. It also installs the workspace dependencies and exposes TypeScript, Prettier and
+ESLint as ordinary Gradle verification tasks.
 
 Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 and arm64.
 
@@ -25,14 +32,23 @@ pnpm workspace in, say, `frontend/` works the same way, and its root project tak
 pnpm build at all. A package's Gradle project has to be *below* its workspace root's Gradle project,
 which is how the plugin finds the workspace the package belongs to.
 
-Pin the pnpm version in the `package.json` of your workspace root:
+Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your workspace root. This
+is the pin pnpm itself enforces — it is independent of the plugin's own `pnpm.version` described
+below:
 
 ```json
 {
   "name": "root",
   "private": true,
   "devEngines": {
-    "packageManager": { "name": "pnpm", "version": "11.23.0" }
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.25.0"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "24.20.0"
+    }
   }
 }
 ```
@@ -55,17 +71,28 @@ plugins {
 
 ## How pnpm is provisioned
 
+The plugin's `pnpm.version` (see [Configuration](#configuration)) has nothing to do with the
+version pinned in `devEngines` — it only picks which pnpm gets bootstrapped so that *a* pnpm exists
+to run in the first place:
+
 1. If `pnpm.executable` is set, that executable is used and nothing is downloaded.
-2. Otherwise, if a pnpm on the `PATH` reports exactly the pinned version, it is reused.
-3. Otherwise the pinned version is downloaded from the pnpm GitHub releases and extracted into
+2. Otherwise, if a pnpm on the `PATH` reports exactly `pnpm.version`, it is reused.
+3. Otherwise `pnpm.version` is downloaded from the pnpm GitHub releases and extracted into
    `<workspaceRootDir>/.gradle/pnpm/<version>`.
+
+`pnpm.version` defaults to the version bundled with the plugin, so most projects never have to set
+it — it does not need to match `devEngines`, since whichever pnpm this resolves to will notice the
+`devEngines` pin the first time it runs (for example for `pnpmInstall`) and download and switch to
+the matching pnpm and Node.js version itself, verifying them the same way it verifies
+`pnpm-lock.yaml`. `pnpm.version` matters on its own only when `preferPnpmOnPath` reuses a pnpm from
+`PATH` without ever consulting `devEngines`.
 
 Step 2 costs one `pnpm --version` call per build and is a configuration cache input, so installing
 or upgrading pnpm invalidates the cache. Set `preferPnpmOnPath = false` for a fully hermetic build
-that always uses the pinned version.
+that always bootstraps through the plugin's own download.
 
 In CI, cache the workspace root's `.gradle/pnpm` (or set `installDirectory` to a location you
-already cache) to avoid downloading pnpm on every run.
+already cache), and pnpm's own download cache, to avoid downloading pnpm on every run.
 
 ## Workspace tasks
 
@@ -224,8 +251,10 @@ Both types support:
 ## Configuration cache and project isolation
 
 The plugin is compatible with the **configuration cache**, and the test suite fails the build on any
-configuration cache problem. Reading `package.json`, probing the `PATH` and looking for the tool
-config files are declared inputs, so all of them invalidate the cache when they change.
+configuration cache problem. Probing the `PATH` and looking for the tool config files are declared
+inputs, so both invalidate the cache when they change. `package.json` and `devEngines` are read by
+pnpm itself, not by the plugin, so they are plain task inputs of `pnpmInstall` rather than
+configuration cache inputs.
 
 The plugin is **not** compatible with **project isolation**: a package reads the `pnpm` extension of
 its workspace root, so that one pnpm installation is shared by the whole workspace.
