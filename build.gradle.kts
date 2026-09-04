@@ -2,6 +2,10 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
+// The plugins DSL resolves through the build script classpath, so locking it pins the plugin
+// versions and their transitive dependencies as well.
+buildscript { configurations.classpath { resolutionStrategy.activateDependencyLocking() } }
+
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.plugin.publish)
@@ -11,6 +15,10 @@ plugins {
 description = "Gradle plugin that provisions pnpm and integrates pnpm workspaces into Gradle builds"
 
 version = providers.environmentVariable("ARTIFACT_VERSION").getOrElse("0.0.0-SNAPSHOT")
+
+// Pins every transitive dependency in gradle.lockfile so builds stay reproducible. Refresh with
+// ./gradlew dependencies --write-locks and ./gradlew buildEnvironment --write-locks.
+dependencyLocking { lockAllConfigurations() }
 
 // Java 21 is the lowest supported bytecode level. The build itself runs on a newer JDK, so it
 // cross-compiles instead of provisioning a second toolchain. sourceCompatibility and
