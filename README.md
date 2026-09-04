@@ -237,7 +237,7 @@ Gradle project.
 ```bash
 ./gradlew build                                  # spotless, unit tests, TestKit tests, validation
 ./gradlew spotlessApply                          # apply the formatting
-./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.6.1   # cross-version tier (downloads Gradle)
+./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.7.1   # cross-version tier (downloads Gradle)
 ./gradlew publishToMavenLocal                    # publish to the local Maven repository
 ```
 
