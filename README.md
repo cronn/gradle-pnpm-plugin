@@ -113,13 +113,14 @@ tasks.named<PnpmSetupTask>("pnpmSetup") {
 ## Tool tasks
 
 Registered in every project, in the `verification` group. The workspace root gets them too, because a
-workspace root is a pnpm package like any other:
+workspace root is a pnpm package like any other. Every tool has its own page:
 
-|    Tool    |                             Enabled by                             |                              Tasks                               |
-|------------|--------------------------------------------------------------------|------------------------------------------------------------------|
-| TypeScript | `tsconfig.json`                                                    | `compileTypescript` (part of `check`)                            |
-| ESLint     | `eslint.config.*` (the flat config; `.eslintrc.*` is not detected) | `eslintCheck` (part of `check`), `eslintFix` (part of `fix`)     |
-| Prettier   | `prettier.config.*` or `.prettierrc*`                              | `prettierCheck` (part of `check`), `prettierFix` (part of `fix`) |
+- [TypeScript](docs/typescript.md)
+- [ESLint](docs/eslint.md)
+- [Prettier](docs/prettier.md)
+
+Each page lists what enables the tool, the tasks it registers, the lifecycle task each of them
+contributes to, and the files each task defaults to.
 
 `eslintCheck` and `eslintFix` depend on `compileTypescript`, and `prettierFix` runs after
 `eslintFix` so that formatting has the final say.
