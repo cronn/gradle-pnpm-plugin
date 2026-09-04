@@ -39,9 +39,19 @@ public abstract class PnpmToolExtension {
     includes.addAll(*patterns)
   }
 
+  /** Adds [patterns] to [includes], keeping the patterns already there. */
+  public fun includes(patterns: Iterable<String>) {
+    includes.addAll(patterns)
+  }
+
   /** Adds [patterns] to [excludes]. */
   public fun excludes(vararg patterns: String) {
     excludes.addAll(*patterns)
+  }
+
+  /** Adds [patterns] to [excludes]. */
+  public fun excludes(patterns: Iterable<String>) {
+    excludes.addAll(patterns)
   }
 
   /** Adds [arguments] to [extraArguments]. */
