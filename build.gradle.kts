@@ -151,7 +151,7 @@ spotless {
   }
 
   flexmark {
-    target("*.md")
+    target("*.md", "docs/*.md")
     flexmark()
     trimTrailingWhitespace()
     endWithNewline()

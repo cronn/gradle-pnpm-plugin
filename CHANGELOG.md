@@ -16,8 +16,8 @@ following changes over that original:
   a pnpm package like any other.
 - Each tool is enabled by default exactly when the project holds a config file for it
   (`tsconfig.json`, `eslint.config.*` or `prettier.config.*`/`.prettierrc*`).
-- A `typescript`, `prettier` and `eslint` extension per project, each with `enabled`, `include(…)`,
-  `exclude(…)` and `extraArguments(…)`. The pnpm installation is configured separately, through the
+- A `typescript`, `prettier` and `eslint` extension per project, each with `enabled`, `includes(…)`,
+  `excludes(…)` and `extraArguments(…)`. The pnpm installation is configured separately, through the
   `pnpm` extension of the workspace root.
 - Configurable `version`, `installDirectory`, `executable` and `preferPnpmOnPath` on the `pnpm`
   extension. The pnpm release to download is derived from the pinned version and can be overridden
