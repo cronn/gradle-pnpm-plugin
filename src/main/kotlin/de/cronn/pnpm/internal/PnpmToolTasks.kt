@@ -86,7 +86,7 @@ internal class PnpmToolTasks(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
       command = "eslint",
-      arguments = ESLINT_ARGUMENTS,
+      arguments = listOf("--max-warnings=0"),
       passesSources = true,
       dependsOn = compileTypescript,
     )
@@ -99,7 +99,7 @@ internal class PnpmToolTasks(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
       command = "eslint",
-      arguments = ESLINT_ARGUMENTS + "--fix",
+      arguments = listOf("--max-warnings=0", "--fix"),
       passesSources = true,
       dependsOn = compileTypescript,
       mutatesSources = true,
@@ -222,11 +222,5 @@ internal class PnpmToolTasks(
     val TYPESCRIPT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
     val PRETTIER_INCLUDES: List<String> = listOf(*BASE_INCLUDES, "*.json", "*.md")
     val ESLINT_INCLUDES: List<String> = listOf(*BASE_INCLUDES)
-
-    /**
-     * ESLint skips a file matched by the `ignores` of its config, but warns about it when it was
-     * named on the command line, which `--max-warnings=0` would turn into a failure.
-     */
-    val ESLINT_ARGUMENTS: List<String> = listOf("--max-warnings=0", "--no-warn-ignored")
   }
 }

@@ -188,9 +188,9 @@ class PnpmPluginTest {
     assertThat(execTask(project, "prettierFix").arguments.get())
       .containsExactly(*PRETTIER_SOURCES, "--write", "--list-different")
     assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored")
+      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0")
     assertThat(execTask(project, "eslintFix").arguments.get())
-      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored", "--fix")
+      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0", "--fix")
   }
 
   @Test
@@ -216,7 +216,6 @@ class PnpmPluginTest {
         "prettier.config.ts",
         "src/nested/app.ts",
         "--max-warnings=0",
-        "--no-warn-ignored",
       )
   }
 
@@ -228,7 +227,7 @@ class PnpmPluginTest {
     eslint(project).includes("types/**")
 
     assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts", "--max-warnings=0", "--no-warn-ignored")
+      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts", "--max-warnings=0")
   }
 
   @Test
@@ -239,7 +238,7 @@ class PnpmPluginTest {
     eslint(project).includes.set(listOf("src/**/*.ts"))
 
     assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly("src/app.ts", "--max-warnings=0", "--no-warn-ignored")
+      .containsExactly("src/app.ts", "--max-warnings=0")
   }
 
   @Test

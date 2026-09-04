@@ -46,7 +46,7 @@ class PnpmPackageFunctionalTest {
       .contains(
         listOf("exec", "tsc", "--noEmit"),
         listOf("exec", "prettier", *PRETTIER_SOURCES, "--check"),
-        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored"),
+        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0"),
       )
   }
 
@@ -63,7 +63,7 @@ class PnpmPackageFunctionalTest {
         .filter { it.contains("--fix") || it.contains("--write") }
     assertThat(fixes)
       .containsExactly(
-        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0", "--no-warn-ignored", "--fix"),
+        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0", "--fix"),
         listOf("exec", "prettier", *PRETTIER_SOURCES, "--write", "--list-different"),
       )
   }
@@ -176,7 +176,7 @@ class PnpmPackageFunctionalTest {
     fixture.runner(":frontend:eslintCheck").build()
 
     assertThat(fixture.stub.invocations().map { it.arguments })
-      .contains(listOf("exec", "eslint", "sources/app.ts", "--max-warnings=0", "--no-warn-ignored"))
+      .contains(listOf("exec", "eslint", "sources/app.ts", "--max-warnings=0"))
 
     // main.ts matches a default pattern, which the configured includes replaced.
     fixture.write("frontend/main.ts", "export const main = 2")
