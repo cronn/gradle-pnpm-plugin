@@ -241,6 +241,14 @@ Gradle project.
 ./gradlew publishToMavenLocal                    # publish to the local Maven repository
 ```
 
+Dependencies are locked. After changing a version in `gradle/libs.versions.toml`, regenerate the
+lock files and commit them:
+
+```bash
+./gradlew dependencies --write-locks
+./gradlew buildEnvironment --write-locks
+```
+
 ### Testing a local build in another project
 
 To try out uncommitted changes in a real build, include this repository as a composite build in the
