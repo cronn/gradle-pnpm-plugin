@@ -167,6 +167,6 @@ spotless {
 // CAUTION: run ./gradlew wrapper (twice) after changes to this task!
 // See https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:upgrading_wrapper
 tasks.wrapper {
-  gradleVersion = "9.6.1"
+  gradleVersion = "9.7.1"
   distributionType = Wrapper.DistributionType.ALL
 }

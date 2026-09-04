@@ -64,4 +64,4 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6.3.0
 
       # Downloads the named Gradle distributions and runs the TestKit suite against each of them.
-      - run: ./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.6.1 --stacktrace
+      - run: ./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.7.1 --stacktrace
