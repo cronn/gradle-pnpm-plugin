@@ -60,7 +60,10 @@ internal abstract class ToolTasks<T : PnpmToolTask>(
       task.description = description
       task.arguments.set(arguments)
       if (mutatesSources) {
-        task.outputs.files(task.sources).withPropertyName("sources")
+        // The elements, not the file collection: registering a file tree as an output would make
+        // Gradle record the tree's root -- the project directory -- as the output location, which
+        // in a multi-project build overlaps with the directory a parent project's task claims.
+        task.outputs.files(task.sources.elements).withPropertyName("sources")
       } else {
         task.outputs.upToDateWhen { true }
       }

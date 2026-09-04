@@ -167,6 +167,27 @@ class PnpmWorkspaceFunctionalTest {
   }
 
   @Test
+  fun `a fix task of the workspace root and of a package can run in the same build`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(packages = listOf("frontend"))
+    fixture.write("frontend/main.ts", "export const main = 1")
+
+    // A fix task declares the sources it rewrites as its outputs. Declaring them as a file tree
+    // would make Gradle record the project directory as the output location, so the root project's
+    // task would claim the directory of every package and Gradle would report an implicit
+    // dependency between the two tasks.
+    val result = fixture.runner(":prettierFix", ":frontend:prettierFix").build()
+
+    assertThat(result.task(":prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(result.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+
+    // The outputs still drive up-to-date checking of each task.
+    val second = fixture.runner(":prettierFix", ":frontend:prettierFix").build()
+    assertThat(second.task(":prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
+  @Test
   fun `fails when the workspace root does not apply the plugin`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeNestedWorkspace()
