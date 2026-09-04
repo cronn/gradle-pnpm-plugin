@@ -168,9 +168,9 @@ eslint {
 - `enabled` overrides the auto-detection above, in both directions.
 
 Prettier and ESLint are handed exactly these files on the command line, so what Gradle tracks and
-what the tool looks at cannot drift apart, and a tool whose patterns match nothing is skipped. `tsc`
-is the exception: it takes the files to compile from `tsconfig.json`, and the patterns only describe
-its Gradle inputs.
+what the tool looks at cannot drift apart. `tsc` is the exception: it takes the files to compile
+from `tsconfig.json`, and the patterns only describe its Gradle inputs. Either way a task whose
+patterns match nothing is `NO-SOURCE`.
 
 Declaring the right inputs is what makes the check tasks skippable: a task whose sources have not
 changed is `UP-TO-DATE`.
@@ -179,6 +179,12 @@ changed is `UP-TO-DATE`.
 
 `PnpmExecTask` runs a binary provided by a workspace dependency, `PnpmRunTask` runs a `package.json`
 script. Both inherit the resolved pnpm executable and the dependency on `pnpmInstall`.
+
+For a second invocation of a tool the plugin already knows, register a `TypescriptTask`,
+`PrettierTask` or `EslintTask` instead: those take their `sources`, `extraArguments` and enablement
+from the tool's extension, so the task only has to say what is different about it. Each tool's page
+shows an example. A task of one of those types that rewrites its sources should declare
+`outputs.files(sources)`.
 
 ```kotlin
 import de.cronn.pnpm.task.PnpmExecTask

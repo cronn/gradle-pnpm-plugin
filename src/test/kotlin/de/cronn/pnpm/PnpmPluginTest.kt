@@ -1,8 +1,12 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
 import de.cronn.pnpm.task.PnpmTask
+import de.cronn.pnpm.task.PnpmToolTask
+import de.cronn.pnpm.task.PrettierTask
+import de.cronn.pnpm.task.TypescriptTask
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -178,45 +182,62 @@ class PnpmPluginTest {
   // Tool tasks
 
   @Test
+  fun `registers each predefined task as the task type of its tool`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    assertThat(project.tasks.getByName("compileTypescript"))
+      .isInstanceOf(TypescriptTask::class.java)
+    assertThat(project.tasks.getByName("prettierCheck")).isInstanceOf(PrettierTask::class.java)
+    assertThat(project.tasks.getByName("prettierFix")).isInstanceOf(PrettierTask::class.java)
+    assertThat(project.tasks.getByName("eslintCheck")).isInstanceOf(EslintTask::class.java)
+    assertThat(project.tasks.getByName("eslintFix")).isInstanceOf(EslintTask::class.java)
+  }
+
+  @Test
   fun `uses the same commands and arguments as the tools expect`(@TempDir directory: File) {
     val project = packageProject(directory)
 
-    assertThat(execTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
-    assertThat(execTask(project, "compileTypescript").arguments.get()).containsExactly("--noEmit")
-    assertThat(execTask(project, "prettierCheck").arguments.get())
-      .containsExactly(*PRETTIER_SOURCES, "--check")
-    assertThat(execTask(project, "prettierFix").arguments.get())
-      .containsExactly(*PRETTIER_SOURCES, "--write", "--list-different")
-    assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0")
-    assertThat(execTask(project, "eslintFix").arguments.get())
-      .containsExactly(*ESLINT_SOURCES, "--max-warnings=0", "--fix")
+    assertThat(toolTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
+    assertThat(toolTask(project, "compileTypescript").arguments.get()).containsExactly("--noEmit")
+    assertThat(toolTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
+    assertThat(toolTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
+    assertThat(toolTask(project, "prettierFix").arguments.get())
+      .containsExactly("--write", "--list-different")
+    assertThat(toolTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
+    assertThat(toolTask(project, "eslintCheck").arguments.get()).containsExactly("--max-warnings=0")
+    assertThat(toolTask(project, "eslintFix").arguments.get())
+      .containsExactly("--max-warnings=0", "--fix")
   }
 
   @Test
-  fun `appends extra arguments configured for a tool`(@TempDir directory: File) {
+  fun `uses the sources of the tool as the inputs of its tasks`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    assertThat(sourceNames(toolTask(project, "prettierCheck"))).containsExactly(*PRETTIER_SOURCES)
+    assertThat(sourceNames(toolTask(project, "prettierFix"))).containsExactly(*PRETTIER_SOURCES)
+    assertThat(sourceNames(toolTask(project, "eslintCheck"))).containsExactly(*ESLINT_SOURCES)
+    assertThat(sourceNames(toolTask(project, "compileTypescript"))).containsExactly(*BASE_SOURCES)
+  }
+
+  @Test
+  fun `takes the extra arguments of a tool over to its tasks`(@TempDir directory: File) {
     val project = packageProject(directory)
     prettier(project).extraArguments("--cache", "--log-level=warn")
 
-    assertThat(execTask(project, "prettierCheck").arguments.get())
-      .containsExactly(*PRETTIER_SOURCES, "--check", "--cache", "--log-level=warn")
+    assertThat(toolTask(project, "prettierCheck").extraArguments.get())
+      .containsExactly("--cache", "--log-level=warn")
   }
 
   @Test
-  fun `passes the resolved sources to the tool`(@TempDir directory: File) {
+  fun `resolves the sources of a tool from its includes and excludes`(@TempDir directory: File) {
     val project = packageProject(directory)
     File(project.projectDir, "src/nested").mkdirs()
     File(project.projectDir, "src/nested/app.ts").writeText("export const app = 1\n")
     File(project.projectDir, "generated.ts").writeText("export const generated = 1\n")
     eslint(project).excludes("generated.ts")
 
-    assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly(
-        "eslint.config.ts",
-        "prettier.config.ts",
-        "src/nested/app.ts",
-        "--max-warnings=0",
-      )
+    assertThat(sourceNames(toolTask(project, "eslintCheck")))
+      .containsExactly("eslint.config.ts", "prettier.config.ts", "src/nested/app.ts")
   }
 
   @Test
@@ -226,8 +247,8 @@ class PnpmPluginTest {
     File(project.projectDir, "types/api.d.ts").writeText("export {}\n")
     eslint(project).includes("types/**")
 
-    assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts", "--max-warnings=0")
+    assertThat(sourceNames(toolTask(project, "eslintCheck")))
+      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
   }
 
   @Test
@@ -237,8 +258,25 @@ class PnpmPluginTest {
     File(project.projectDir, "src/app.ts").writeText("export const app = 1\n")
     eslint(project).includes.set(listOf("src/**/*.ts"))
 
-    assertThat(execTask(project, "eslintCheck").arguments.get())
-      .containsExactly("src/app.ts", "--max-warnings=0")
+    assertThat(sourceNames(toolTask(project, "eslintCheck"))).containsExactly("src/app.ts")
+  }
+
+  @Test
+  fun `configures a tool task registered by the build script like a predefined one`(
+    @TempDir directory: File
+  ) {
+    val project = packageProject(directory)
+    prettier(project).extraArguments("--cache")
+    val custom =
+      project.tasks.register("prettierDocs", PrettierTask::class.java) { task ->
+        task.arguments.set(listOf("--check"))
+      }
+
+    val task = custom.get()
+    assertThat(task.command.get()).isEqualTo("prettier")
+    assertThat(task.extraArguments.get()).containsExactly("--cache")
+    assertThat(sourceNames(task)).containsExactly(*PRETTIER_SOURCES)
+    assertThat(task.group).isEqualTo("verification")
   }
 
   @Test
@@ -349,6 +387,15 @@ class PnpmPluginTest {
   private fun execTask(project: Project, name: String): PnpmExecTask =
     project.tasks.getByName(name) as PnpmExecTask
 
+  private fun toolTask(project: Project, name: String): PnpmToolTask =
+    project.tasks.getByName(name) as PnpmToolTask
+
+  /** The sources of [task] the way they reach the command line: relative and sorted. */
+  private fun sourceNames(task: PnpmToolTask): List<String> {
+    val directory = task.workingDirectory.get().asFile
+    return task.sources.files.map { it.relativeTo(directory).invariantSeparatorsPath }.sorted()
+  }
+
   private fun pnpmTask(project: Project, name: String): PnpmTask =
     project.tasks.getByName(name) as PnpmTask
 
@@ -360,7 +407,8 @@ class PnpmPluginTest {
     const val PLUGIN_ID = "de.cronn.gradle-pnpm-plugin"
 
     /** The files of a package project that match the default patterns of each tool. */
-    val ESLINT_SOURCES: Array<String> = arrayOf("eslint.config.ts", "prettier.config.ts")
+    val BASE_SOURCES: Array<String> = arrayOf("eslint.config.ts", "prettier.config.ts")
+    val ESLINT_SOURCES: Array<String> = BASE_SOURCES
     val PRETTIER_SOURCES: Array<String> =
       arrayOf("eslint.config.ts", "package.json", "prettier.config.ts", "tsconfig.json")
 
