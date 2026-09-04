@@ -9,7 +9,4 @@ legacy `.eslintrc.*` format is not detected.
 | `eslintFix`   | `fix`          | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` |
 
 Both tasks depend on `compileTypescript`, and both are handed exactly the files the patterns resolve
-to: `eslint <files> --max-warnings=0 --no-warn-ignored`, with `--fix` appended for `eslintFix`.
-`--no-warn-ignored` is needed because ESLint skips a file matched by the `ignores` of its config, but
-warns about it when it was named on the command line, which `--max-warnings=0` would turn into a
-failure.
+to: `eslint <files> --max-warnings=0`, with `--fix` appended for `eslintFix`.
