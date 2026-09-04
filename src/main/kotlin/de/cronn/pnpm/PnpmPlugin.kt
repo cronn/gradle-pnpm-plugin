@@ -1,6 +1,5 @@
 package de.cronn.pnpm
 
-import de.cronn.pnpm.internal.PackageJson
 import de.cronn.pnpm.internal.PnpmOnPath
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
@@ -109,7 +108,6 @@ public class PnpmPlugin : Plugin<Project> {
     extension: PnpmExtension,
   ) {
     val workspaceDirectory = target.layout.projectDirectory
-    val providers = target.providers
     val taskPathPrefix = layout.taskPathPrefix()
 
     extension.preferPnpmOnPath.convention(true)
@@ -125,27 +123,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmWorkspaceTasks.INSTALL_TASK_NAME,
     )
 
-    // fileContents declares a tracked configuration input, so editing the pinned pnpm version
-    // invalidates the configuration cache. Two constraints shape this:
-    //  - the provider must be created here, not inside a lambda: file contents can only be
-    //    obtained while the build is being configured;
-    //  - the fallback must not throw, because storing the configuration cache evaluates both
-    //    branches of orElse. A missing file therefore surfaces as empty content.
-    val packageJson = workspaceDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON)
-    val packageJsonText = providers.fileContents(packageJson).asText.orElse("")
-
-    extension.version.convention(
-      packageJsonText.map { text ->
-        if (text.isBlank()) {
-          throw GradleException(
-            "Expected a package.json pinning the pnpm version in " +
-              "'devEngines.packageManager' at ${packageJson.asFile}, but the file is missing " +
-              "or empty"
-          )
-        }
-        PackageJson.pnpmVersion(text, packageJson.asFile.path)
-      }
-    )
+    extension.version.convention(DEFAULT_PNPM_VERSION)
 
     extension.installDirectory.convention(
       extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") }
@@ -252,6 +230,7 @@ public class PnpmPlugin : Plugin<Project> {
     const val ESLINT_EXTENSION_NAME: String = "eslint"
     const val TASK_GROUP: String = "pnpm"
     const val RESOLUTION_NAME: String = "pnpmResolution"
+    const val DEFAULT_PNPM_VERSION: String = "11.25.0"
     private const val PATH_VARIABLE = "PATH"
     private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")
   }

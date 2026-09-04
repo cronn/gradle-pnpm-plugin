@@ -18,20 +18,22 @@ class GradleProjectFixture(val rootDirectory: File) {
     packages: List<String> = emptyList(),
     rootBuildScript: String = "",
     packageBuildScript: String = "",
-    pnpmVersion: String = PNPM_VERSION,
+    /** The pinned pnpm version, or `null` to fall back to the plugin's default version. */
+    pnpmVersion: String? = PNPM_VERSION,
     /** Body of the `pnpm { }` block; defaults to pointing the build at the stub. */
     pnpmConfiguration: String? = null,
   ) {
     stubExecutable = stub.install()
 
     writeSettings(rootProjectName = "workspace", projects = packages)
-    writePackageRoot("", pnpmVersion, packages)
+    writePackageRoot("", packages)
     write(
       "build.gradle.kts",
       """
       plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       pnpm {
+        ${pnpmVersion?.let { "version = \"$it\"" } ?: ""}
         ${pnpmConfiguration ?: "executable = ${quoted(stubExecutable)}"}
       }
 
@@ -57,13 +59,14 @@ class GradleProjectFixture(val rootDirectory: File) {
     val packagePaths = packages.map { "$workspaceRoot:$it" }
     writeSettings(rootProjectName = "build", projects = listOf(workspaceRoot) + packagePaths)
     write("build.gradle.kts", "// no pnpm files here")
-    writePackageRoot(workspaceRoot, pnpmVersion, packages)
+    writePackageRoot(workspaceRoot, packages)
     write(
       "$workspaceRoot/build.gradle.kts",
       """
       plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       pnpm {
+        version = "$pnpmVersion"
         executable = ${quoted(stubExecutable)}
       }
       """,
@@ -83,15 +86,14 @@ class GradleProjectFixture(val rootDirectory: File) {
   }
 
   /** The files that make [directory] a pnpm workspace root. */
-  private fun writePackageRoot(directory: String, pnpmVersion: String, packages: List<String>) {
+  private fun writePackageRoot(directory: String, packages: List<String>) {
     val prefix = if (directory.isEmpty()) "" else "$directory/"
     write(
       "${prefix}package.json",
       """
       {
         "name": "root",
-        "private": true,
-        "devEngines": { "packageManager": { "name": "pnpm", "version": "$pnpmVersion" } }
+        "private": true
       }
       """,
     )

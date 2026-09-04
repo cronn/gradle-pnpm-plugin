@@ -75,17 +75,32 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `reads the pinned pnpm version from package json`(@TempDir directory: File) {
+  fun `uses the default pnpm version bundled with the plugin`(@TempDir directory: File) {
     val project = workspaceProject(directory)
 
-    assertThat(extension(project).version.get()).isEqualTo(PNPM_VERSION)
+    assertThat(extension(project).version.get()).isEqualTo(PnpmPlugin.DEFAULT_PNPM_VERSION)
   }
 
   @Test
-  fun `derives the install directory and the archive url from the pinned version`(
+  fun `derives the install directory and the archive url from the default version`(
     @TempDir directory: File
   ) {
     val project = workspaceProject(directory)
+
+    assertThat(extension(project).installDirectory.get().asFile)
+      .isEqualTo(File(project.projectDir, ".gradle/pnpm/${PnpmPlugin.DEFAULT_PNPM_VERSION}"))
+    assertThat(setupTask(project).archiveUrl.get())
+      .startsWith(
+        "https://github.com/pnpm/pnpm/releases/download/v${PnpmPlugin.DEFAULT_PNPM_VERSION}/pnpm-"
+      )
+  }
+
+  @Test
+  fun `derives the install directory and the archive url from an explicitly configured version`(
+    @TempDir directory: File
+  ) {
+    val project = workspaceProject(directory)
+    extension(project).version.set(PNPM_VERSION)
 
     assertThat(extension(project).installDirectory.get().asFile)
       .isEqualTo(File(project.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
@@ -129,7 +144,7 @@ class PnpmPluginTest {
     assertThat(extension.setupTaskPath.get()).isEqualTo(":frontend:pnpmSetup")
     assertThat(extension.installTaskPath.get()).isEqualTo(":frontend:pnpmInstall")
     assertThat(extension.installDirectory.get().asFile)
-      .isEqualTo(File(frontend.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
+      .isEqualTo(File(frontend.projectDir, ".gradle/pnpm/${PnpmPlugin.DEFAULT_PNPM_VERSION}"))
     assertThat(root.extensions.findByName("pnpm")).isNull()
     assertThat(app.tasks.names).contains("prettierCheck").doesNotContain("pnpmInstall")
   }
@@ -427,15 +442,14 @@ class PnpmPluginTest {
     val PRETTIER_SOURCES: Array<String> =
       arrayOf("eslint.config.ts", "package.json", "prettier.config.ts", "tsconfig.json")
 
-    fun writePackageJson(directory: File, version: String = PNPM_VERSION) {
+    fun writePackageJson(directory: File) {
       directory.mkdirs()
       File(directory, "package.json")
         .writeText(
           """
           {
             "name": "root",
-            "private": true,
-            "devEngines": { "packageManager": { "name": "pnpm", "version": "$version" } }
+            "private": true
           }
           """
             .trimIndent()

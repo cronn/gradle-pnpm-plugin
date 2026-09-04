@@ -12,6 +12,31 @@ class PnpmWorkspaceFunctionalTest {
   @TempDir lateinit var projectDirectory: File
 
   @Test
+  fun `uses the default pnpm version when none is configured`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(
+      pnpmVersion = null,
+      pnpmConfiguration = "preferPnpmOnPath = false",
+      rootBuildScript =
+        """
+        val pinnedVersion = pnpm.version
+        tasks.register("printPnpmVersion") {
+          // Copied into a local so the doLast action does not capture the build script itself.
+          val version = pinnedVersion
+          doLast { println("pinned=" + version.get()) }
+        }
+        """,
+    )
+
+    val result = fixture.runner("printPnpmVersion").build()
+
+    // Kept in sync manually with PnpmPlugin.DEFAULT_PNPM_VERSION, which functionalTest cannot
+    // reference: it only depends on the plugin as a published artifact, not as a compile
+    // dependency.
+    assertThat(result.output).contains("pinned=11.25.0")
+  }
+
+  @Test
   fun `pnpmInstall runs pnpm install in the workspace root`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace()
@@ -88,40 +113,6 @@ class PnpmWorkspaceFunctionalTest {
 
     assertThat(first.output).contains("Configuration cache entry stored")
     assertThat(second.output).contains("Configuration cache entry reused")
-  }
-
-  @Test
-  fun `picks up a changed pinned pnpm version even when the configuration cache is reused`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(
-      rootBuildScript =
-        """
-        val pinnedVersion = pnpm.version
-        tasks.register("printPnpmVersion") {
-          // Copied into a local so the doLast action does not capture the build script itself.
-          val version = pinnedVersion
-          doLast { println("pinned=" + version.get()) }
-        }
-        """
-    )
-
-    val first = fixture.runner("printPnpmVersion").build()
-    assertThat(first.output).contains("pinned=${GradleProjectFixture.PNPM_VERSION}")
-
-    fixture.write(
-      "package.json",
-      """
-      {
-        "name": "root",
-        "private": true,
-        "devEngines": { "packageManager": { "name": "pnpm", "version": "11.0.0" } }
-      }
-      """,
-    )
-    val second = fixture.runner("printPnpmVersion").build()
-
-    // The file contents are re-read on every build, so a reused entry still yields a fresh value.
-    assertThat(second.output).contains("pinned=11.0.0")
   }
 
   @Test
@@ -208,18 +199,5 @@ class PnpmWorkspaceFunctionalTest {
 
     assertThat(result.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(result.task(":prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-  }
-
-  @Test
-  fun `reports a missing package json`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace()
-    fixture.directory("package.json").delete()
-
-    val result = fixture.runner("pnpmInstall").buildAndFail()
-
-    assertThat(result.output)
-      .contains("Expected a package.json pinning the pnpm version")
-      .contains("but the file is missing or empty")
   }
 }

@@ -16,10 +16,7 @@ import org.gradle.api.provider.Property
  */
 public abstract class PnpmExtension {
 
-  /**
-   * The pnpm version to use. Defaults to `devEngines.packageManager.version` of the `package.json`
-   * in the directory of the workspace root.
-   */
+  /** The pnpm version to use. Defaults to the version bundled with the plugin. */
   public abstract val version: Property<String>
 
   /**
@@ -39,7 +36,7 @@ public abstract class PnpmExtension {
    *
    * Reusing a matching pnpm avoids a download, at the cost of one `pnpm --version` call per build,
    * which is a configuration cache input. Set to `false` for a fully hermetic build that always
-   * uses the pnpm version pinned in `package.json`.
+   * uses the pnpm version pinned via [version].
    */
   public abstract val preferPnpmOnPath: Property<Boolean>
 
