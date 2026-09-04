@@ -37,7 +37,8 @@ following changes over that original:
   silently did nothing after their first run.
 - `pnpmInstall` declared `pnpm-lock.yaml` as both an input and an output, and declared the
   `node_modules` symlink farm as an output. It now has a stamp file as its output.
-- `prettierFix` and `eslintFix` declared the same file tree as both inputs and outputs.
+- `prettierFix` and `eslintFix` declared the same file tree as both inputs and outputs. They now
+  declare no outputs and are never up to date, because they rewrite the sources they read.
 - `package.json` was read and `pnpm --version` executed eagerly on every configuration, without
   being declared as configuration cache inputs, so changing either did not invalidate the cache.
 - A pnpm version change did not invalidate the tool tasks, because only the executable path was

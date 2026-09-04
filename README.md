@@ -184,7 +184,8 @@ For a second invocation of a tool the plugin already knows, register a `Typescri
 `PrettierTask` or `EslintTask` instead: those take their `sources`, `extraArguments` and enablement
 from the tool's extension, so the task only has to say what is different about it. Each tool's page
 shows an example. A task of one of those types that rewrites its sources should declare
-`outputs.files(sources)`.
+`outputs.upToDateWhen { false }`, because it changes its own inputs and therefore has no result
+Gradle could find up to date.
 
 ```kotlin
 import de.cronn.pnpm.task.PnpmExecTask

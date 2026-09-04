@@ -30,5 +30,5 @@ tasks.register<PrettierTask>("prettierDocs") {
 
 The `extraArguments` and the `enabled` state of the `prettier` extension apply to it like they do to
 the predefined tasks, and `sources` defaults to the extension's patterns when the task does not set
-it. A task that rewrites its sources should declare `outputs.files(sources)` the way `prettierFix`
-does.
+it. A task that rewrites its sources should declare `outputs.upToDateWhen { false }` the way
+`prettierFix` does, so that it runs on every invocation.

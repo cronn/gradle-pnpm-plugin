@@ -29,4 +29,5 @@ tasks.register<EslintTask>("eslintReport") {
 The `sources`, the `extraArguments` and the `enabled` state of the `eslint` extension apply to it
 like they do to the predefined tasks, and it depends on the TypeScript tasks in the same way.
 `sources` can be set on the task to lint a different set of files; a task that rewrites its sources
-should declare `outputs.files(sources)` the way `eslintFix` does.
+should declare `outputs.upToDateWhen { false }` the way `eslintFix` does, so that it runs on every
+invocation.
