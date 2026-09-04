@@ -139,7 +139,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint {
-            additionalIncludes("sources/**")
+            includes("sources/**")
             excludes("sources/generated/**")
           }
           """

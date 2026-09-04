@@ -221,6 +221,17 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `adds to the default patterns when includes is called as a method`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    File(project.projectDir, "types").mkdirs()
+    File(project.projectDir, "types/api.d.ts").writeText("export {}\n")
+    eslint(project).includes("types/**")
+
+    assertThat(execTask(project, "eslintCheck").arguments.get())
+      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts", "--max-warnings=0", "--no-warn-ignored")
+  }
+
+  @Test
   fun `replaces the default patterns with the configured includes`(@TempDir directory: File) {
     val project = packageProject(directory)
     File(project.projectDir, "src").mkdirs()

@@ -25,9 +25,11 @@ internal class PnpmToolTasks(
 ) {
 
   fun register() {
-    typescript.includes.convention(TYPESCRIPT_INCLUDES)
-    prettier.includes.convention(PRETTIER_INCLUDES)
-    eslint.includes.convention(ESLINT_INCLUDES)
+    // A value, not a convention: adding to a property that only has a convention discards it,
+    // which would make the additive includes(...) method replace the defaults instead.
+    typescript.includes.set(TYPESCRIPT_INCLUDES)
+    prettier.includes.set(PRETTIER_INCLUDES)
+    eslint.includes.set(ESLINT_INCLUDES)
 
     val compileTypescript = registerCompileTypescript()
     val prettierCheck = registerPrettierCheck()
@@ -165,7 +167,7 @@ internal class PnpmToolTasks(
    * `pnpm { ... }` blocks anywhere in the build script are taken into account.
    */
   private fun sourceFiles(tool: PnpmToolExtension): FileTree {
-    val includes = tool.includes.get() + tool.additionalIncludes.get()
+    val includes = tool.includes.get()
     val excludes = tool.excludes.get()
     target.logger.debug(
       "Sources of {}: including {}, excluding {}",

@@ -139,17 +139,18 @@ Each tool has its own extension:
 
 ```kotlin
 typescript {
-  additionalIncludes("types/**")
+  // Adds to the default patterns
+  includes("types/**")
 }
 
 prettier {
-  additionalIncludes("docs/**")
+  includes("docs/**")
   excludes("src/generated/**")
   extraArguments("--cache")
 }
 
 eslint {
-  // Replaces the default patterns instead of adding to them
+  // Assigning replaces the default patterns instead of adding to them
   includes = listOf("app/**/*.ts")
 
   // Set it to false to keep eslintCheck and eslintFix out of check and fix
@@ -158,9 +159,8 @@ eslint {
 ```
 
 - `includes` are the Ant-style patterns of the tool's inputs. It defaults to `*.ts`, `src/**/*.ts`
-  and `src/**/*.tsx` for every tool, plus `*.json` and `*.md` for Prettier; assigning it replaces
-  those defaults.
-- `additionalIncludes(…)` adds patterns on top of `includes`, keeping the defaults.
+  and `src/**/*.tsx` for every tool, plus `*.json` and `*.md` for Prettier. `includes(…)` adds
+  patterns to whatever is already there, assigning replaces it.
 - `excludes(…)` removes patterns from the inputs. Nothing is excluded by default: the include
   patterns above reach neither `node_modules` nor the Gradle build directory.
 - `extraArguments(…)` appends arguments to the tool's command line.
