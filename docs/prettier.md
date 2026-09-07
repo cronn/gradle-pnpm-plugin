@@ -1,23 +1,17 @@
 # Prettier
 
-Enabled by default when the project directory contains a `prettier.config.*` or a `.prettierrc*`
-file.
+**Enabled by**: `prettier.config.*` or `.prettierrc*` in the project directory
 
-|      Task       | Contributes to |                    Default includes                     |
-|-----------------|----------------|---------------------------------------------------------|
-| `prettierCheck` | `check`        | `*.ts`, `src/**/*.ts`, `src/**/*.tsx`, `*.json`, `*.md` |
-| `prettierFix`   | `fix`          | `*.ts`, `src/**/*.ts`, `src/**/*.tsx`, `*.json`, `*.md` |
+## Pre-defined tasks
 
-Both tasks are handed exactly the files the patterns resolve to: `prettier <files> --check` for
-`prettierCheck`, `prettier <files> --write --list-different` for `prettierFix`. A task whose
-patterns match nothing is `NO-SOURCE`, because `prettier` without a file to work on fails instead of
-doing nothing. `prettierFix` runs after `eslintFix`, so that formatting has the final say over
-ESLint's automatic fixes.
+|      Task       | Default arguments  |                    Default includes                     | Contributes to |
+|-----------------|--------------------|---------------------------------------------------------|----------------|
+| `prettierCheck` | none               | `*.ts`, `src/**/*.ts`, `src/**/*.tsx`, `*.json`, `*.md` | `check`        |
+| `prettierFix`   | `--list-different` | `*.ts`, `src/**/*.ts`, `src/**/*.tsx`, `*.json`, `*.md` | `fix`          |
 
 ## Custom tasks
 
-Both tasks are a `de.cronn.pnpm.task.PrettierTask`, and so is every task a build script registers of
-that type:
+Use `de.cronn.pnpm.task.PrettierTask` to register custom Prettier tasks:
 
 ```kotlin
 import de.cronn.pnpm.task.PrettierTask
@@ -27,8 +21,3 @@ tasks.register<PrettierTask>("prettierDocs") {
   arguments = listOf("--check")
 }
 ```
-
-The `extraArguments` and the `enabled` state of the `prettier` extension apply to it like they do to
-the predefined tasks, and `sources` defaults to the extension's patterns when the task does not set
-it. A task that rewrites its sources should declare `outputs.upToDateWhen { false }` the way
-`prettierFix` does, so that it runs on every invocation.
