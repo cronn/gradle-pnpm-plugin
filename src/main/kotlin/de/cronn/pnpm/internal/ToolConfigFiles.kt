@@ -27,9 +27,11 @@ internal object ToolConfigFiles {
       listOf(".prettierrc.json", ".prettierrc.yaml", ".prettierrc.yml") +
       variants(".prettierrc")
 
-  fun anyPresent(project: Project, fileNames: List<String>): Boolean =
-    fileNames.any { File(project.projectDir, it).isFile }
+  fun anyPresent(project: Project, fileNames: List<String>): Boolean = fileNames.any {
+    File(project.projectDir, it).isFile
+  }
 
-  private fun variants(baseName: String): List<String> =
-    CONFIG_EXTENSIONS.map { extension -> "$baseName.$extension" }
+  private fun variants(baseName: String): List<String> = CONFIG_EXTENSIONS.map { extension ->
+    "$baseName.$extension"
+  }
 }
