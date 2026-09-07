@@ -44,13 +44,12 @@ internal abstract class PnpmOnPathSource : ValueSource<PnpmOnPath, PnpmOnPathSou
         .firstOrNull { it.isFile } ?: return null
 
     val standardOutput = ByteArrayOutputStream()
-    val result =
-      execOperations.exec { spec ->
-        spec.commandLine(candidate.absolutePath, "--version")
-        spec.standardOutput = standardOutput
-        spec.errorOutput = ByteArrayOutputStream()
-        spec.isIgnoreExitValue = true
-      }
+    val result = execOperations.exec { spec ->
+      spec.commandLine(candidate.absolutePath, "--version")
+      spec.standardOutput = standardOutput
+      spec.errorOutput = ByteArrayOutputStream()
+      spec.isIgnoreExitValue = true
+    }
     if (result.exitValue != 0) {
       return null
     }
