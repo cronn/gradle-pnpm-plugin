@@ -1,6 +1,7 @@
 package de.cronn.pnpm.fixture
 
 import java.io.File
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
@@ -8,16 +9,28 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 
 /**
- * Creates a local pnpm "release" archive, so that [de.cronn.pnpm.task.PnpmSetupTask] can be tested
- * against a `file:` URL instead of downloading a real pnpm distribution.
+ * Creates a local pnpm "release", laid out the way the pnpm repository expects it, so that
+ * [de.cronn.pnpm.task.PnpmSetupTask] resolves a fixture instead of a real pnpm distribution.
  */
 object PnpmArchiveFixture {
 
   /**
-   * Writes an archive for [version] in the archive format the plugin expects on this platform.
+   * Platform part of a release asset name for the machine running the tests. Mirrors
+   * `PnpmPlatform`, which is internal to the plugin and therefore not visible from this source set.
+   */
+  val platformIdentifier: String = "${osFamily()}-${architecture()}"
+
+  val archiveExtension: String = if (PnpmStub.isWindows) "zip" else "tar.gz"
+
+  /** Name of the release asset for this platform, for example `pnpm-linux-x64.tar.gz`. */
+  val assetName: String = "pnpm-$platformIdentifier.$archiveExtension"
+
+  /**
+   * Writes the release of [version] into [directory], under the `v<version>/<asset>` path the Ivy
+   * pattern of the pnpm repository resolves against.
    *
    * @param entries file name to content; defaults to a recording pnpm stub.
-   * @return the URL to configure as the `archiveUrl` of the `pnpmSetup` task.
+   * @return the URL of [directory], to be used as the URL of the pnpm repository.
    */
   fun writeRelease(
     directory: File,
@@ -25,13 +38,9 @@ object PnpmArchiveFixture {
     entries: Map<String, String> = defaultEntries(),
   ): String {
     val releaseDirectory = File(directory, "v$version").apply { mkdirs() }
-    val archive =
-      if (PnpmStub.isWindows) {
-        File(releaseDirectory, "pnpm-win32.zip").also { writeZip(it, entries) }
-      } else {
-        File(releaseDirectory, "pnpm-linux.tar.gz").also { writeTarGz(it, entries) }
-      }
-    return archive.toURI().toString()
+    val archive = File(releaseDirectory, assetName)
+    if (PnpmStub.isWindows) writeZip(archive, entries) else writeTarGz(archive, entries)
+    return directory.toURI().toString()
   }
 
   /** A pnpm stub that logs its arguments next to itself, mirroring [PnpmStub]. */
@@ -72,4 +81,20 @@ object PnpmArchiveFixture {
   }
 
   private const val EXECUTABLE_MODE = 0b111_101_101
+
+  private fun osFamily(): String {
+    val osName = System.getProperty("os.name").lowercase(Locale.ROOT)
+    return when {
+      osName.startsWith("windows") -> "win32"
+      osName.startsWith("mac") || osName.contains("darwin") -> "darwin"
+      else -> "linux"
+    }
+  }
+
+  private fun architecture(): String =
+    when (System.getProperty("os.arch").lowercase(Locale.ROOT)) {
+      "aarch64",
+      "arm64" -> "arm64"
+      else -> "x64"
+    }
 }

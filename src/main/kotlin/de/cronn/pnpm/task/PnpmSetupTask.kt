@@ -1,24 +1,28 @@
 package de.cronn.pnpm.task
 
 import java.io.File
-import java.net.URI
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ArchiveOperations
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
-/** Downloads a self-contained pnpm distribution and extracts it into [installDirectory]. */
+/** Extracts a self-contained pnpm distribution into [installDirectory]. */
 @DisableCachingByDefault(
   because =
-    "Downloading and extracting a pnpm distribution is not worth transporting through a build cache."
+    "Extracting a pnpm distribution that already sits in the dependency cache is not worth " +
+      "transporting through a build cache."
 )
 public abstract class PnpmSetupTask : DefaultTask() {
 
@@ -26,14 +30,22 @@ public abstract class PnpmSetupTask : DefaultTask() {
 
   @get:Inject protected abstract val archiveOperations: ArchiveOperations
 
-  /** URL of the pnpm release archive to download. */
-  @get:Input public abstract val archiveUrl: Property<String>
+  /**
+   * The pnpm distribution archive, normally resolved from the repository a build registers with
+   * `repositories { pnpm() }`.
+   *
+   * Only the content of the archive matters: it lives in the shared dependency cache, under a path
+   * that differs from machine to machine, so the path itself is not part of the input.
+   */
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.NONE)
+  public abstract val distributionArchive: ConfigurableFileCollection
 
   /** Name of the pnpm executable inside the archive. */
   @get:Input public abstract val executableName: Property<String>
 
   /**
-   * Whether pnpm actually has to be downloaded. Read by an `onlyIf` spec, which the configuration
+   * Whether pnpm actually has to be installed. Read by an `onlyIf` spec, which the configuration
    * cache serializes -- so the decision is carried by the task rather than captured in the spec.
    */
   @get:Internal public abstract val required: Property<Boolean>
@@ -47,42 +59,32 @@ public abstract class PnpmSetupTask : DefaultTask() {
 
   @TaskAction
   public fun install() {
-    val url = archiveUrl.get()
-    val archive = File(temporaryDir, url.substringAfterLast('/'))
-
-    download(url, archive)
+    val archive = resolveArchive()
+    logger.info("Extracting {} into {}", archive, installDirectory.get().asFile)
     extract(archive)
-    archive.delete()
 
-    val executable = findExecutable()
+    val executable = findExecutable(archive)
     if (!executable.setExecutable(true) && !executable.canExecute()) {
       logger.warn("Could not mark {} as executable", executable)
     }
     logger.info("Installed pnpm at {}", executable)
   }
 
-  private fun download(url: String, archive: File) {
-    logger.lifecycle("Downloading $url")
-    // Downloaded to a side file first: an aborted download must not leave a truncated archive
-    // behind that a later invocation would happily try to extract.
-    val partial = File(archive.parentFile, "${archive.name}.part")
-    partial.delete()
-
-    val connection = URI(url).toURL().openConnection()
-    connection.connectTimeout = CONNECT_TIMEOUT_MILLIS
-    connection.readTimeout = READ_TIMEOUT_MILLIS
-    try {
-      connection.getInputStream().use { input ->
-        partial.outputStream().use { output -> input.copyTo(output) }
-      }
-    } catch (e: java.io.IOException) {
-      partial.delete()
-      throw GradleException("Failed to download pnpm from $url", e)
-    }
-
-    archive.delete()
-    if (!partial.renameTo(archive)) {
-      throw GradleException("Failed to move $partial to $archive")
+  private fun resolveArchive(): File {
+    val archives = distributionArchive.files
+    return when (archives.size) {
+      1 -> archives.single()
+      0 ->
+        throw GradleException(
+          "No pnpm distribution archive was resolved. Register the repository that serves it with " +
+            "`repositories { pnpm() }`, or point the build at an existing pnpm with " +
+            "`pnpm { executable = ... }`."
+        )
+      else ->
+        throw GradleException(
+          "Expected a single pnpm distribution archive, but resolved " +
+            archives.joinToString(", ") { it.name }
+        )
     }
   }
 
@@ -94,6 +96,7 @@ public abstract class PnpmSetupTask : DefaultTask() {
         archiveOperations.tarTree(archiveOperations.gzip(archive))
       }
 
+    // The archive is never deleted afterwards: it belongs to the dependency cache now.
     fileSystemOperations.sync { spec ->
       spec.from(archiveTree)
       spec.into(installDirectory)
@@ -104,7 +107,7 @@ public abstract class PnpmSetupTask : DefaultTask() {
    * pnpm currently publishes flat archives, but the layout is not part of any contract, so the
    * executable is searched for instead of assumed at the root.
    */
-  private fun findExecutable(): File {
+  private fun findExecutable(archive: File): File {
     val name = executableName.get()
     val root = installDirectory.get().asFile
     val direct = File(root, name)
@@ -126,13 +129,8 @@ public abstract class PnpmSetupTask : DefaultTask() {
         .joinToString(", ")
         .ifEmpty { "<nothing>" }
     throw GradleException(
-      "Expected a pnpm executable named '$name' after extracting ${archiveUrl.get()}, " +
+      "Expected a pnpm executable named '$name' after extracting ${archive.name}, " +
         "but the archive contained: $extracted"
     )
-  }
-
-  private companion object {
-    const val CONNECT_TIMEOUT_MILLIS = 30_000
-    const val READ_TIMEOUT_MILLIS = 120_000
   }
 }

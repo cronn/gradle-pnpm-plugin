@@ -1,6 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.fixture.PnpmArchiveFixture
+import de.cronn.pnpm.fixture.PnpmStub
 import java.io.File
 import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
@@ -31,6 +33,42 @@ class PnpmGradleVersionFunctionalTest {
 
     assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(result.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  /**
+   * Resolving the pnpm distribution touches the dependency management APIs that changed most
+   * between Gradle versions, so it gets its own case in this tier.
+   */
+  @ParameterizedTest(name = "Gradle {0}", allowZeroInvocations = true)
+  @MethodSource("gradleVersions")
+  fun `resolves and extracts pnpm on the given gradle version`(
+    gradleVersion: String,
+    @TempDir releaseDirectory: File,
+  ) {
+    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(
+      imports = listOf("de.cronn.pnpm.pnpm"),
+      rootBuildScript =
+        """
+        repositories {
+          pnpm { setUrl("$url") }
+        }
+        """
+          .trimIndent(),
+      pnpmConfiguration = "preferPnpmOnPath = false",
+    )
+
+    val result = fixture.runner("pnpmSetup").withGradleVersion(gradleVersion).build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(
+        fixture.directory(
+          ".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/" +
+            if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
+        )
+      )
+      .isFile()
   }
 
   companion object {

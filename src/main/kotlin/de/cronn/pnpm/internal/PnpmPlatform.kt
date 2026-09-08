@@ -20,10 +20,16 @@ internal class PnpmPlatform(osName: String, osArch: String) {
   val isWindows: Boolean
     get() = family == Family.WINDOWS
 
-  /** Platform part of a pnpm release asset name, for example `linux-arm64`. */
+  /**
+   * Platform part of a pnpm release asset name, for example `linux-arm64`. Used as the classifier
+   * of the dependency the pnpm distribution is resolved as.
+   */
   val identifier: String = "${family.identifier}-$architecture"
 
-  /** File extension of the pnpm release asset for this platform. */
+  /**
+   * File extension of the pnpm release asset for this platform. Used as the extension of the
+   * dependency the pnpm distribution is resolved as.
+   */
   val archiveExtension: String = if (isWindows) "zip" else "tar.gz"
 
   /** Name of the pnpm executable inside an extracted pnpm release archive. */
@@ -78,11 +84,5 @@ internal class PnpmPlatform(osName: String, osArch: String) {
     /** The platform of the JVM running Gradle. */
     fun current(): PnpmPlatform =
       PnpmPlatform(System.getProperty("os.name").orEmpty(), System.getProperty("os.arch").orEmpty())
-
-    /** URL of the self-contained pnpm distribution for [platform]. */
-    fun archiveUrl(version: String, platform: PnpmPlatform): String =
-      "$DOWNLOAD_BASE_URL/v$version/pnpm-${platform.identifier}.${platform.archiveExtension}"
-
-    private const val DOWNLOAD_BASE_URL = "https://github.com/pnpm/pnpm/releases/download"
   }
 }
