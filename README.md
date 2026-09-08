@@ -6,8 +6,8 @@ build.
 The pnpm version is pinned once, in the `devEngines` field of `package.json`, and pnpm itself
 enforces that pin. The plugin's job is just to make sure *some* pnpm is available to run in the
 first place — on a fresh checkout or CI runner, nothing is installed yet. It bootstraps a pnpm from
-`PATH` or a plugin-bundled download, then lets pnpm's own version resolution, lockfile checks and
-checksum verification take it from there. It also installs the workspace dependencies and exposes
+`PATH` or from a pnpm distribution it resolves like any other dependency, then lets pnpm's own
+version resolution, lockfile checks and checksum verification take it from there. It also installs the workspace dependencies and exposes
 pre-defined tasks for common tools like TypeScript, Prettier and ESLint.
 
 Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 and arm64.
@@ -46,16 +46,61 @@ plugins {
 }
 ```
 
+### The pnpm repository
+
+The plugin resolves the pnpm distribution as an ordinary dependency, `pnpm:pnpm:<version>`, so it
+goes through the dependency cache, dependency verification, dependency locking and the proxy
+settings of your build. It does not register the repository that serves it — which repositories a
+build resolves from is the decision of that build. Declare it in the workspace root:
+
+```kotlin
+// build.gradle.kts
+import de.cronn.pnpm.pnpm
+
+repositories {
+  pnpm()
+}
+```
+
+or centrally, in the settings script — the plugin has to be on its classpath for that:
+
+```kotlin
+// settings.gradle.kts
+import de.cronn.pnpm.pnpm
+
+plugins {
+  id("de.cronn.gradle-pnpm-plugin") version "<version>" apply false
+}
+
+dependencyResolutionManagement {
+  repositories { pnpm() }
+}
+```
+
+`pnpm()` returns the repository it created and takes an optional configuration action, so an
+internal mirror of the pnpm releases is a one-liner:
+
+```kotlin
+repositories {
+  pnpm { setUrl("https://artifacts.example.com/github/pnpm/pnpm/releases/download/") }
+}
+```
+
+To pin the archive by checksum, run `./gradlew pnpmSetup --write-verification-metadata sha256` and
+commit `gradle/verification-metadata.xml`. Dependency locking applies to the
+`pnpmDistributionArchive` configuration; write its lock state with `preferPnpmOnPath = false`, so
+that the distribution is actually resolved.
+
 ## Workspace tasks
 
 Registered on the workspace root, in the `pnpm` group:
 
-|     Task      |                             Description                              |
-|---------------|-----------------------------------------------------------------------|
-| `pnpmSetup`   | Downloads and extracts the pinned pnpm, if needed.                    |
-| `pnpmInstall` | Runs `pnpm install`.                                                   |
-| `pnpmDedupe`  | Runs `pnpm dedupe`.                                                     |
-| `pnpmClean`   | Runs `pnpm clean`.                                                      |
+|     Task      |                    Description                    |
+|---------------|---------------------------------------------------|
+| `pnpmSetup`   | Resolves and extracts the pinned pnpm, if needed. |
+| `pnpmInstall` | Runs `pnpm install`.                              |
+| `pnpmDedupe`  | Runs `pnpm dedupe`.                               |
+| `pnpmClean`   | Runs `pnpm clean`.                                |
 
 Every task that runs pnpm depends on `pnpmSetup`, and every task that runs against the installed
 workspace additionally depends on `pnpmInstall`.
@@ -78,8 +123,10 @@ pnpm {
 The `pnpm` extension is created on the workspace root and shared by the whole workspace, so
 configure it once, in the build script of the workspace root.
 
-In CI, cache the workspace root's `.gradle/pnpm` (or set `installDirectory` to a location you
-already cache), and pnpm's own download cache, to avoid downloading pnpm on every run.
+In CI, the pnpm distribution comes out of the Gradle dependency cache, so caching
+`~/.gradle/caches/modules-2` is enough to avoid downloading it on every run. Caching the workspace
+root's `.gradle/pnpm` (or an `installDirectory` you already cache) additionally skips the
+extraction, and caching pnpm's own download cache skips the package downloads.
 
 ## Package tasks
 
@@ -146,13 +193,26 @@ tasks.register<PnpmRunTask>("buildFrontend") {
 ./gradlew publishToMavenLocal                                   # publish to the local Maven repository
 ```
 
-To try out uncommitted changes in a real build, include this repository as a composite build in the
-target project's `settings.gradle.kts`:
+To try out uncommitted changes in a real build, run `./gradlew publishToMavenLocal` and add the following configuration to the target project's `settings.gradle.kts`:
 
 ```kotlin
 // settings.gradle.kts
+import de.cronn.pnpm.pnpm
+
 pluginManagement {
-  includeBuild("../gradle-pnpm-plugin")
+  repositories {
+    mavenLocal()
+  }
+}
+
+plugins {
+  id("de.cronn.gradle-pnpm-plugin") version "0.0.0-SNAPSHOT" apply false
+}
+
+dependencyResolutionManagement {
+  repositories {
+    pnpm()
+  }
 }
 ```
 

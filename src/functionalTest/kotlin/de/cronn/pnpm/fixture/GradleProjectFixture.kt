@@ -16,6 +16,8 @@ class GradleProjectFixture(val rootDirectory: File) {
    */
   fun writeWorkspace(
     packages: List<String> = emptyList(),
+    /** Imports of the root build script; they have to precede the `plugins` block. */
+    imports: List<String> = emptyList(),
     rootBuildScript: String = "",
     packageBuildScript: String = "",
     /** The pinned pnpm version, or `null` to fall back to the plugin's default version. */
@@ -30,6 +32,8 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "build.gradle.kts",
       """
+      ${imports.joinToString("\n      ") { "import $it" }}
+
       plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       pnpm {

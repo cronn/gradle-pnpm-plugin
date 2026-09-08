@@ -1,5 +1,6 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmOnPath
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
@@ -67,9 +68,9 @@ public class PnpmPlugin : Plugin<Project> {
     }
 
     if (layout.isWorkspaceRoot) {
-      val archiveUrl =
-        workspace.version.map { version -> PnpmPlatform.archiveUrl(version, platform) }
-      PnpmWorkspaceTasks(target, workspace, resolution, archiveUrl, TASK_GROUP).register()
+      val distributionArchive =
+        PnpmDistribution.register(target, workspace.version, platform, resolution.usesManagedPnpm)
+      PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
     }
 
     registerToolTasks(target)

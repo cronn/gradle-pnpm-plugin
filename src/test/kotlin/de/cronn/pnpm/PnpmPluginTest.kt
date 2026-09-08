@@ -1,5 +1,7 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.PnpmDistribution
+import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
@@ -13,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -82,21 +85,18 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `derives the install directory and the archive url from the default version`(
+  fun `derives the install directory and the distribution from the default version`(
     @TempDir directory: File
   ) {
     val project = workspaceProject(directory)
 
     assertThat(extension(project).installDirectory.get().asFile)
       .isEqualTo(File(project.projectDir, ".gradle/pnpm/${PnpmPlugin.DEFAULT_PNPM_VERSION}"))
-    assertThat(setupTask(project).archiveUrl.get())
-      .startsWith(
-        "https://github.com/pnpm/pnpm/releases/download/v${PnpmPlugin.DEFAULT_PNPM_VERSION}/pnpm-"
-      )
+    assertThat(distributionDependency(project).version).isEqualTo(PnpmPlugin.DEFAULT_PNPM_VERSION)
   }
 
   @Test
-  fun `derives the install directory and the archive url from an explicitly configured version`(
+  fun `derives the install directory and the distribution from a configured version`(
     @TempDir directory: File
   ) {
     val project = workspaceProject(directory)
@@ -104,8 +104,61 @@ class PnpmPluginTest {
 
     assertThat(extension(project).installDirectory.get().asFile)
       .isEqualTo(File(project.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
-    assertThat(setupTask(project).archiveUrl.get())
-      .startsWith("https://github.com/pnpm/pnpm/releases/download/v$PNPM_VERSION/pnpm-")
+
+    val dependency = distributionDependency(project)
+    assertThat(dependency.group).isEqualTo(PNPM_GROUP)
+    assertThat(dependency.name).isEqualTo(PNPM_MODULE)
+    assertThat(dependency.version).isEqualTo(PNPM_VERSION)
+    assertThat(dependency.isTransitive).isFalse()
+
+    val platform = PnpmPlatform.current()
+    val artifact = dependency.artifacts.single()
+    assertThat(artifact.name).isEqualTo(PNPM_MODULE)
+    assertThat(artifact.classifier).isEqualTo(platform.identifier)
+    assertThat(artifact.extension).isEqualTo(platform.archiveExtension)
+  }
+
+  @Test
+  fun `declares the distribution configurations only on the workspace root`(
+    @TempDir directory: File
+  ) {
+    val project = packageProject(directory)
+
+    assertThat(project.configurations.names)
+      .doesNotContain(
+        PnpmDistribution.DECLARED_CONFIGURATION_NAME,
+        PnpmDistribution.ARCHIVE_CONFIGURATION_NAME,
+      )
+    assertThat(project.rootProject.configurations.names)
+      .contains(
+        PnpmDistribution.DECLARED_CONFIGURATION_NAME,
+        PnpmDistribution.ARCHIVE_CONFIGURATION_NAME,
+      )
+  }
+
+  /**
+   * Which repositories a build resolves from is the decision of that build: the plugin only offers
+   * `repositories { pnpm() }`.
+   */
+  @Test
+  fun `registers no repository`(@TempDir directory: File) {
+    val project = workspaceProject(directory)
+
+    assertThat(project.repositories).isEmpty()
+  }
+
+  /**
+   * The setup task has nothing to resolve when pnpm comes from somewhere else. The configuration
+   * cache resolves the inputs of a task while it stores the entry, before any `onlyIf` runs, so an
+   * empty input is what keeps such a build from needing a repository at all.
+   */
+  @Test
+  fun `resolves no distribution when pnpm is not managed by the plugin`(@TempDir directory: File) {
+    val project = workspaceProject(directory)
+    extension(project).executable.set("/usr/local/bin/pnpm")
+
+    assertThat(setupTask(project).distributionArchive.isEmpty).isTrue()
+    assertThat(setupTask(project).required.get()).isFalse()
   }
 
   @Test
@@ -398,6 +451,12 @@ class PnpmPluginTest {
     assertThat(typescript(project).enabled.get()).isTrue()
     assertThat(dependencyNames(project.tasks.getByName("check"))).contains("compileTypescript")
   }
+
+  private fun distributionDependency(project: Project): ExternalModuleDependency =
+    project.rootProject.configurations
+      .getByName(PnpmDistribution.DECLARED_CONFIGURATION_NAME)
+      .dependencies
+      .single() as ExternalModuleDependency
 
   private fun setupTask(project: Project): PnpmSetupTask =
     project.tasks.getByName("pnpmSetup") as PnpmSetupTask
