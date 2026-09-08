@@ -1,6 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.fixture.PnpmArchiveFixture
+import de.cronn.pnpm.fixture.PnpmStub
 import java.io.File
 import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +22,8 @@ class PnpmGradleVersionFunctionalTest {
 
   @TempDir lateinit var projectDirectory: File
 
+  @TempDir lateinit var releaseDirectory: File
+
   @ParameterizedTest(name = "Gradle {0}", allowZeroInvocations = true)
   @MethodSource("gradleVersions")
   fun `builds a workspace on the given gradle version`(gradleVersion: String) {
@@ -31,6 +35,30 @@ class PnpmGradleVersionFunctionalTest {
 
     assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(result.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  /**
+   * Provisioning pnpm reaches further into Gradle's API than the rest of the plugin does -- a
+   * detached resolver, a resolvable configuration and an Ivy repository with a pattern layout -- so
+   * it is worth resolving an actual distribution on every supported Gradle version.
+   */
+  @ParameterizedTest(name = "Gradle {0}", allowZeroInvocations = true)
+  @MethodSource("gradleVersions")
+  fun `provisions pnpm on the given gradle version`(gradleVersion: String) {
+    val baseUrl =
+      PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(pnpmConfiguration = "preferPnpmOnPath = false")
+    fixture.write("gradle.properties", "de.cronn.pnpm.distributionBaseUrl=$baseUrl")
+
+    val result = fixture.runner("pnpmSetup").withGradleVersion(gradleVersion).build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    val executableName = if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
+    assertThat(
+        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName")
+      )
+      .isFile()
   }
 
   companion object {

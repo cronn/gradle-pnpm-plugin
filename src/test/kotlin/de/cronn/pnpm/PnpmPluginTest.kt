@@ -1,5 +1,6 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
@@ -82,21 +83,15 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `derives the install directory and the archive url from the default version`(
-    @TempDir directory: File
-  ) {
+  fun `derives the install directory from the default version`(@TempDir directory: File) {
     val project = workspaceProject(directory)
 
     assertThat(extension(project).installDirectory.get().asFile)
       .isEqualTo(File(project.projectDir, ".gradle/pnpm/${PnpmPlugin.DEFAULT_PNPM_VERSION}"))
-    assertThat(setupTask(project).archiveUrl.get())
-      .startsWith(
-        "https://github.com/pnpm/pnpm/releases/download/v${PnpmPlugin.DEFAULT_PNPM_VERSION}/pnpm-"
-      )
   }
 
   @Test
-  fun `derives the install directory and the archive url from an explicitly configured version`(
+  fun `derives the install directory from an explicitly configured version`(
     @TempDir directory: File
   ) {
     val project = workspaceProject(directory)
@@ -104,8 +99,15 @@ class PnpmPluginTest {
 
     assertThat(extension(project).installDirectory.get().asFile)
       .isEqualTo(File(project.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
-    assertThat(setupTask(project).archiveUrl.get())
-      .startsWith("https://github.com/pnpm/pnpm/releases/download/v$PNPM_VERSION/pnpm-")
+  }
+
+  @Test
+  fun `tells the setup task what to extract for the current platform`(@TempDir directory: File) {
+    val project = workspaceProject(directory)
+    val platform = PnpmPlatform.current()
+
+    assertThat(setupTask(project).archiveExtension.get()).isEqualTo(platform.archiveExtension)
+    assertThat(setupTask(project).executableName.get()).isEqualTo(platform.executableName)
   }
 
   @Test

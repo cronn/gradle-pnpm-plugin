@@ -22,10 +22,12 @@ class GradleProjectFixture(val rootDirectory: File) {
     pnpmVersion: String? = PNPM_VERSION,
     /** Body of the `pnpm { }` block; defaults to pointing the build at the stub. */
     pnpmConfiguration: String? = null,
+    /** Appended to `settings.gradle.kts`, for repository and dependency locking settings. */
+    settingsScript: String = "",
   ) {
     stubExecutable = stub.install()
 
-    writeSettings(rootProjectName = "workspace", projects = packages)
+    writeSettings(rootProjectName = "workspace", projects = packages, script = settingsScript)
     writePackageRoot("", packages)
     write(
       "build.gradle.kts",
@@ -75,12 +77,18 @@ class GradleProjectFixture(val rootDirectory: File) {
     packages.forEach { name -> writePackage("$workspaceRoot/$name") }
   }
 
-  private fun writeSettings(rootProjectName: String, projects: List<String>) {
+  private fun writeSettings(
+    rootProjectName: String,
+    projects: List<String>,
+    script: String = "",
+  ) {
     write(
       "settings.gradle.kts",
       """
       rootProject.name = "$rootProjectName"
       ${projects.joinToString("\n") { "include(\"$it\")" }}
+
+      $script
       """,
     )
   }

@@ -8,16 +8,19 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 
 /**
- * Creates a local pnpm "release" archive, so that [de.cronn.pnpm.task.PnpmSetupTask] can be tested
- * against a `file:` URL instead of downloading a real pnpm distribution.
+ * Creates a local mirror of the pnpm releases, so that the provisioning can be tested against a
+ * `file:` URL instead of downloading a real pnpm distribution.
+ *
+ * The layout has to match the artifact pattern of the repository the plugin declares, because
+ * Gradle -- not the plugin -- builds the asset path from the requested coordinates.
  */
 object PnpmArchiveFixture {
 
   /**
-   * Writes an archive for [version] in the archive format the plugin expects on this platform.
+   * Writes a pnpm release for [version] into [directory], in the layout the plugin resolves from.
    *
    * @param entries file name to content; defaults to a recording pnpm stub.
-   * @return the URL to configure as the `archiveUrl` of the `pnpmSetup` task.
+   * @return the URL to configure as the pnpm distribution base url.
    */
   fun writeRelease(
     directory: File,
@@ -25,14 +28,36 @@ object PnpmArchiveFixture {
     entries: Map<String, String> = defaultEntries(),
   ): String {
     val releaseDirectory = File(directory, "v$version").apply { mkdirs() }
-    val archive =
-      if (PnpmStub.isWindows) {
-        File(releaseDirectory, "pnpm-win32.zip").also { writeZip(it, entries) }
-      } else {
-        File(releaseDirectory, "pnpm-linux.tar.gz").also { writeTarGz(it, entries) }
-      }
-    return archive.toURI().toString()
+    val archive = File(releaseDirectory, "pnpm-$IDENTIFIER.$ARCHIVE_EXTENSION")
+    if (PnpmStub.isWindows) writeZip(archive, entries) else writeTarGz(archive, entries)
+    return directory.toURI().toString()
   }
+
+  /**
+   * The platform part of a pnpm release asset name, duplicated from
+   * `de.cronn.pnpm.internal.PnpmPlatform` -- which is `internal`, so it is not visible from this
+   * source set. `PnpmPlatform` remains the source of truth; this only has to agree with it for the
+   * platform the tests actually run on.
+   */
+  private val IDENTIFIER: String = buildString {
+    append(
+      when {
+        PnpmStub.isWindows -> "win32"
+        System.getProperty("os.name").orEmpty().lowercase().startsWith("mac") -> "darwin"
+        else -> "linux"
+      }
+    )
+    append('-')
+    append(
+      when (System.getProperty("os.arch").orEmpty().lowercase()) {
+        "aarch64",
+        "arm64" -> "arm64"
+        else -> "x64"
+      }
+    )
+  }
+
+  private val ARCHIVE_EXTENSION: String = if (PnpmStub.isWindows) "zip" else "tar.gz"
 
   /** A pnpm stub that logs its arguments next to itself, mirroring [PnpmStub]. */
   fun defaultEntries(): Map<String, String> =

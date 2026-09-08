@@ -71,19 +71,6 @@ class PnpmPlatformTest {
     assertThat(platform.executableNamesOnPath).containsExactly("pnpm.exe", "pnpm.cmd", "pnpm.bat")
   }
 
-  @ParameterizedTest
-  @CsvSource(
-    "Linux, amd64, pnpm-linux-x64.tar.gz",
-    "Mac OS X, aarch64, pnpm-darwin-arm64.tar.gz",
-    "Windows 11, amd64, pnpm-win32-x64.zip",
-  )
-  fun `builds the release archive url`(osName: String, osArch: String, expectedAsset: String) {
-    val url = PnpmPlatform.archiveUrl("11.23.0", PnpmPlatform(osName, osArch))
-
-    assertThat(url)
-      .isEqualTo("https://github.com/pnpm/pnpm/releases/download/v11.23.0/$expectedAsset")
-  }
-
   @Test
   @DisabledOnOs(OS.WINDOWS)
   fun `finds an executable pnpm on the path`(@TempDir directory: File) {

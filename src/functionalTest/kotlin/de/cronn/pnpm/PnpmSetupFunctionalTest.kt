@@ -61,15 +61,34 @@ class PnpmSetupFunctionalTest {
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
   }
 
+  /**
+   * The configuration cache resolves every file collection reachable from a task while it
+   * serializes the task graph, which happens before any `onlyIf` spec runs. A build that already
+   * has a usable pnpm must not resolve the distribution at all, which an unreachable base url
+   * proves: resolving it would fail the build.
+   */
+  @Test
+  fun `does not resolve the pnpm distribution when a matching pnpm is configured`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace()
+
+    val result =
+      fixture
+        .runner("pnpmSetup", "-P$BASE_URL_PROPERTY=${File(releaseDirectory, "absent").toURI()}")
+        .build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+  }
+
   @Test
   fun `reports what the archive contained when pnpm is missing from it`() {
-    val archiveUrl =
+    val baseUrl =
       PnpmArchiveFixture.writeRelease(
         releaseDirectory,
         GradleProjectFixture.PNPM_VERSION,
         entries = mapOf("README.md" to "no pnpm here\n", "bin/other" to "nope\n"),
       )
-    val fixture = workspaceWithLocalRelease(archiveUrl)
+    val fixture = workspaceWithLocalRelease(baseUrl)
 
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
@@ -79,13 +98,14 @@ class PnpmSetupFunctionalTest {
   }
 
   @Test
-  fun `fails with a readable message when the archive cannot be downloaded`() {
-    val fixture =
-      workspaceWithLocalRelease(File(releaseDirectory, "missing.tar.gz").toURI().toString())
+  fun `fails with a readable message when the pnpm distribution cannot be resolved`() {
+    val empty = File(releaseDirectory, "empty").apply { mkdirs() }
+    val fixture = workspaceWithLocalRelease(empty.toURI().toString())
 
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
-    assertThat(result.output).contains("Failed to download pnpm from")
+    assertThat(result.output)
+      .contains("Could not find com.pnpm:pnpm:${GradleProjectFixture.PNPM_VERSION}")
   }
 
   @Test
@@ -110,6 +130,72 @@ class PnpmSetupFunctionalTest {
     }
   }
 
+  /** The repository the plugin declares is detached, so this mode does not apply to it. */
+  @Test
+  fun `provisions pnpm when the build forbids project repositories`() {
+    val fixture =
+      workspaceWithLocalRelease(
+        settingsScript =
+          """
+          dependencyResolutionManagement {
+            repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+            repositories { mavenCentral() }
+          }
+          """
+            .trimIndent()
+      )
+
+    val result = fixture.runner("pnpmSetup").build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  /**
+   * In the default repositories mode, repositories declared in settings are consulted only while a
+   * project declares none -- so a project repository added by the plugin would silently break the
+   * resolution of everything else in the workspace root.
+   */
+  @Test
+  fun `leaves the repositories declared in settings alone`() {
+    val fixture =
+      workspaceWithLocalRelease(
+        settingsScript =
+          """
+          dependencyResolutionManagement { repositories { mavenCentral() } }
+          """
+            .trimIndent(),
+        rootBuildScript =
+          """
+          val other: Configuration by configurations.creating
+          dependencies { other("org.apache.commons:commons-lang3:3.20.0") }
+
+          tasks.register("resolveOther") {
+            val files = other.incoming.files
+            doLast { logger.lifecycle("resolved " + files.files.single().name) }
+          }
+          """
+            .trimIndent(),
+      )
+
+    val result = fixture.runner("pnpmSetup", "resolveOther").build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(result.output).contains("resolved commons-lang3-3.20.0.jar")
+  }
+
+  /** The detached configuration is not reached by the locking the build applies to its own. */
+  @Test
+  fun `does not add the pnpm distribution to the dependency locks`() {
+    val fixture =
+      workspaceWithLocalRelease(rootBuildScript = "dependencyLocking { lockAllConfigurations() }")
+
+    fixture.runner("pnpmSetup", "--write-locks").build()
+
+    val lockfiles =
+      fixture.rootDirectory.walkTopDown().filter { it.isFile && it.name.endsWith(".lockfile") }
+    assertThat(lockfiles.map { it.readText() }.toList()).noneMatch { it.contains("com.pnpm") }
+  }
+
   /** Tail of the path of the pnpm the plugin downloads, independent of the temporary directory. */
   private val downloadedExecutablePath: String
     get() =
@@ -120,23 +206,28 @@ class PnpmSetupFunctionalTest {
     get() = if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
 
   /**
-   * A workspace whose `pnpmSetup` downloads from a local archive. The archive URL is configured on
-   * the task, which is where a build overrides the pnpm release the plugin derives from the pinned
-   * version.
+   * A workspace whose `pnpmSetup` resolves pnpm from a local mirror of the pnpm releases, pointed
+   * at through the Gradle property that also serves real mirrors and air-gapped builds.
    */
-  private fun workspaceWithLocalRelease(archiveUrl: String? = null): GradleProjectFixture {
+  private fun workspaceWithLocalRelease(
+    baseUrl: String? = null,
+    rootBuildScript: String = "",
+    settingsScript: String = "",
+  ): GradleProjectFixture {
     val url =
-      archiveUrl
+      baseUrl
         ?: PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(
-      rootBuildScript =
-        """
-        tasks.named<de.cronn.pnpm.task.PnpmSetupTask>("pnpmSetup") { archiveUrl = "$url" }
-        """
-          .trimIndent(),
+      rootBuildScript = rootBuildScript,
       pnpmConfiguration = "preferPnpmOnPath = false",
+      settingsScript = settingsScript,
     )
+    fixture.write("gradle.properties", "$BASE_URL_PROPERTY=$url")
     return fixture
+  }
+
+  private companion object {
+    const val BASE_URL_PROPERTY = "de.cronn.pnpm.distributionBaseUrl"
   }
 }

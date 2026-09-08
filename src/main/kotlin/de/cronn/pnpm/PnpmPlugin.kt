@@ -1,5 +1,6 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmOnPath
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
@@ -39,6 +40,10 @@ import org.gradle.util.GradleVersion
  * cross project boundaries -- provisioning pnpm and installing the workspace -- are expressed as
  * task paths ([PnpmExtension.setupTaskPath], [PnpmExtension.installTaskPath]) rather than as
  * cross-project task references, so that the plugin does not mutate another project's model.
+ *
+ * The pnpm distribution itself is resolved as a Gradle dependency, from a repository the plugin
+ * declares on a resolver detached from the project -- see [PnpmDistribution] for why it must not be
+ * a project repository.
  */
 public class PnpmPlugin : Plugin<Project> {
 
@@ -67,9 +72,16 @@ public class PnpmPlugin : Plugin<Project> {
     }
 
     if (layout.isWorkspaceRoot) {
-      val archiveUrl =
-        workspace.version.map { version -> PnpmPlatform.archiveUrl(version, platform) }
-      PnpmWorkspaceTasks(target, workspace, resolution, archiveUrl, TASK_GROUP).register()
+      val distribution = PnpmDistribution(target, workspace, platform)
+      PnpmWorkspaceTasks(
+          target,
+          workspace,
+          resolution,
+          distribution.archive(resolution.usesManagedPnpm),
+          platform.archiveExtension,
+          TASK_GROUP,
+        )
+        .register()
     }
 
     registerToolTasks(target)

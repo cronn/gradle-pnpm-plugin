@@ -6,8 +6,8 @@ build.
 The pnpm version is pinned once, in the `devEngines` field of `package.json`, and pnpm itself
 enforces that pin. The plugin's job is just to make sure *some* pnpm is available to run in the
 first place — on a fresh checkout or CI runner, nothing is installed yet. It bootstraps a pnpm from
-`PATH` or a plugin-bundled download, then lets pnpm's own version resolution, lockfile checks and
-checksum verification take it from there. It also installs the workspace dependencies and exposes
+`PATH` or, failing that, from the pnpm releases resolved as an ordinary Gradle dependency, then lets
+pnpm's own version resolution, lockfile checks and checksum verification take it from there. It also installs the workspace dependencies and exposes
 pre-defined tasks for common tools like TypeScript, Prettier and ESLint.
 
 Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 and arm64.
@@ -50,12 +50,12 @@ plugins {
 
 Registered on the workspace root, in the `pnpm` group:
 
-|     Task      |                             Description                              |
-|---------------|-----------------------------------------------------------------------|
-| `pnpmSetup`   | Downloads and extracts the pinned pnpm, if needed.                    |
-| `pnpmInstall` | Runs `pnpm install`.                                                   |
-| `pnpmDedupe`  | Runs `pnpm dedupe`.                                                     |
-| `pnpmClean`   | Runs `pnpm clean`.                                                      |
+|     Task      |              Description               |
+|---------------|----------------------------------------|
+| `pnpmSetup`   | Provisions the pinned pnpm, if needed. |
+| `pnpmInstall` | Runs `pnpm install`.                   |
+| `pnpmDedupe`  | Runs `pnpm dedupe`.                    |
+| `pnpmClean`   | Runs `pnpm clean`.                     |
 
 Every task that runs pnpm depends on `pnpmSetup`, and every task that runs against the installed
 workspace additionally depends on `pnpmInstall`.
@@ -78,8 +78,55 @@ pnpm {
 The `pnpm` extension is created on the workspace root and shared by the whole workspace, so
 configure it once, in the build script of the workspace root.
 
-In CI, cache the workspace root's `.gradle/pnpm` (or set `installDirectory` to a location you
-already cache), and pnpm's own download cache, to avoid downloading pnpm on every run.
+### Where pnpm comes from
+
+Unless a usable pnpm is already available, the plugin resolves the pnpm distribution as a regular
+Gradle dependency, from an Ivy repository laid out over the pnpm GitHub releases:
+
+```
+com.pnpm:pnpm:<version>:<platform>@<tar.gz|zip>
+  -> https://github.com/pnpm/pnpm/releases/download/v<version>/pnpm-<platform>.<tar.gz|zip>
+```
+
+Gradle therefore does the downloading, which means the archive is cached in the shared module cache
+rather than per project, `--offline` and `--refresh-dependencies` work as usual, and proxies and
+credentials are configured the way they are for every other dependency.
+
+The repository is declared on a resolver detached from the project, so it is invisible to the rest
+of the build: it does not interact with `repositoriesMode`, it is never consulted for anything but
+pnpm, `dependencyLocking { lockAllConfigurations() }` does not produce a lock entry for it, and
+`configurations.all { }` rules do not apply to it.
+
+**Mirrors and air-gapped builds.** Point the `de.cronn.pnpm.distributionBaseUrl` Gradle property at
+any mirror that keeps the pnpm release layout — including a `file:` URL:
+
+```properties
+# gradle.properties
+de.cronn.pnpm.distributionBaseUrl=https://artifacts.example.com/pnpm-releases
+```
+
+**Dependency verification.** Because pnpm is now a resolved artifact, it is covered by
+`gradle/verification-metadata.xml`. If your build already verifies dependencies, add an entry per
+platform you build on, or the resolution will fail:
+
+```xml
+<component group="com.pnpm" name="pnpm" version="11.25.0">
+  <artifact name="pnpm-11.25.0-linux-x64.tar.gz">
+    <sha256 value="…"/>
+  </artifact>
+</component>
+```
+
+Generate it with `./gradlew --write-verification-metadata sha256 pnpmSetup`.
+
+Note that the archive is resolved during the configuration phase, so a failure to download it
+surfaces before `pnpmSetup` runs. Nothing is resolved when pnpm does not have to be provisioned at
+all.
+
+**In CI**, cache Gradle's module cache (`~/.gradle/caches/modules-2`, which
+[`gradle/actions/setup-gradle`](https://github.com/gradle/actions) already does) alongside the
+workspace root's `.gradle/pnpm` — or set `installDirectory` to a location you already cache — and
+pnpm's own download cache, to avoid downloading anything on every run.
 
 ## Package tasks
 
