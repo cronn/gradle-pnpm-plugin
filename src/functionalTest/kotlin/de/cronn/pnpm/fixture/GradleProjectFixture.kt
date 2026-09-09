@@ -17,28 +17,33 @@ class GradleProjectFixture(val rootDirectory: File) {
    */
   fun writeWorkspace(
     packages: List<String> = emptyList(),
-    /** Imports of the root build script; they have to precede the `plugins` block. */
-    imports: List<String> = emptyList(),
     rootBuildScript: String = "",
     packageBuildScript: String = "",
     /** The pinned pnpm version, or `null` to fall back to the plugin's default version. */
     pnpmVersion: String? = PNPM_VERSION,
     /** Body of the `pnpm { }` block; defaults to pointing the build at the stub. */
     pnpmConfiguration: String? = null,
+    /** Added to the `pnpm { }` block, so the plugin registers its repository over a local URL. */
+    repositoryUrl: String? = null,
+    /** Appended to the settings script, for example a `dependencyResolutionManagement` block. */
+    settingsScript: String = "",
   ) {
     stubExecutable = stub.install()
 
-    writeSettings(rootProjectName = "workspace", projects = packages)
+    writeSettings(
+      rootProjectName = "workspace",
+      projects = packages,
+      settingsScript = settingsScript,
+    )
     writePackageRoot("", packages)
     write(
       "build.gradle.kts",
       """
-      ${imports.joinToString("\n      ") { "import $it" }}
-
       plugins { id("de.cronn.gradle-pnpm-plugin") }
 
       pnpm {
         ${pnpmVersion?.let { "version = \"$it\"" } ?: ""}
+        ${repositoryUrl?.let { "repositoryUrl = \"$it\"" } ?: ""}
         ${pnpmConfiguration ?: "executable = ${quoted(stubExecutable)}"}
       }
 
@@ -179,12 +184,18 @@ class GradleProjectFixture(val rootDirectory: File) {
       .map(::File)
   }
 
-  private fun writeSettings(rootProjectName: String, projects: List<String>) {
+  private fun writeSettings(
+    rootProjectName: String,
+    projects: List<String>,
+    settingsScript: String = "",
+  ) {
     write(
       "settings.gradle.kts",
       """
       rootProject.name = "$rootProjectName"
       ${projects.joinToString("\n") { "include(\"$it\")" }}
+
+      $settingsScript
       """,
     )
   }
@@ -292,6 +303,42 @@ class GradleProjectFixture(val rootDirectory: File) {
 
   companion object {
     const val PNPM_VERSION: String = "11.23.0"
+
+    /**
+     * The declaration of the pnpm repository the README documents, over [url]. Builds that declare
+     * their repositories themselves write exactly this, in a build script or in the settings
+     * script, and it deliberately mentions none of the plugin's classes.
+     */
+    fun pnpmRepository(url: String): String =
+      """
+      exclusiveContent {
+        forRepository {
+          ivy {
+            name = "pnpm"
+            setUrl("$url")
+            patternLayout { artifact("v[revision]/[artifact]-[classifier].[ext]") }
+            metadataSources { artifact() }
+          }
+        }
+        filter { includeModule("pnpm", "pnpm") }
+      }
+      """
+        .trimIndent()
+
+    /** A `dependencyResolutionManagement` block declaring [repositories]. */
+    fun settingsRepositories(
+      vararg repositories: String,
+      failOnProjectRepositories: Boolean = false,
+    ): String =
+      """
+      dependencyResolutionManagement {
+        ${if (failOnProjectRepositories) "repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS" else ""}
+        repositories {
+          ${repositories.joinToString("\n")}
+        }
+      }
+      """
+        .trimIndent()
 
     /**
      * Id of the convention plugin every project of [writeWorkspaceWithConventionPlugins] applies.

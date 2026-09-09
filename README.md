@@ -114,39 +114,42 @@ tasks.named<PnpmTask>("pnpmInstall") {
 
 The plugin resolves the pnpm distribution as an ordinary dependency, `pnpm:pnpm:<version>`, so it
 goes through the dependency cache, dependency verification, dependency locking and the proxy
-settings of your build. It does not register the repository that serves it — which repositories a
-build resolves from is the decision of that build. Declare it in the workspace root:
+settings of your build. It registers the Ivy repository serving it in the workspace root.
+
+`repositoryUrl` points that repository at an internal mirror of the pnpm releases, or at whatever a
+proxy serves them under:
 
 ```kotlin
-// build.gradle.kts
-import de.cronn.pnpm.pnpm
-
-repositories {
-  pnpm()
+pnpm {
+  repositoryUrl = "https://artifacts.example.com/github/pnpm/pnpm/releases/download/"
 }
 ```
 
-or centrally, in the settings script — the plugin has to be on its classpath for that:
+The plugin registers no repository when
+
+- the build declares one named `pnpm` itself
+- the build sets `RepositoriesMode.PREFER_SETTINGS` or `FAIL_ON_PROJECT_REPOS`
+- the repositories are defined in `settings.gradle.kts`
+
+To define the repository yourself, use the following snippet:
 
 ```kotlin
 // settings.gradle.kts
-import de.cronn.pnpm.pnpm
-
-plugins {
-  id("de.cronn.gradle-pnpm-plugin") version "<version>" apply false
-}
-
 dependencyResolutionManagement {
-  repositories { pnpm() }
-}
-```
-
-`pnpm()` returns the repository it created and takes an optional configuration action, so an
-internal mirror of the pnpm releases is a one-liner:
-
-```kotlin
-repositories {
-  pnpm { setUrl("https://artifacts.example.com/github/pnpm/pnpm/releases/download/") }
+  repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+  repositories {
+    exclusiveContent {
+      forRepository {
+        ivy {
+          name = "pnpm"
+          setUrl("https://github.com/pnpm/pnpm/releases/download/")
+          patternLayout { artifact("v[revision]/[artifact]-[classifier].[ext]") }
+          metadataSources { artifact() }
+        }
+      }
+      filter { includeModule("pnpm", "pnpm") }
+    }
+  }
 }
 ```
 
@@ -178,11 +181,13 @@ pnpm {
   installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.25.0")
   // Skips provisioning entirely; the PATH is not consulted
   executable = "/usr/local/bin/pnpm"
+  // Where the pnpm distribution is downloaded from
+  repositoryUrl = "https://github.com/pnpm/pnpm/releases/download/"
 }
 ```
 
-`version`, `installDirectory` and `executable` describe the one pnpm installation the whole
-workspace shares, so configure them once, in the build script of the workspace root. Every package
+`version`, `installDirectory`, `executable` and `repositoryUrl` describe the one pnpm installation
+the whole workspace shares, so configure them once, in the build script of the workspace root. Every package
 inherits its values from there. Setting one of them on a package overrides it for that project's own
 pnpm invocations only — pnpm is still provisioned by the workspace root.
 
@@ -275,21 +280,9 @@ following configuration to the target project's `settings.gradle.kts`:
 
 ```kotlin
 // settings.gradle.kts
-import de.cronn.pnpm.pnpm
-
 pluginManagement {
   repositories {
     mavenLocal()
-  }
-}
-
-plugins {
-  id("de.cronn.gradle-pnpm-plugin") version "0.0.0-SNAPSHOT" apply false
-}
-
-dependencyResolutionManagement {
-  repositories {
-    pnpm()
   }
 }
 ```

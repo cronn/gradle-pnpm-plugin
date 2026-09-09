@@ -3,6 +3,7 @@ package de.cronn.pnpm
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
+import de.cronn.pnpm.internal.PnpmRepository
 import de.cronn.pnpm.internal.PnpmResolution
 import de.cronn.pnpm.internal.PnpmRole
 import de.cronn.pnpm.internal.PnpmToolTasks
@@ -78,6 +79,7 @@ public class PnpmPlugin : Plugin<Project> {
     }
 
     if (layout.isWorkspaceRoot) {
+      PnpmRepository.register(target, workspace)
       val distributionArchive =
         PnpmDistribution.register(target, workspace.version, platform, resolution.usesManagedPnpm)
       PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
@@ -122,6 +124,7 @@ public class PnpmPlugin : Plugin<Project> {
     )
 
     extension.version.convention(DEFAULT_PNPM_VERSION)
+    extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
 
     extension.installDirectory.convention(
       extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") }
@@ -161,6 +164,7 @@ public class PnpmPlugin : Plugin<Project> {
     extension.version.convention(rootExtension.version)
     extension.installDirectory.convention(rootExtension.installDirectory)
     extension.executable.convention(rootExtension.executable)
+    extension.repositoryUrl.convention(rootExtension.repositoryUrl)
   }
 
   /**
@@ -173,6 +177,7 @@ public class PnpmPlugin : Plugin<Project> {
     val projectDirectory = target.layout.projectDirectory
 
     extension.version.convention(DEFAULT_PNPM_VERSION)
+    extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
 
     extension.installDirectory.convention(
       extension.version.map { version -> projectDirectory.dir(".gradle/pnpm/$version") }

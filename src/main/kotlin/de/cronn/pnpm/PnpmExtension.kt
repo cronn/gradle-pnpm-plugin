@@ -41,6 +41,16 @@ public abstract class PnpmExtension {
   public abstract val executable: Property<String>
 
   /**
+   * Base URL the pnpm distribution archives are downloaded from. Defaults to the pnpm releases on
+   * GitHub; set it to an internal mirror of them, or to whatever a proxy serves them under.
+   *
+   * The plugin registers the repository over this URL in the workspace root. It registers none when
+   * the repositories of the build are declared in `settings.gradle.kts`, or when the build already
+   * declares a repository named `pnpm` itself.
+   */
+  public abstract val repositoryUrl: Property<String>
+
+  /**
    * Gradle path of the project that is the pnpm workspace root, for example `:` or `:frontend`.
    * Defaults to the project whose directory contains the `pnpm-workspace.yaml`.
    *

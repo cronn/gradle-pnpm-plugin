@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- The plugin registers the repository serving the pnpm distribution itself, and steps aside when the
+  build declares its repositories in `settings.gradle.kts`
+- New `pnpm { repositoryUrl }`, to point the repository at a mirror or a proxy
+- **Breaking:** removed `RepositoryHandler.pnpm()`; declare the repository with a plain Ivy
+  declaration instead, which keeps the plugin off the settings classpath
+
 ## 0.1.0
 
 - Support applying the plugin from a convention plugin
