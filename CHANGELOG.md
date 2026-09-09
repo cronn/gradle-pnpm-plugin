@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
 
 - Support applying the plugin from a convention plugin
 - Applying the plugin to a project that holds no pnpm files no longer fails
