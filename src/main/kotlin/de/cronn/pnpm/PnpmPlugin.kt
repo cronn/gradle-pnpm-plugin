@@ -1,7 +1,6 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.internal.PnpmDistribution
-import de.cronn.pnpm.internal.PnpmOnPath
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmResolution
@@ -108,7 +107,6 @@ public class PnpmPlugin : Plugin<Project> {
     val workspaceDirectory = target.layout.projectDirectory
     val workspaceRootPath = target.path
 
-    extension.preferPnpmOnPath.convention(true)
     extension.workspaceRootPath.convention(workspaceRootPath)
 
     target.logger.debug(
@@ -137,8 +135,7 @@ public class PnpmPlugin : Plugin<Project> {
     val pnpmOnPath = pnpmOnPath(target, platform)
     val managed =
       extension.installDirectory.file(platform.executableName).map { it.asFile.absolutePath }
-    val executable =
-      extension.executable.orElse(usablePnpmOnPath(target, extension, pnpmOnPath)).orElse(managed)
+    val executable = extension.executable.orElse(pnpmOnPath).orElse(managed)
 
     return PnpmResolution(
       executable = executable,
@@ -189,28 +186,16 @@ public class PnpmPlugin : Plugin<Project> {
     return present
   }
 
-  private fun pnpmOnPath(target: Project, platform: PnpmPlatform): Provider<PnpmOnPath> =
+  /**
+   * The pnpm on the `PATH`, whatever version it is. Its version is deliberately not checked: the
+   * pinned [PnpmExtension.version] only decides which pnpm is downloaded when there is none.
+   */
+  private fun pnpmOnPath(target: Project, platform: PnpmPlatform): Provider<String> =
     target.providers.of(PnpmOnPathSource::class.java) { spec ->
       spec.parameters.searchPath.set(target.providers.environmentVariable(PATH_VARIABLE))
-      spec.parameters.executableNames.set(platform.executableNamesOnPath)
+      spec.parameters.osName.set(platform.osName)
+      spec.parameters.osArch.set(platform.osArch)
     }
-
-  private fun usablePnpmOnPath(
-    target: Project,
-    extension: PnpmExtension,
-    pnpmOnPath: Provider<PnpmOnPath>,
-  ): Provider<String> {
-    val absent = target.providers.provider<String> { null }
-    return extension.preferPnpmOnPath.flatMap { prefer ->
-      if (prefer) {
-        extension.version.flatMap { pinned ->
-          pnpmOnPath.filter { it.version == pinned }.map { it.executablePath }
-        }
-      } else {
-        absent
-      }
-    }
-  }
 
   private fun requireSupportedGradleVersion() {
     if (GradleVersion.current() < MINIMUM_GRADLE_VERSION) {

@@ -137,10 +137,12 @@ class GradleProjectFixture(val rootDirectory: File) {
     file.writeText(content.trimIndent().trim() + "\n")
   }
 
-  fun runner(vararg arguments: String): GradleRunner =
+  /** Runs Gradle, with [pnpmOnPath] as the only pnpm the build finds on its `PATH`. */
+  fun runner(vararg arguments: String, pnpmOnPath: File? = null): GradleRunner =
     GradleRunner.create()
       .withProjectDir(rootDirectory)
       .withPluginClasspath()
+      .withEnvironment(environmentWith(pnpmOnPath))
       .withArguments(
         arguments.toList() +
           listOf(
@@ -154,10 +156,32 @@ class GradleProjectFixture(val rootDirectory: File) {
 
   fun directory(path: String): File = File(rootDirectory, path)
 
+  /**
+   * The environment of the test JVM, with every `PATH` entry that holds a pnpm removed and the
+   * directory of [pnpmOnPath] put in front. The plugin reuses a pnpm from the `PATH`, so a pnpm
+   * installed on the machine running the tests would otherwise decide the outcome of every test.
+   */
+  private fun environmentWith(pnpmOnPath: File?): Map<String, String> =
+    System.getenv().mapValues { (name, value) ->
+      if (!name.equals("PATH", ignoreCase = true)) {
+        value
+      } else {
+        val directories =
+          value.split(File.pathSeparator).filterNot { directory ->
+            PNPM_EXECUTABLE_NAMES.any { File(directory, it).isFile }
+          }
+        (listOfNotNull(pnpmOnPath?.parentFile?.absolutePath) + directories).joinToString(
+          File.pathSeparator
+        )
+      }
+    }
+
   /** Kotlin string literal for [file], safe on Windows where paths contain backslashes. */
   private fun quoted(file: File): String = "\"${file.invariantSeparatorsPath}\""
 
   companion object {
     const val PNPM_VERSION: String = "11.23.0"
+
+    private val PNPM_EXECUTABLE_NAMES = listOf("pnpm", "pnpm.exe", "pnpm.cmd", "pnpm.bat")
   }
 }

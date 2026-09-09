@@ -88,8 +88,7 @@ repositories {
 
 To pin the archive by checksum, run `./gradlew pnpmSetup --write-verification-metadata sha256` and
 commit `gradle/verification-metadata.xml`. Dependency locking applies to the
-`pnpmDistributionArchive` configuration; write its lock state with `preferPnpmOnPath = false`, so
-that the distribution is actually resolved.
+`pnpmDistributionArchive` configuration.
 
 ## Workspace tasks
 
@@ -109,14 +108,12 @@ workspace additionally depends on `pnpmInstall`.
 
 ```kotlin
 pnpm {
-  // Overrides pnpm version for initial setup
+  // The version downloaded when no pnpm is on the PATH
   version = "11.25.0"
   // Defaults to <workspaceRootDir>/.gradle/pnpm/<version>
   installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.25.0")
-  // Skips provisioning entirely
+  // Skips provisioning entirely; the PATH is not consulted
   executable = "/usr/local/bin/pnpm"
-  // Reuse a matching pnpm from the PATH; defaults to true
-  preferPnpmOnPath = true
 }
 ```
 

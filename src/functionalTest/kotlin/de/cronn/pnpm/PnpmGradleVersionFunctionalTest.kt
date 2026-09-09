@@ -56,7 +56,7 @@ class PnpmGradleVersionFunctionalTest {
         }
         """
           .trimIndent(),
-      pnpmConfiguration = "preferPnpmOnPath = false",
+      pnpmConfiguration = "",
     )
 
     val result = fixture.runner("pnpmSetup").withGradleVersion(gradleVersion).build()

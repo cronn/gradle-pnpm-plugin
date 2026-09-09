@@ -16,7 +16,7 @@ class PnpmWorkspaceFunctionalTest {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(
       pnpmVersion = null,
-      pnpmConfiguration = "preferPnpmOnPath = false",
+      pnpmConfiguration = "",
       rootBuildScript =
         """
         val pinnedVersion = pnpm.version
