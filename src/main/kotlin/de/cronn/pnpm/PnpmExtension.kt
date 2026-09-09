@@ -41,14 +41,11 @@ public abstract class PnpmExtension {
   public abstract val preferPnpmOnPath: Property<Boolean>
 
   /**
-   * Path of the task that provisions pnpm. Defaults to the `pnpmSetup` task of the workspace root,
-   * for example `:pnpmSetup` or `:frontend:pnpmSetup`.
+   * Gradle path of the project that is the pnpm workspace root, for example `:` or `:frontend`.
+   * Defaults to the project whose directory contains the `pnpm-workspace.yaml`.
+   *
+   * The pnpm lifecycle tasks of that project (`pnpmSetup`, `pnpmInstall`) are the tasks every pnpm
+   * task of the workspace depends on.
    */
-  public abstract val setupTaskPath: Property<String>
-
-  /**
-   * Path of the task that installs the workspace dependencies. Defaults to the `pnpmInstall` task
-   * of the workspace root, for example `:pnpmInstall` or `:frontend:pnpmInstall`.
-   */
-  public abstract val installTaskPath: Property<String>
+  public abstract val workspaceRootPath: Property<String>
 }

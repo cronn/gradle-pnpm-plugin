@@ -29,10 +29,6 @@ internal class PnpmWorkspaceLayout(
   val isWorkspaceRoot: Boolean
     get() = role == PnpmRole.WORKSPACE_ROOT
 
-  /** Prefix that turns a task name of [workspaceRoot] into an absolute task path. */
-  fun taskPathPrefix(): String =
-    workspaceRoot.path.let { path -> if (path == Project.PATH_SEPARATOR) path else "$path:" }
-
   companion object {
     const val WORKSPACE_FILE: String = "pnpm-workspace.yaml"
     const val PACKAGE_JSON: String = "package.json"

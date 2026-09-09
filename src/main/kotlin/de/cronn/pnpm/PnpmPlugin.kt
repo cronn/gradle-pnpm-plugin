@@ -38,8 +38,8 @@ import org.gradle.util.GradleVersion
  *
  * All wiring happens within the project the plugin is applied to. The two edges that necessarily
  * cross project boundaries -- provisioning pnpm and installing the workspace -- are expressed as
- * task paths ([PnpmExtension.setupTaskPath], [PnpmExtension.installTaskPath]) rather than as
- * cross-project task references, so that the plugin does not mutate another project's model.
+ * task paths derived from [PnpmExtension.workspaceRootPath] rather than as cross-project task
+ * references, so that the plugin does not mutate another project's model.
  */
 public class PnpmPlugin : Plugin<Project> {
 
@@ -56,15 +56,16 @@ public class PnpmPlugin : Plugin<Project> {
     target.tasks.withType(PnpmTask::class.java).configureEach { task ->
       task.executable.convention(resolution.executable)
       task.pnpmVersion.convention(workspace.version)
-      task.dependsOn(workspace.setupTaskPath)
+      task.dependsOn(lifecycleTaskPath(workspace, PnpmWorkspaceTasks.SETUP_TASK_NAME))
     }
 
     // pnpm exec and pnpm run both need the workspace dependencies to be present.
+    val installTaskPath = lifecycleTaskPath(workspace, PnpmWorkspaceTasks.INSTALL_TASK_NAME)
     target.tasks.withType(PnpmExecTask::class.java).configureEach { task ->
-      task.dependsOn(workspace.installTaskPath)
+      task.dependsOn(installTaskPath)
     }
     target.tasks.withType(PnpmRunTask::class.java).configureEach { task ->
-      task.dependsOn(workspace.installTaskPath)
+      task.dependsOn(installTaskPath)
     }
 
     if (layout.isWorkspaceRoot) {
@@ -99,29 +100,22 @@ public class PnpmPlugin : Plugin<Project> {
     }
 
     val created = root.extensions.create(EXTENSION_NAME, PnpmExtension::class.java)
-    applyWorkspaceConventions(root, layout, created)
+    applyWorkspaceConventions(root, created)
     return created
   }
 
-  private fun applyWorkspaceConventions(
-    target: Project,
-    layout: PnpmWorkspaceLayout,
-    extension: PnpmExtension,
-  ) {
+  private fun applyWorkspaceConventions(target: Project, extension: PnpmExtension) {
     val workspaceDirectory = target.layout.projectDirectory
-    val taskPathPrefix = layout.taskPathPrefix()
+    val workspaceRootPath = target.path
 
     extension.preferPnpmOnPath.convention(true)
-    extension.setupTaskPath.convention(taskPathPrefix + PnpmWorkspaceTasks.SETUP_TASK_NAME)
-    extension.installTaskPath.convention(taskPathPrefix + PnpmWorkspaceTasks.INSTALL_TASK_NAME)
+    extension.workspaceRootPath.convention(workspaceRootPath)
 
     target.logger.debug(
-      "pnpm: workspace root {} provisions pnpm through {}{} and {}{}",
+      "pnpm: workspace root {} provisions pnpm through {} and {}",
       target.path,
-      taskPathPrefix,
-      PnpmWorkspaceTasks.SETUP_TASK_NAME,
-      taskPathPrefix,
-      PnpmWorkspaceTasks.INSTALL_TASK_NAME,
+      PnpmWorkspaceTasks.taskPath(workspaceRootPath, PnpmWorkspaceTasks.SETUP_TASK_NAME),
+      PnpmWorkspaceTasks.taskPath(workspaceRootPath, PnpmWorkspaceTasks.INSTALL_TASK_NAME),
     )
 
     extension.version.convention(DEFAULT_PNPM_VERSION)
@@ -130,6 +124,10 @@ public class PnpmPlugin : Plugin<Project> {
       extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") }
     )
   }
+
+  /** Path of the lifecycle task [taskName] in the workspace root configured in [extension]. */
+  private fun lifecycleTaskPath(extension: PnpmExtension, taskName: String): Provider<String> =
+    extension.workspaceRootPath.map { path -> PnpmWorkspaceTasks.taskPath(path, taskName) }
 
   private fun resolution(
     target: Project,
