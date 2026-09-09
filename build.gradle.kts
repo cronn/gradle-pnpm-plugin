@@ -129,6 +129,14 @@ val functionalTestTask =
       "pnpm.test.gradleVersions",
       providers.gradleProperty("pnpmTestGradleVersions").getOrElse(""),
     )
+    // A TestKit daemon outlives the build it ran and keeps file handles on the project's .gradle
+    // directory open. Windows refuses to delete an open file, so deleting the @TempDir of a test
+    // fails whenever the daemon has not let go yet. The leftovers are temporary directories of a
+    // throwaway build, so a failure to delete them is logged instead of failing the test.
+    systemProperty(
+      "junit.jupiter.tempdir.deletion.strategy.default",
+      "org.junit.jupiter.api.io.TempDirDeletionStrategy${'$'}IgnoreFailures",
+    )
     shouldRunAfter(tasks.test)
   }
 
