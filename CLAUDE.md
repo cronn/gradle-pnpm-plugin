@@ -6,10 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Use auto-discovery to enable features when possible (e.g. checking for tool-specific configuration files)
 - Add debug logging whenever deriving configuration from the environment or configuration files
+- Extensions must be compatible with the Gradle configuration cache
 
 ## Conventions
 
 - Use Conventional Commits
+
+## Documentation
+
+- Add user-facing changes to the Unreleased section of the CHANGELOG.md
+- Keep documentation short and concise
+- Prefer overviews to detailed explanations
 
 ## GitHub Pull Requests
 
