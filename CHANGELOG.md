@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Declare compatibility with configuration cache
 - Fix: `pnpmSetup` task is not compatible with configuration cache when `preferPnpmOnPath = true`
 
 ## 0.0.2

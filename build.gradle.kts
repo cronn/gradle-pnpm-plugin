@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
@@ -102,6 +103,11 @@ gradlePlugin {
           "the Gradle build. Discovers the workspace root from pnpm-workspace.yaml and adds the " +
           "pnpm lifecycle tasks there, plus TypeScript, Prettier and ESLint tasks to every pnpm " +
           "package"
+      compatibility {
+        features {
+          configurationCache = true
+        }
+      }
       tags =
         listOf(
           "pnpm",
