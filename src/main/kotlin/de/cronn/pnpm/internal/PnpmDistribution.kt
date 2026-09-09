@@ -1,7 +1,7 @@
 package de.cronn.pnpm.internal
 
-import de.cronn.pnpm.PNPM_GROUP
-import de.cronn.pnpm.PNPM_MODULE
+import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
+import de.cronn.pnpm.internal.PnpmRepository.PNPM_MODULE
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.dsl.DependencyFactory
@@ -13,8 +13,8 @@ import org.gradle.api.provider.Provider
  * part in the dependency cache, dependency verification, dependency locking and the proxy
  * configuration of the build.
  *
- * The repository serving it is not registered here; a build declares it with `repositories { pnpm()
- * }`.
+ * The repository serving it is registered by [PnpmRepository], unless the build declares its
+ * repositories in `settings.gradle.kts` and serves pnpm from there.
  */
 internal object PnpmDistribution {
 

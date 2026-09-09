@@ -31,8 +31,8 @@ public abstract class PnpmSetupTask : DefaultTask() {
   @get:Inject protected abstract val archiveOperations: ArchiveOperations
 
   /**
-   * The pnpm distribution archive, normally resolved from the repository a build registers with
-   * `repositories { pnpm() }`.
+   * The pnpm distribution archive, normally resolved from the repository the plugin registers, or
+   * from the one the build declares in `settings.gradle.kts`.
    *
    * Only the content of the archive matters: it lives in the shared dependency cache, under a path
    * that differs from machine to machine, so the path itself is not part of the input.
@@ -76,8 +76,8 @@ public abstract class PnpmSetupTask : DefaultTask() {
       1 -> archives.single()
       0 ->
         throw GradleException(
-          "No pnpm distribution archive was resolved. Register the repository that serves it with " +
-            "`repositories { pnpm() }`, or point the build at an existing pnpm with " +
+          "No pnpm distribution archive was resolved. Declare the repository that serves it in " +
+            "`settings.gradle.kts`, or point the build at an existing pnpm with " +
             "`pnpm { executable = ... }`."
         )
       else ->

@@ -1,6 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.pnpmRepository
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.settingsRepositories
 import de.cronn.pnpm.fixture.PnpmArchiveFixture
 import de.cronn.pnpm.fixture.PnpmStub
 import java.io.File
@@ -47,17 +49,7 @@ class PnpmGradleVersionFunctionalTest {
   ) {
     val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
     val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(
-      imports = listOf("de.cronn.pnpm.pnpm"),
-      rootBuildScript =
-        """
-        repositories {
-          pnpm { setUrl("$url") }
-        }
-        """
-          .trimIndent(),
-      pnpmConfiguration = "",
-    )
+    fixture.writeWorkspace(pnpmConfiguration = "", repositoryUrl = url)
 
     val result = fixture.runner("pnpmSetup").withGradleVersion(gradleVersion).build()
 
@@ -69,6 +61,28 @@ class PnpmGradleVersionFunctionalTest {
         )
       )
       .isFile()
+  }
+
+  /**
+   * The plugin reads the repositories mode of the build through the one internal Gradle API it
+   * uses, so this tier is where a change to it would show up first.
+   */
+  @ParameterizedTest(name = "Gradle {0}", allowZeroInvocations = true)
+  @MethodSource("gradleVersions")
+  fun `resolves pnpm from settings when project repositories are forbidden`(
+    gradleVersion: String,
+    @TempDir releaseDirectory: File,
+  ) {
+    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(
+      settingsScript = settingsRepositories(pnpmRepository(url), failOnProjectRepositories = true),
+      pnpmConfiguration = "",
+    )
+
+    val result = fixture.runner("pnpmSetup").withGradleVersion(gradleVersion).build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   companion object {

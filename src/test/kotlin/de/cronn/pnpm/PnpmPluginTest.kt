@@ -2,6 +2,8 @@ package de.cronn.pnpm
 
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
+import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
+import de.cronn.pnpm.internal.PnpmRepository.PNPM_MODULE
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
@@ -180,17 +182,6 @@ class PnpmPluginTest {
         PnpmDistribution.DECLARED_CONFIGURATION_NAME,
         PnpmDistribution.ARCHIVE_CONFIGURATION_NAME,
       )
-  }
-
-  /**
-   * Which repositories a build resolves from is the decision of that build: the plugin only offers
-   * `repositories { pnpm() }`.
-   */
-  @Test
-  fun `registers no repository`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-
-    assertThat(project.repositories).isEmpty()
   }
 
   /**

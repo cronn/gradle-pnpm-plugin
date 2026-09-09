@@ -1,6 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.pnpmRepository
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.settingsRepositories
 import de.cronn.pnpm.fixture.PnpmArchiveFixture
 import de.cronn.pnpm.fixture.PnpmStub
 import java.io.File
@@ -88,16 +90,7 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `resolves nothing when pnpm comes from somewhere else`() {
     val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(
-      imports = listOf("de.cronn.pnpm.pnpm"),
-      rootBuildScript =
-        """
-        repositories {
-          pnpm { setUrl("https://127.0.0.1:1/unreachable") }
-        }
-        """
-          .trimIndent(),
-    )
+    fixture.writeWorkspace(repositoryUrl = "https://127.0.0.1:1/unreachable")
 
     val first = fixture.runner("pnpmSetup").build()
     val second = fixture.runner("pnpmSetup").build()
@@ -126,7 +119,7 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `fails with a readable message when no repository serves the pnpm distribution`() {
     val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(pnpmConfiguration = "")
+    fixture.writeWorkspace(pnpmConfiguration = "", repositoryUrl = emptyRepositoryUrl())
 
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
@@ -223,6 +216,84 @@ class PnpmSetupFunctionalTest {
     }
   }
 
+  // The repository the plugin registers, and the cases in which it steps aside
+
+  @Test
+  fun `registers the pnpm repository in the workspace root`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(rootBuildScript = PRINT_REPOSITORIES)
+
+    val result = fixture.runner("printRepositories").build()
+
+    assertThat(result.output)
+      .contains("repositories: [pnpm]")
+      .contains("https://github.com/pnpm/pnpm/releases/download/")
+  }
+
+  /**
+   * A build that declares its repositories in settings declares the pnpm repository there too, as a
+   * plain Ivy declaration -- so `settings.gradle.kts` needs none of the plugin's classes, and the
+   * plugin stays in the build script classpath of the projects that apply it.
+   */
+  @Test
+  fun `resolves pnpm from the repository declared in settings`() {
+    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(
+      settingsScript = settingsRepositories(pnpmRepository(url), failOnProjectRepositories = true),
+      pnpmConfiguration = "",
+    )
+
+    val result = fixture.runner("pnpmSetup").build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.directory("settings.gradle.kts")).content().doesNotContain("de.cronn")
+  }
+
+  /**
+   * And when it forgets to, the plugin must not be what fails the build: adding a project
+   * repository is rejected outright in that mode, so it does not even try.
+   */
+  @Test
+  fun `steps aside when project repositories are forbidden`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(
+      settingsScript =
+        settingsRepositories(ivyRepository(emptyRepositoryUrl()), failOnProjectRepositories = true),
+      pnpmConfiguration = "",
+    )
+
+    val result = fixture.runner("pnpmSetup").buildAndFail()
+
+    assertThat(result.output)
+      .contains("Could not find pnpm:pnpm:${GradleProjectFixture.PNPM_VERSION}")
+      .doesNotContain("was added by")
+  }
+
+  /**
+   * Gradle consults the repositories declared in settings for a project that declares none of its
+   * own. Registering one here would cut the project off from them, and every other dependency it
+   * has with it, so the plugin leaves such a project alone.
+   */
+  @Test
+  fun `leaves the repositories declared in settings in charge`() {
+    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    File(releaseDirectory, "v1.0").mkdirs()
+    File(releaseDirectory, "v1.0/example-linux.tar.gz").writeText("an unrelated dependency\n")
+
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(
+      settingsScript = settingsRepositories(pnpmRepository(url), ivyRepository(url)),
+      rootBuildScript = RESOLVE_OTHER,
+      pnpmConfiguration = "",
+    )
+
+    val result = fixture.runner("pnpmSetup", "resolveOther").build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(result.output).contains("resolved: [example-linux.tar.gz]")
+  }
+
   /** Tail of the path of the pnpm the plugin installs, independent of the temporary directory. */
   private val installedExecutablePath: String
     get() =
@@ -233,8 +304,8 @@ class PnpmSetupFunctionalTest {
     get() = if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
 
   /**
-   * A workspace that resolves pnpm from a local pnpm repository. Registering the repository is
-   * exactly what a real build does, only with the pnpm releases of GitHub behind it.
+   * A workspace that resolves pnpm from a local pnpm release directory, which is what pointing the
+   * build at a mirror looks like: the plugin registers its own repository, over that URL.
    */
   private fun workspaceWithLocalRelease(
     repositoryUrl: String? = null,
@@ -247,21 +318,24 @@ class PnpmSetupFunctionalTest {
         ?: PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(
-      imports = listOf("de.cronn.pnpm.pnpm"),
       rootBuildScript =
         """
         repositories {
           $firstRepositories
-          pnpm { setUrl("$url") }
         }
 
         $extraBuildScript
         """
           .trimIndent(),
       pnpmConfiguration = "",
+      repositoryUrl = url,
     )
     return fixture
   }
+
+  /** URL of a repository directory that holds nothing at all. */
+  private fun emptyRepositoryUrl(): String =
+    File(releaseDirectory, "empty").apply { mkdirs() }.toURI().toString()
 
   /** An Ivy repository over a local pnpm release directory, laid out like the pnpm repository. */
   private fun ivyRepository(url: String): String =
@@ -273,4 +347,39 @@ class PnpmSetupFunctionalTest {
     }
     """
       .trimIndent()
+
+  companion object {
+
+    /** Prints the repositories of the project once the plugin had its say on them. */
+    val PRINT_REPOSITORIES: String =
+      """
+      afterEvaluate {
+        val declared = repositories.map { it.name }
+        val urls =
+          repositories
+            .filterIsInstance<org.gradle.api.artifacts.repositories.IvyArtifactRepository>()
+            .map { it.url.toString() }
+        tasks.register("printRepositories") {
+          doLast {
+            println("repositories: " + declared)
+            println("urls: " + urls)
+          }
+        }
+      }
+      """
+        .trimIndent()
+
+    /** Resolves an unrelated artifact-only dependency, to prove the build still can. */
+    val RESOLVE_OTHER: String =
+      """
+      val other = configurations.dependencyScope("other")
+      val otherArchive = configurations.resolvable("otherArchive") { extendsFrom(other.get()) }
+      dependencies { add("other", "org.example:example:1.0:linux@tar.gz") }
+      tasks.register("resolveOther") {
+        inputs.files(otherArchive.map { it.incoming.files })
+        doLast { println("resolved: " + inputs.files.files.map { it.name }) }
+      }
+      """
+        .trimIndent()
+  }
 }
