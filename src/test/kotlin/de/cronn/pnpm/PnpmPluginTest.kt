@@ -194,8 +194,7 @@ class PnpmPluginTest {
     val app = packageProject(File(directory, "frontend/app"), name = "app", parent = frontend)
 
     val extension = extension(frontend)
-    assertThat(extension.setupTaskPath.get()).isEqualTo(":frontend:pnpmSetup")
-    assertThat(extension.installTaskPath.get()).isEqualTo(":frontend:pnpmInstall")
+    assertThat(extension.workspaceRootPath.get()).isEqualTo(":frontend")
     assertThat(extension.installDirectory.get().asFile)
       .isEqualTo(File(frontend.projectDir, ".gradle/pnpm/${PnpmPlugin.DEFAULT_PNPM_VERSION}"))
     assertThat(root.extensions.findByName("pnpm")).isNull()
@@ -212,7 +211,7 @@ class PnpmPluginTest {
     project.pluginManager.apply(PLUGIN_ID)
 
     assertThat(project.tasks.names).contains("pnpmInstall", "prettierCheck")
-    assertThat(extension(project).setupTaskPath.get()).isEqualTo(":pnpmSetup")
+    assertThat(extension(project).workspaceRootPath.get()).isEqualTo(":")
   }
 
   @Test

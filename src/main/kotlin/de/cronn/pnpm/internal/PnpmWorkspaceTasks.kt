@@ -11,8 +11,8 @@ import org.gradle.api.provider.Provider
  * Registers the pnpm lifecycle tasks of a workspace root: the tasks that provision pnpm and manage
  * the dependencies of the whole workspace.
  *
- * These are the tasks every other pnpm task in the build depends on, through
- * [PnpmExtension.setupTaskPath] and [PnpmExtension.installTaskPath].
+ * These are the tasks every other pnpm task in the build depends on, addressed by the task paths
+ * [taskPath] derives from [PnpmExtension.workspaceRootPath].
  *
  * [distributionArchive] is passed in rather than derived here, so that no provider created by this
  * class captures it -- and with it the project -- in the configuration cache.
@@ -105,6 +105,16 @@ internal class PnpmWorkspaceTasks(
   }
 
   companion object {
+    /**
+     * The absolute path of the task [taskName] of the workspace root project [workspaceRootPath].
+     */
+    fun taskPath(workspaceRootPath: String, taskName: String): String =
+      if (workspaceRootPath.endsWith(Project.PATH_SEPARATOR)) {
+        workspaceRootPath + taskName
+      } else {
+        workspaceRootPath + Project.PATH_SEPARATOR + taskName
+      }
+
     const val SETUP_TASK_NAME: String = "pnpmSetup"
     const val INSTALL_TASK_NAME: String = "pnpmInstall"
     const val DEDUPE_TASK_NAME: String = "pnpmDedupe"

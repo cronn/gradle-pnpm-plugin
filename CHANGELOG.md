@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replace `setupTaskPath` and `installTaskPath` with `workspaceRootPath`
 - Declare compatibility with configuration cache
 - Fix: `pnpmSetup` task is not compatible with configuration cache when `preferPnpmOnPath = true`
 
