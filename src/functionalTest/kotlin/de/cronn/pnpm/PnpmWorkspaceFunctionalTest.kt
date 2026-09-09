@@ -190,6 +190,50 @@ class PnpmWorkspaceFunctionalTest {
   }
 
   @Test
+  fun `a project outside the pnpm workspace is inert`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeNestedWorkspace(extraProjects = listOf("docs"))
+    // The plugin reaches every project, including the two that hold no pnpm files at all.
+    fixture.write(
+      "build.gradle.kts",
+      """
+      plugins { id("de.cronn.gradle-pnpm-plugin") }
+
+      subprojects { apply(plugin = "de.cronn.gradle-pnpm-plugin") }
+      """,
+    )
+    fixture.write("docs/build.gradle.kts", "// nothing but the plugin from subprojects")
+
+    val result = fixture.runner(":frontend:app:check").build()
+
+    assertThat(result.task(":frontend:app:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(result.task(":frontend:pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+
+    // The lifecycle tasks belong to the workspace root, not to a project with no pnpm files. The
+    // task list of a subproject holds only its own tasks, unlike the root project's.
+    val listed = fixture.runner(":docs:tasks").build().output
+    assertThat(listed)
+      .contains("prettierCheck - ")
+      .doesNotContain("pnpmInstall - ", "pnpmSetup - ", "pnpmDedupe - ", "pnpmClean - ")
+  }
+
+  @Test
+  fun `reports the missing workspace root when a pnpm task outside the workspace runs`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeNestedWorkspace(extraProjects = listOf("docs"))
+    // A tool config file but no package.json: the tool is enabled, so the task is actually asked
+    // for the workspace root that this project does not have.
+    fixture.write("docs/build.gradle.kts", """plugins { id("de.cronn.gradle-pnpm-plugin") }""")
+    fixture.writeToolConfigs("docs")
+
+    val result = fixture.runner(":docs:prettierCheck").buildAndFail()
+
+    assertThat(result.output)
+      .contains(":docs takes no part in the pnpm build")
+      .contains("Add a pnpm-workspace.yaml to the workspace root, or a package.json to :docs")
+  }
+
+  @Test
   fun `treats a single package without a workspace file as its own workspace root`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace()

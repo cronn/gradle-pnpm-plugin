@@ -4,6 +4,7 @@ import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmResolution
+import de.cronn.pnpm.internal.PnpmRole
 import de.cronn.pnpm.internal.PnpmToolTasks
 import de.cronn.pnpm.internal.PnpmWorkspaceLayout
 import de.cronn.pnpm.internal.PnpmWorkspaceTasks
@@ -28,12 +29,21 @@ import org.gradle.util.GradleVersion
  *   extension that configures the pnpm installation shared by the workspace;
  * - a project below such a project is a **package** of that workspace;
  * - a project with a `package.json` but no `pnpm-workspace.yaml` anywhere above it is a standalone
- *   package that is its own workspace root.
+ *   package that is its own workspace root;
+ * - a project with neither takes no part in the pnpm build. It stays inert: it gets the extensions
+ *   and the (disabled) tool tasks, but no pnpm lifecycle tasks, and only reports the missing
+ *   workspace root if one of its pnpm tasks is requested after all.
  *
- * Every project gets the Node tool tasks and the `typescript`, `prettier` and `eslint` extensions
- * that configure them, the workspace root included, because a workspace root is a pnpm package like
- * any other. Each tool is enabled by default exactly when the project contains a configuration file
- * for it.
+ * Every project gets the `pnpm` extension, the Node tool tasks and the `typescript`, `prettier` and
+ * `eslint` extensions that configure them, the workspace root included, because a workspace root is
+ * a pnpm package like any other. Each tool is enabled by default exactly when the project contains
+ * a configuration file for it.
+ *
+ * The plugin surface deliberately does not depend on the role, because Gradle derives the type-safe
+ * accessors of a convention plugin by applying the plugin to a synthetic project over an empty
+ * temporary directory: whatever is registered there is the surface every project the convention
+ * plugin is applied to has to provide. Applying the plugin must therefore never fail because of the
+ * files in a project's directory.
  *
  * All wiring happens within the project the plugin is applied to. The two edges that necessarily
  * cross project boundaries -- provisioning pnpm and installing the workspace -- are expressed as
@@ -47,7 +57,7 @@ public class PnpmPlugin : Plugin<Project> {
 
     val layout = PnpmWorkspaceLayout.discover(target)
     val platform = PnpmPlatform.current()
-    val workspace = workspaceExtension(target, layout)
+    val workspace = createWorkspaceExtension(target, layout)
     val resolution = resolution(target, workspace, platform)
 
     target.extensions.add(PnpmResolution::class.java, RESOLUTION_NAME, resolution)
@@ -55,11 +65,11 @@ public class PnpmPlugin : Plugin<Project> {
     target.tasks.withType(PnpmTask::class.java).configureEach { task ->
       task.executable.convention(resolution.executable)
       task.pnpmVersion.convention(workspace.version)
-      task.dependsOn(lifecycleTaskPath(workspace, PnpmWorkspaceTasks.SETUP_TASK_NAME))
+      task.dependsOn(lifecycleTaskPath(target, workspace, PnpmWorkspaceTasks.SETUP_TASK_NAME))
     }
 
     // pnpm exec and pnpm run both need the workspace dependencies to be present.
-    val installTaskPath = lifecycleTaskPath(workspace, PnpmWorkspaceTasks.INSTALL_TASK_NAME)
+    val installTaskPath = lifecycleTaskPath(target, workspace, PnpmWorkspaceTasks.INSTALL_TASK_NAME)
     target.tasks.withType(PnpmExecTask::class.java).configureEach { task ->
       task.dependsOn(installTaskPath)
     }
@@ -77,30 +87,25 @@ public class PnpmPlugin : Plugin<Project> {
   }
 
   /**
-   * The `pnpm` extension of the workspace root of [layout], created on first use.
+   * Creates the `pnpm` extension of [target].
    *
-   * A package resolves the extension of its workspace root, which Gradle has already evaluated: it
-   * evaluates a project's ancestors before the project itself. Reading it is why the plugin is not
-   * compatible with project isolation.
+   * Every project gets one, whatever role it plays, so that the extension is part of the plugin
+   * surface a convention plugin can rely on. Only the conventions differ: a package inherits the
+   * values of its workspace root, so that one pnpm installation is still shared by the whole
+   * workspace and configuring `pnpm { }` once in the workspace root remains the way to do it.
    */
-  private fun workspaceExtension(target: Project, layout: PnpmWorkspaceLayout): PnpmExtension {
-    val root = layout.workspaceRoot
-    val existing = root.extensions.findByType(PnpmExtension::class.java)
-    if (existing != null) {
-      return existing
+  private fun createWorkspaceExtension(
+    target: Project,
+    layout: PnpmWorkspaceLayout,
+  ): PnpmExtension {
+    val extension = target.extensions.create(EXTENSION_NAME, PnpmExtension::class.java)
+    when (layout.role) {
+      PnpmRole.WORKSPACE_ROOT -> applyWorkspaceConventions(target, extension)
+      PnpmRole.PACKAGE ->
+        applyPackageConventions(target, extension, checkNotNull(layout.workspaceRoot))
+      PnpmRole.NONE -> applyInertConventions(target, extension)
     }
-
-    if (root != target) {
-      throw GradleException(
-        "The directory of ${root.path} contains a ${PnpmWorkspaceLayout.WORKSPACE_FILE}, so it is " +
-          "the pnpm workspace root of ${target.path}, but it does not apply the $PLUGIN_ID " +
-          "plugin. Apply id(\"$PLUGIN_ID\") in the build script of ${root.path}."
-      )
-    }
-
-    val created = root.extensions.create(EXTENSION_NAME, PnpmExtension::class.java)
-    applyWorkspaceConventions(root, created)
-    return created
+    return extension
   }
 
   private fun applyWorkspaceConventions(target: Project, extension: PnpmExtension) {
@@ -123,9 +128,85 @@ public class PnpmPlugin : Plugin<Project> {
     )
   }
 
-  /** Path of the lifecycle task [taskName] in the workspace root configured in [extension]. */
-  private fun lifecycleTaskPath(extension: PnpmExtension, taskName: String): Provider<String> =
-    extension.workspaceRootPath.map { path -> PnpmWorkspaceTasks.taskPath(path, taskName) }
+  /**
+   * Takes the conventions of a package from the `pnpm` extension of its workspace root, which
+   * Gradle has already evaluated: it evaluates a project's ancestors before the project itself.
+   * Reading it is why the plugin is not compatible with project isolation.
+   *
+   * The values are inherited as conventions rather than copied, so a `pnpm { }` block that runs in
+   * the workspace root after this package was configured still reaches it. Setting one of them here
+   * overrides it for this project's own pnpm invocations only; pnpm is still provisioned by the
+   * workspace root.
+   */
+  private fun applyPackageConventions(
+    target: Project,
+    extension: PnpmExtension,
+    root: Project,
+  ) {
+    val rootExtension =
+      root.extensions.findByType(PnpmExtension::class.java)
+        ?: throw GradleException(
+          "The directory of ${root.path} contains a ${PnpmWorkspaceLayout.WORKSPACE_FILE}, so it " +
+            "is the pnpm workspace root of ${target.path}, but it does not apply the $PLUGIN_ID " +
+            "plugin. Apply id(\"$PLUGIN_ID\") in the build script of ${root.path}."
+        )
+
+    target.logger.debug(
+      "pnpm: package {} inherits its pnpm configuration from the workspace root {}",
+      target.path,
+      root.path,
+    )
+
+    extension.workspaceRootPath.convention(rootExtension.workspaceRootPath)
+    extension.version.convention(rootExtension.version)
+    extension.installDirectory.convention(rootExtension.installDirectory)
+    extension.executable.convention(rootExtension.executable)
+  }
+
+  /**
+   * Conventions of a project that takes no part in the pnpm build.
+   * [PnpmExtension.workspaceRootPath] deliberately gets none: its absence is what makes
+   * [lifecycleTaskPath] report the missing workspace root, and only if a pnpm task of this project
+   * is actually requested.
+   */
+  private fun applyInertConventions(target: Project, extension: PnpmExtension) {
+    val projectDirectory = target.layout.projectDirectory
+
+    extension.version.convention(DEFAULT_PNPM_VERSION)
+
+    extension.installDirectory.convention(
+      extension.version.map { version -> projectDirectory.dir(".gradle/pnpm/$version") }
+    )
+  }
+
+  /**
+   * Path of the lifecycle task [taskName] in the workspace root configured in [extension].
+   *
+   * A project that takes no part in the pnpm build has no workspace root, so the provider fails
+   * instead of yielding a path. That is deliberately not checked when the plugin is applied: such a
+   * project is inert, and only requesting one of its pnpm tasks makes the missing workspace root a
+   * problem worth reporting.
+   */
+  private fun lifecycleTaskPath(
+    target: Project,
+    extension: PnpmExtension,
+    taskName: String,
+  ): Provider<String> {
+    // Locals, so that the provider captures neither the project nor this plugin: the configuration
+    // cache serializes it as part of a task dependency.
+    val projectPath = target.path
+    val projectDirectory = target.projectDir
+    val missingWorkspaceRoot =
+      target.providers.provider<String> {
+        throw GradleException(
+          PnpmWorkspaceLayout.noWorkspaceRootMessage(projectPath, projectDirectory)
+        )
+      }
+
+    return extension.workspaceRootPath.orElse(missingWorkspaceRoot).map { path ->
+      PnpmWorkspaceTasks.taskPath(path, taskName)
+    }
+  }
 
   private fun resolution(
     target: Project,

@@ -1,7 +1,6 @@
 package de.cronn.pnpm.internal
 
 import java.io.File
-import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 /** The role a project plays in a pnpm build. */
@@ -11,6 +10,9 @@ internal enum class PnpmRole {
 
   /** A package of a workspace whose root is another project. */
   PACKAGE,
+
+  /** Takes no part in the pnpm build: no pnpm file in its directory, and none above it. */
+  NONE,
 }
 
 /**
@@ -19,11 +21,22 @@ internal enum class PnpmRole {
  *
  * A `pnpm-workspace.yaml` marks a workspace root; only its presence matters, so the file is never
  * parsed and no YAML parser is needed.
+ *
+ * Discovery is total: it never fails, whatever a project's directory looks like. Applying the
+ * plugin has to succeed on a project whose directory is empty, because that is how Gradle derives
+ * the type-safe accessors of a convention plugin -- it applies every plugin of a precompiled script
+ * plugin's `plugins {}` block to a synthetic project over an empty temporary directory, and any
+ * failure there fails the whole build. A project that takes no part in the pnpm build is therefore
+ * [PnpmRole.NONE] and stays inert; [noWorkspaceRootMessage] is reported if one of its pnpm tasks is
+ * requested after all.
  */
 internal class PnpmWorkspaceLayout(
   val role: PnpmRole,
-  /** The project that owns the pnpm installation and the lifecycle tasks. */
-  val workspaceRoot: Project,
+  /**
+   * The project that owns the pnpm installation and the lifecycle tasks, or `null` for
+   * [PnpmRole.NONE], which has no workspace root anywhere.
+   */
+  val workspaceRoot: Project?,
 ) {
 
   val isWorkspaceRoot: Boolean
@@ -64,13 +77,27 @@ internal class PnpmWorkspaceLayout(
         return PnpmWorkspaceLayout(PnpmRole.WORKSPACE_ROOT, target)
       }
 
-      throw GradleException(
-        "Cannot tell what role ${target.path} plays in the pnpm build: its directory " +
-          "(${target.projectDir}) contains neither a $WORKSPACE_FILE nor a $PACKAGE_JSON, and " +
-          "none of its ancestor projects contains a $WORKSPACE_FILE. Add a $WORKSPACE_FILE to the " +
-          "workspace root, or a $PACKAGE_JSON to ${target.path}."
+      target.logger.debug(
+        "pnpm: {} contains neither a {} nor a {} and no ancestor project contains a {}, so it " +
+          "takes no part in the pnpm build",
+        target.path,
+        WORKSPACE_FILE,
+        PACKAGE_JSON,
+        WORKSPACE_FILE,
       )
+      return PnpmWorkspaceLayout(PnpmRole.NONE, null)
     }
+
+    /**
+     * Why a project that takes no part in the pnpm build cannot run a pnpm task. Reported when such
+     * a task is requested, rather than when the plugin is applied: a project with no pnpm files is
+     * inert, not misconfigured, until something actually needs a workspace root.
+     */
+    fun noWorkspaceRootMessage(projectPath: String, projectDirectory: File): String =
+      "$projectPath takes no part in the pnpm build, so it has no pnpm workspace root: its " +
+        "directory ($projectDirectory) contains neither a $WORKSPACE_FILE nor a $PACKAGE_JSON, " +
+        "and none of its ancestor projects contains a $WORKSPACE_FILE. Add a $WORKSPACE_FILE to " +
+        "the workspace root, or a $PACKAGE_JSON to $projectPath."
 
     /** The ancestors of [target], nearest first, up to and including the root project. */
     private fun ancestors(target: Project): Sequence<Project> =
