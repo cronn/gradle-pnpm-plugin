@@ -16,7 +16,10 @@ import org.gradle.api.provider.Property
  */
 public abstract class PnpmExtension {
 
-  /** The pnpm version to use. Defaults to the version bundled with the plugin. */
+  /**
+   * The pnpm version to download when neither [executable] is set nor a pnpm is found on the
+   * `PATH`. Defaults to the version pinned by the plugin.
+   */
   public abstract val version: Property<String>
 
   /**
@@ -29,16 +32,6 @@ public abstract class PnpmExtension {
    * The pnpm executable to use. When set, no pnpm is downloaded and the `PATH` is not consulted.
    */
   public abstract val executable: Property<String>
-
-  /**
-   * Whether a pnpm found on the `PATH` is reused when its version matches [version]. Defaults to
-   * `true`.
-   *
-   * Reusing a matching pnpm avoids a download, at the cost of one `pnpm --version` call per build,
-   * which is a configuration cache input. Set to `false` for a fully hermetic build that always
-   * uses the pnpm version pinned via [version].
-   */
-  public abstract val preferPnpmOnPath: Property<Boolean>
 
   /**
    * Gradle path of the project that is the pnpm workspace root, for example `:` or `:frontend`.

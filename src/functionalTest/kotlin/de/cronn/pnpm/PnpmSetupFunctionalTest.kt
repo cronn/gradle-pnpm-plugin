@@ -62,6 +62,25 @@ class PnpmSetupFunctionalTest {
   }
 
   /**
+   * A pnpm on the `PATH` is reused whatever version it is: the pinned version only decides which
+   * pnpm is downloaded when there is none.
+   */
+  @Test
+  fun `is skipped when a pnpm of another version is on the path`() {
+    val onPath = PnpmStub(File(projectDirectory, "pnpm-on-path"))
+    val executable = onPath.install()
+    val fixture = workspaceWithLocalRelease()
+
+    val result = fixture.runner("pnpmInstall", pnpmOnPath = executable).build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(onPath.invocations())
+      .singleElement()
+      .extracting { it.arguments }
+      .isEqualTo(listOf("install"))
+  }
+
+  /**
    * The configuration cache resolves the inputs of a task while it stores the entry, before any
    * `onlyIf` runs. A build that does not provision pnpm must therefore not even reach the
    * repository -- here an unreachable one, so that any resolution would fail the build.
@@ -107,7 +126,7 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `fails with a readable message when no repository serves the pnpm distribution`() {
     val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(pnpmConfiguration = "preferPnpmOnPath = false")
+    fixture.writeWorkspace(pnpmConfiguration = "")
 
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
@@ -239,7 +258,7 @@ class PnpmSetupFunctionalTest {
         $extraBuildScript
         """
           .trimIndent(),
-      pnpmConfiguration = "preferPnpmOnPath = false",
+      pnpmConfiguration = "",
     )
     return fixture
   }

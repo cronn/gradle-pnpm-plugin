@@ -11,7 +11,7 @@ import org.gradle.api.GradleException
  * properties inside this class, so that the mapping can be tested for every supported platform on a
  * single machine.
  */
-internal class PnpmPlatform(osName: String, osArch: String) {
+internal class PnpmPlatform(val osName: String, val osArch: String) {
 
   private val family = familyOf(osName)
 
