@@ -1,23 +1,28 @@
 # gradle-pnpm-plugin
 
-A Gradle plugin that provisions [pnpm](https://pnpm.io) and integrates a pnpm workspace into a Gradle
-build.
+A Gradle plugin that provisions [pnpm](https://pnpm.io) and integrates a pnpm workspace into a
+Gradle build.
 
 The pnpm version is pinned once, in the `devEngines` field of `package.json`, and pnpm itself
 enforces that pin. The plugin's job is just to make sure *some* pnpm is available to run in the
 first place — on a fresh checkout or CI runner, nothing is installed yet. It bootstraps a pnpm from
 `PATH` or from a pnpm distribution it resolves like any other dependency, then lets pnpm's own
-version resolution, lockfile checks and checksum verification take it from there. It also installs the workspace dependencies and exposes
-pre-defined tasks for common tools like TypeScript, Prettier and ESLint.
+version resolution, lockfile checks and checksum verification take it from there. It also installs
+the workspace dependencies and exposes pre-defined tasks for common tools like TypeScript, Prettier
+and ESLint.
 
 Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 and arm64.
 
 ## Setup
 
-Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm build. There is
-only one plugin id: the plugin works out what each project is from the files in its directory —
-the **workspace root** has a `pnpm-workspace.yaml`, a **package** sits below it, and a project with
-only a `package.json` is a **standalone package** that acts as its own workspace root.
+Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm build. The plugin
+works out what each project is from the files in its directory:
+
+- **workspace root**: project with a `pnpm-workspace.yaml`
+- **workspace package**: project with a `package.json` and an ancestor project with a `pnpm-workspace.yaml`
+- **standalone package**: project with a `package.json` and no ancestor project with a `pnpm-workspace.yaml`
+
+A project with neither takes no part in the pnpm build.
 
 Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your workspace root:
 
@@ -43,6 +48,65 @@ Then apply the plugin, in the workspace root and in every package:
 // build.gradle.kts
 plugins {
   id("de.cronn.gradle-pnpm-plugin") version "<version>"
+}
+```
+
+### Convention plugins
+
+The plugin can be applied from
+a [convention plugin](https://docs.gradle.org/current/samples/sample_convention_plugins.html)
+— a precompiled script plugin in `buildSrc`. Put the plugin on buildSrc's compile classpath:
+
+```kotlin
+// buildSrc/build.gradle.kts
+plugins {
+  `kotlin-dsl`
+}
+
+repositories {
+  gradlePluginPortal()
+}
+
+dependencies {
+  implementation("de.cronn:gradle-pnpm-plugin:<version>")
+}
+```
+
+and apply it from the convention plugin's `plugins` block:
+
+```kotlin
+// buildSrc/src/main/kotlin/pnpm-conventions.gradle.kts
+plugins {
+  id("de.cronn.gradle-pnpm-plugin")
+}
+
+pnpm {
+  version = "11.25.0"
+}
+
+prettier {
+  extraArguments("--cache")
+}
+```
+
+The same convention plugin can be applied to the workspace root and to every package: the `pnpm`,
+`typescript`, `prettier` and `eslint` extensions exist in every project, whatever role it plays.
+
+The pnpm lifecycle tasks are the exception, because they exist only on the workspace root. Gradle
+derives the type-safe accessors of a convention plugin by applying the plugin to a synthetic project
+over an empty directory, which is no workspace root, so there is no `tasks.pnpmInstall` accessor.
+Address them by name, from a convention plugin that only the workspace root applies:
+
+```kotlin
+// buildSrc/src/main/kotlin/pnpm-workspace-conventions.gradle.kts
+import de.cronn.pnpm.task.PnpmTask
+
+plugins {
+  id("pnpm-conventions")
+}
+
+tasks.named<PnpmTask>("pnpmInstall") {
+  // ...
 }
 ```
 
@@ -117,8 +181,21 @@ pnpm {
 }
 ```
 
-The `pnpm` extension is created on the workspace root and shared by the whole workspace, so
-configure it once, in the build script of the workspace root.
+`version`, `installDirectory` and `executable` describe the one pnpm installation the whole
+workspace shares, so configure them once, in the build script of the workspace root. Every package
+inherits its values from there. Setting one of them on a package overrides it for that project's own
+pnpm invocations only — pnpm is still provisioned by the workspace root.
+
+`workspaceRootPath` is the one property that is per project. It says which project provisions pnpm
+for this one, and defaults to the nearest ancestor project holding a `pnpm-workspace.yaml`. Set it
+to point a project at a workspace root the plugin cannot discover on its own, because it is not one
+of that project's Gradle ancestors:
+
+```kotlin
+pnpm {
+  workspaceRootPath = ":frontend"
+}
+```
 
 In CI, the pnpm distribution comes out of the Gradle dependency cache, so caching
 `~/.gradle/caches/modules-2` is enough to avoid downloading it on every run. Caching the workspace
@@ -127,7 +204,9 @@ extraction, and caching pnpm's own download cache skips the package downloads.
 
 ## Package tasks
 
-Registered in every package. Tasks related to a supported tool are enabled by default exactly when the project contains a configuration file for it. For a list of pre-defined tasks, see the documentation pages of each tool:
+Registered in every package. Tasks related to a supported tool are enabled by default exactly when
+the project contains a configuration file for it. For a list of pre-defined tasks, see the
+documentation pages of each tool:
 
 - [TypeScript](docs/typescript.md)
 - [ESLint](docs/eslint.md)
@@ -157,7 +236,8 @@ eslint {
 }
 ```
 
-Configuration defined via the available extension properties is also applied to custom tasks using the task classes provided for each tool.
+Configuration defined via the available extension properties is also applied to custom tasks using
+the task classes provided for each tool.
 
 ## Custom pnpm tasks
 
@@ -190,7 +270,8 @@ tasks.register<PnpmRunTask>("buildFrontend") {
 ./gradlew publishToMavenLocal                                   # publish to the local Maven repository
 ```
 
-To try out uncommitted changes in a real build, run `./gradlew publishToMavenLocal` and add the following configuration to the target project's `settings.gradle.kts`:
+To try out uncommitted changes in a real build, run `./gradlew publishToMavenLocal` and add the
+following configuration to the target project's `settings.gradle.kts`:
 
 ```kotlin
 // settings.gradle.kts

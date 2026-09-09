@@ -16,6 +16,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.provider.Provider
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -56,12 +57,57 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `creates the pnpm extension only on the workspace root`(@TempDir directory: File) {
+  fun `creates the pnpm extension in every project`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    val root = project.rootProject
+
+    // Every project has one, so that the plugin surface a convention plugin sees does not depend on
+    // the role of the project the accessors happened to be generated from.
+    assertThat(root.extensions.findByName("pnpm")).isInstanceOf(PnpmExtension::class.java)
+    assertThat(project.extensions.findByName("pnpm")).isInstanceOf(PnpmExtension::class.java)
+    assertThat(extension(project)).isNotSameAs(extension(root))
+
+    assertThat(extension(project).workspaceRootPath.get()).isEqualTo(":")
+    assertThat(extension(project).version.get()).isEqualTo(extension(root).version.get())
+    assertThat(extension(project).installDirectory.get())
+      .isEqualTo(extension(root).installDirectory.get())
+  }
+
+  @Test
+  fun `a package keeps following its workspace root configured later`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    val root = project.rootProject
+
+    // Inherited as a convention rather than copied, so configuring the workspace root after a
+    // package was configured still reaches that package.
+    extension(root).version.set("11.0.0")
+
+    assertThat(extension(project).version.get()).isEqualTo("11.0.0")
+    assertThat(extension(project).installDirectory.get().asFile)
+      .isEqualTo(File(root.projectDir, ".gradle/pnpm/11.0.0"))
+  }
+
+  @Test
+  fun `a package can override the pnpm version for its own tasks`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    val root = project.rootProject
+    extension(root).version.set("11.0.0")
+
+    extension(project).version.set("11.1.0")
+
+    assertThat(pnpmTask(root, "pnpmInstall").pnpmVersion.get()).isEqualTo("11.0.0")
+    assertThat(toolTask(project, "prettierCheck").pnpmVersion.get()).isEqualTo("11.1.0")
+  }
+
+  @Test
+  fun `a package follows a redirected workspace root`(@TempDir directory: File) {
     val project = packageProject(directory)
 
-    assertThat(project.extensions.findByType(PnpmExtension::class.java)).isNull()
-    assertThat(project.rootProject.extensions.findByName("pnpm"))
-      .isInstanceOf(PnpmExtension::class.java)
+    extension(project.rootProject).workspaceRootPath.set(":other")
+
+    assertThat(extension(project).workspaceRootPath.get()).isEqualTo(":other")
+    assertThat(dependencyPaths(toolTask(project, "prettierCheck")))
+      .contains(":other:pnpmSetup", ":other:pnpmInstall")
   }
 
   @Test
@@ -214,15 +260,62 @@ class PnpmPluginTest {
     assertThat(extension(project).workspaceRootPath.get()).isEqualTo(":")
   }
 
+  /**
+   * Gradle derives the type-safe accessors of a convention plugin by applying the plugin to a
+   * synthetic project over an empty temporary directory, and fails the whole build if that throws.
+   * A project with an empty directory is exactly what this builds, so this is the regression guard
+   * for using the plugin from a convention plugin.
+   */
   @Test
-  fun `fails when the project is neither a workspace root nor a package`(@TempDir directory: File) {
+  fun `applies to a project with no pnpm files`(@TempDir directory: File) {
     val project = ProjectBuilder.builder().withProjectDir(directory).build()
 
-    assertThatThrownBy { project.pluginManager.apply(PLUGIN_ID) }
-      .hasRootCauseInstanceOf(GradleException::class.java)
+    project.pluginManager.apply(PLUGIN_ID)
+
+    assertThat(project.extensions.findByName("pnpm")).isInstanceOf(PnpmExtension::class.java)
+    assertThat(project.extensions.findByName("typescript"))
+      .isInstanceOf(TypescriptExtension::class.java)
+    assertThat(project.extensions.findByName("prettier"))
+      .isInstanceOf(PrettierExtension::class.java)
+    assertThat(project.extensions.findByName("eslint")).isInstanceOf(EslintExtension::class.java)
+    assertThat(project.tasks.names).contains("compileTypescript", "prettierCheck", "eslintCheck")
+
+    // It takes no part in the pnpm build, so it owns neither the lifecycle tasks nor the
+    // distribution of a workspace root.
+    assertThat(project.tasks.names)
+      .doesNotContain("pnpmSetup", "pnpmInstall", "pnpmDedupe", "pnpmClean")
+    assertThat(project.configurations.names)
+      .doesNotContain(
+        PnpmDistribution.DECLARED_CONFIGURATION_NAME,
+        PnpmDistribution.ARCHIVE_CONFIGURATION_NAME,
+      )
+  }
+
+  @Test
+  fun `reports the missing workspace root when a pnpm task of such a project runs`(
+    @TempDir directory: File
+  ) {
+    val project = ProjectBuilder.builder().withProjectDir(directory).build()
+    project.pluginManager.apply(PLUGIN_ID)
+    val task = project.tasks.register("runSomething", PnpmExecTask::class.java).get()
+
+    // Gradle wraps the failure of a dependency provider, so only the message is asserted on.
+    assertThatThrownBy { task.taskDependencies.getDependencies(task) }
       .rootCause()
-      .hasMessageContaining("Cannot tell what role : plays in the pnpm build")
+      .isInstanceOf(GradleException::class.java)
+      .hasMessageContaining(": takes no part in the pnpm build")
       .hasMessageContaining("neither a pnpm-workspace.yaml nor a package.json")
+      .hasMessageContaining("Add a pnpm-workspace.yaml to the workspace root")
+  }
+
+  @Test
+  fun `does not report a missing workspace root for a real workspace root`(
+    @TempDir directory: File
+  ) {
+    val project = workspaceProject(directory)
+
+    assertThat(dependencyNames(project.tasks.getByName("prettierCheck")))
+      .contains("pnpmInstall", "pnpmSetup")
   }
 
   @Test
@@ -489,6 +582,13 @@ class PnpmPluginTest {
 
   private fun dependencyNames(task: Task): List<String> =
     task.taskDependencies.getDependencies(task).map { it.name }
+
+  /**
+   * The task paths [task] declares a dependency on, without resolving them. The paths of another
+   * project's lifecycle tasks are what the plugin wires in, and they need no such project to exist.
+   */
+  private fun dependencyPaths(task: Task): List<String> =
+    task.dependsOn.filterIsInstance<Provider<*>>().map { it.get().toString() }
 
   internal companion object {
     const val PNPM_VERSION = "11.23.0"
