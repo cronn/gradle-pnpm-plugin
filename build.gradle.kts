@@ -99,10 +99,7 @@ gradlePlugin {
       implementationClass = "de.cronn.pnpm.PnpmPlugin"
       displayName = "pnpm plugin"
       description =
-        "Provisions the pnpm version pinned in package.json and integrates a pnpm workspace into " +
-          "the Gradle build. Discovers the workspace root from pnpm-workspace.yaml and adds the " +
-          "pnpm lifecycle tasks there, plus TypeScript, Prettier and ESLint tasks to every pnpm " +
-          "package"
+        "A Gradle plugin that provisions pnpm and integrates a pnpm workspace into a Gradle build."
       compatibility {
         features {
           configurationCache = true
@@ -112,11 +109,6 @@ gradlePlugin {
         listOf(
           "pnpm",
           "node",
-          "npm",
-          "javascript",
-          "typescript",
-          "eslint",
-          "prettier",
           "workspace",
           "monorepo",
         )
