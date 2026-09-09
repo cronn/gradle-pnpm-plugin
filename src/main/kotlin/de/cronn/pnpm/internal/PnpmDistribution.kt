@@ -69,8 +69,9 @@ internal object PnpmDistribution {
         configuration.extendsFrom(declared.get())
       }
 
+    val archiveFiles: FileCollection = archive.get()
     return usesManagedPnpm.map { managed ->
-      if (managed) listOf<FileCollection>(archive.get()) else emptyList()
+      if (managed) listOf(archiveFiles) else emptyList()
     }
   }
 
