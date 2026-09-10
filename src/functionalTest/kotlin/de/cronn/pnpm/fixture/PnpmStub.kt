@@ -15,7 +15,7 @@ class PnpmStub(private val directory: File) {
   /** Installs the stub and returns its path, to be used as `pnpm.executable`. */
   fun install(exitCode: Int = 0, standardOutput: String = ""): File {
     directory.mkdirs()
-    // The lock directories of the batch stub go as well, so that the slots start over from zero.
+    // The lock directories go as well, so that the slots start over from zero.
     directory
       .listFiles()
       .orEmpty()
@@ -58,34 +58,34 @@ class PnpmStub(private val directory: File) {
   }
 
   /**
-   * The record files in the order they were written: the single file the shell stub appends to, or
-   * the numbered per-invocation files of the batch stub, ordered by the slot each invocation
-   * claimed.
+   * The numbered per-invocation record files, ordered by the slot each invocation claimed, which is
+   * the order the stub was called in.
    */
-  private fun recordFiles(): List<File> {
-    val slots =
-      directory
-        .listFiles()
-        .orEmpty()
-        .mapNotNull { file ->
-          file.name
-            .substringAfter("${recordFile.name}.", missingDelimiterValue = "")
-            .toIntOrNull()
-            ?.let { slot -> slot to file }
-        }
-        .sortedBy { (slot, _) -> slot }
-        .map { (_, file) -> file }
-    return listOfNotNull(recordFile.takeIf { it.isFile }) + slots
-  }
+  private fun recordFiles(): List<File> =
+    directory
+      .listFiles()
+      .orEmpty()
+      .mapNotNull { file ->
+        file.name
+          .substringAfter("${recordFile.name}.", missingDelimiterValue = "")
+          .toIntOrNull()
+          ?.let { slot -> slot to file }
+      }
+      .sortedBy { (slot, _) -> slot }
+      .map { (_, file) -> file }
 
   /**
    * The shell stub, built from shell builtins alone: the tests run the build with every `PATH`
    * entry that holds a pnpm removed, which on a machine that installed pnpm system wide takes `env`
    * and `grep` with it.
    *
-   * The record of an invocation is assembled in a variable and appended with a single `printf`,
-   * because two stubs started by tasks that Gradle runs in parallel append to the same file:
-   * written line by line, the lines of one invocation land between those of another.
+   * Every invocation records into its own numbered file, claiming the first free slot the same way
+   * the batch stub does. Appending to a shared file is not an option: a `printf` of a whole record
+   * is not one `write` call in every shell (the bash 3.2 that is `/bin/sh` on macOS flushes the
+   * format in pieces), so the lines of one invocation land between those of another as soon as
+   * Gradle runs two pnpm tasks in parallel. The slot is claimed by the record redirection itself
+   * under `set -C`, and not with `mkdir`, which is no builtin and therefore not on the stripped
+   * `PATH`.
    */
   private fun installShellScript(exitCode: Int, standardOutput: String): File {
     val script = File(directory, "pnpm")
@@ -108,9 +108,23 @@ class PnpmStub(private val directory: File) {
         record="${'$'}record
       ${'$'}variables"
       fi
-      printf '%s\n---\n' "${'$'}record" >> '${recordFile.absolutePath}'
-      ${if (standardOutput.isEmpty()) "" else "printf '%s\\n' '$standardOutput'"}
-      exit $exitCode
+      # `set -C` makes the redirection fail on a file that exists, so creating the record file and
+      # writing it are one step and no two invocations claim the same slot. Sequential invocations
+      # claim ascending slots, which is what keeps the recorded order meaningful.
+      set -C
+      slot=0
+      while [ ${'$'}slot -lt $MAX_SLOTS ]; do
+        # The error output is redirected before the record file, so that the message a shell
+        # prints for a redirection onto an existing file is suppressed as well.
+        if printf '%s\n---\n' "${'$'}record" 2>/dev/null > '${recordFile.absolutePath}.'${'$'}slot
+        then
+          ${if (standardOutput.isEmpty()) "" else "printf '%s\\n' '$standardOutput'"}
+          exit $exitCode
+        fi
+        slot=${'$'}((slot + 1))
+      done
+      echo "failed to record an invocation next to ${recordFile.absolutePath}" 1>&2
+      exit 1
       """
         .trimIndent() + "\n"
     )
@@ -123,14 +137,11 @@ class PnpmStub(private val directory: File) {
     // cmd.exe splits batch parameters on '=' as well, which would turn "--max-warnings=0" into two
     // arguments.
     //
-    // cmd.exe opens a redirection target without sharing it for writing, so two stub processes
-    // started by tasks that Gradle runs in parallel cannot append to the same file: one of them
-    // loses its record entirely. Each invocation therefore records into its own numbered file,
-    // claiming the first free slot. The claim is a `md` of a lock directory next to it, because
-    // creating a directory either succeeds or fails as one step: testing a file for existence and
-    // then opening it lets two invocations claim the same slot and interleave their records.
-    // Sequential invocations claim ascending slots, which is what keeps the recorded order
-    // meaningful.
+    // Every invocation records into its own numbered file, claiming the first free slot the same
+    // way the shell stub does. The claim is a `md` of a lock directory next to it, because creating
+    // a directory either succeeds or fails as one step: testing a file for existence and then
+    // opening it lets two invocations claim the same slot and interleave their records. Sequential
+    // invocations claim ascending slots, which is what keeps the recorded order meaningful.
     //
     // The environment variables are appended after the slot is claimed, because `set` needs its
     // own error output suppressed, which cmd.exe does not take inside a redirection block.
@@ -178,7 +189,7 @@ class PnpmStub(private val directory: File) {
      */
     const val ENVIRONMENT_PREFIX: String = "PNPM_TEST_"
 
-    /** Upper bound on the numbered record files the batch stub will try to claim. */
+    /** Upper bound on the numbered record files a stub will try to claim. */
     private const val MAX_SLOTS = 1000
 
     /**
