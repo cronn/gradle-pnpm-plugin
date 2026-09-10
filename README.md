@@ -32,11 +32,13 @@ Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your wo
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.25.0"
+      "version": "11.25.0",
+      "onFail": "download"
     },
     "runtime": {
       "name": "node",
-      "version": "24.20.0"
+      "version": "24.20.0",
+      "onFail": "download"
     }
   }
 }
