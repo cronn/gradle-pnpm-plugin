@@ -45,7 +45,7 @@ class PnpmPackageFunctionalTest {
     assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(fixture.stub.invocations().map { it.arguments })
       .contains(
-        listOf("exec", "tsc", "--noEmit"),
+        listOf("exec", "tsc"),
         listOf("exec", "prettier", *PRETTIER_PATTERNS, "--check"),
         listOf("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0"),
       )

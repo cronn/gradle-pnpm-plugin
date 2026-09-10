@@ -366,7 +366,7 @@ class PnpmPluginTest {
     val project = packageProject(directory)
 
     assertThat(toolTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
-    assertThat(toolTask(project, "compileTypescript").arguments.get()).containsExactly("--noEmit")
+    assertThat(toolTask(project, "compileTypescript").arguments.get()).isEmpty()
     assertThat(toolTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
     assertThat(toolTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
     assertThat(toolTask(project, "prettierFix").arguments.get())

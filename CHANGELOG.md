@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Breaking:** `compileTypescript` no longer passes `--noEmit`; set `noEmit` in the
+  `tsconfig.json` or add the argument in the task configuration to only type-check
 - New `environment` on `PnpmTask`, to pass environment variables to the pnpm process; the entries
   are added to the environment of the build (Closes #23)
 - **Breaking:** the tools are invoked with the `includes` and `excludes` patterns instead of the
