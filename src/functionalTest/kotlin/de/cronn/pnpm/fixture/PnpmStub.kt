@@ -15,7 +15,12 @@ class PnpmStub(private val directory: File) {
   /** Installs the stub and returns its path, to be used as `pnpm.executable`. */
   fun install(exitCode: Int = 0, standardOutput: String = ""): File {
     directory.mkdirs()
-    recordFiles().forEach { it.delete() }
+    // The lock directories of the batch stub go as well, so that the slots start over from zero.
+    directory
+      .listFiles()
+      .orEmpty()
+      .filter { it.name.startsWith("${recordFile.name}.") || it.name == recordFile.name }
+      .forEach { it.delete() }
     return if (isWindows) installBatchFile(exitCode, standardOutput)
     else installShellScript(exitCode, standardOutput)
   }
@@ -118,14 +123,15 @@ class PnpmStub(private val directory: File) {
     //
     // cmd.exe opens a redirection target without sharing it for writing, so two stub processes
     // started by tasks that Gradle runs in parallel cannot append to the same file: one of them
-    // loses its record entirely. Each invocation therefore claims the first free numbered file,
-    // and `2>nul ( ... ) || goto` both swallows the redirection error cmd.exe would print and
-    // moves on to the next slot when another invocation won the race for this one. Sequential
-    // invocations claim ascending slots, which is what keeps the recorded order meaningful.
+    // loses its record entirely. Each invocation therefore records into its own numbered file,
+    // claiming the first free slot. The claim is a `md` of a lock directory next to it, because
+    // creating a directory either succeeds or fails as one step: testing a file for existence and
+    // then opening it lets two invocations claim the same slot and interleave their records.
+    // Sequential invocations claim ascending slots, which is what keeps the recorded order
+    // meaningful.
     //
     // The environment variables are appended after the slot is claimed, because `set` needs its
-    // own error output suppressed and cmd.exe does not take that escape inside the nested
-    // redirection block claiming the slot.
+    // own error output suppressed, which cmd.exe does not take inside a redirection block.
     val script = File(directory, "pnpm.bat")
     script.writeText(
       """
@@ -134,14 +140,12 @@ class PnpmStub(private val directory: File) {
       set RECORD=${recordFile.absolutePath}
       set SLOT=0
       :claim
-      if exist "%RECORD%.%SLOT%" goto next
-      2>nul (
-        >>"%RECORD%.%SLOT%" (
-          echo cwd=%CD%
-          echo args=%*
-        )
-      ) || goto next
-      if exist "%RECORD%.%SLOT%" goto recorded
+      md "%RECORD%.%SLOT%.lock" 2>nul || goto next
+      >>"%RECORD%.%SLOT%" (
+        echo cwd=%CD%
+        echo args=%*
+      )
+      goto recorded
       :next
       set /a SLOT+=1
       if %SLOT% lss $MAX_SLOTS goto claim
