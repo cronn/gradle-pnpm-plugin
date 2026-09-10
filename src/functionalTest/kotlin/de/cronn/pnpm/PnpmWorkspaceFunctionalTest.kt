@@ -147,10 +147,12 @@ class PnpmWorkspaceFunctionalTest {
       .containsExactly(
         "exec",
         "prettier",
-        "eslint.config.ts",
-        "package.json",
-        "prettier.config.ts",
-        "tsconfig.json",
+        "--no-error-on-unmatched-pattern",
+        "*.ts",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "*.json",
+        "*.md",
         "--check",
       )
     assertThat(invocations.last().workingDirectory)

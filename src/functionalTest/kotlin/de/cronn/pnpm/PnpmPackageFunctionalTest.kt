@@ -19,7 +19,8 @@ class PnpmPackageFunctionalTest {
 
     assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     val prettier = fixture.stub.invocations().single { it.arguments.contains("prettier") }
-    assertThat(prettier.arguments).containsExactly("exec", "prettier", *PRETTIER_SOURCES, "--check")
+    assertThat(prettier.arguments)
+      .containsExactly("exec", "prettier", *PRETTIER_PATTERNS, "--check")
     assertThat(File(prettier.workingDirectory).canonicalFile)
       .isEqualTo(fixture.directory("frontend").canonicalFile)
   }
@@ -45,8 +46,8 @@ class PnpmPackageFunctionalTest {
     assertThat(fixture.stub.invocations().map { it.arguments })
       .contains(
         listOf("exec", "tsc", "--noEmit"),
-        listOf("exec", "prettier", *PRETTIER_SOURCES, "--check"),
-        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0"),
+        listOf("exec", "prettier", *PRETTIER_PATTERNS, "--check"),
+        listOf("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0"),
       )
   }
 
@@ -63,8 +64,8 @@ class PnpmPackageFunctionalTest {
         .filter { it.contains("--fix") || it.contains("--write") }
     assertThat(fixes)
       .containsExactly(
-        listOf("exec", "eslint", *ESLINT_SOURCES, "--max-warnings=0", "--fix"),
-        listOf("exec", "prettier", *PRETTIER_SOURCES, "--write", "--list-different"),
+        listOf("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0", "--fix"),
+        listOf("exec", "prettier", *PRETTIER_PATTERNS, "--write", "--list-different"),
       )
   }
 
@@ -81,7 +82,7 @@ class PnpmPackageFunctionalTest {
     fixture.runner(":frontend:prettierCheck").build()
 
     assertThat(fixture.stub.invocations().map { it.arguments })
-      .contains(listOf("exec", "prettier", *PRETTIER_SOURCES, "--check", "--cache"))
+      .contains(listOf("exec", "prettier", *PRETTIER_PATTERNS, "--check", "--cache"))
   }
 
   @Test
@@ -139,7 +140,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint {
-            includes("sources/**")
+            includes("sources/**/*.ts")
             excludes("sources/generated/**")
           }
           """
@@ -176,12 +177,99 @@ class PnpmPackageFunctionalTest {
     fixture.runner(":frontend:eslintCheck").build()
 
     assertThat(fixture.stub.invocations().map { it.arguments })
-      .contains(listOf("exec", "eslint", "sources/app.ts", "--max-warnings=0"))
+      .contains(
+        listOf(
+          "exec",
+          "eslint",
+          "--no-error-on-unmatched-pattern",
+          "sources/**/*.ts",
+          "--max-warnings=0",
+        )
+      )
 
     // main.ts matches a default pattern, which the configured includes replaced.
     fixture.write("frontend/main.ts", "export const main = 2")
     val second = fixture.runner(":frontend:eslintCheck").build()
     assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
+  @Test
+  fun `names no individual source file on the command line`() {
+    val fixture = workspaceWithFrontend()
+    repeat(50) { index -> fixture.write("frontend/src/module$index.ts", "export const m = $index") }
+
+    fixture.runner(":frontend:eslintCheck").build()
+
+    // Passing every source file would overrun the command line length limit of Windows.
+    val eslint = fixture.stub.invocations().single { it.arguments.contains("eslint") }
+    assertThat(eslint.arguments)
+      .containsExactly("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0")
+  }
+
+  @Test
+  fun `passes the excludes to eslint as ignore patterns`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          eslint { excludes("src/generated/**") }
+          """
+      )
+    fixture.write("frontend/src/generated/api.ts", "export const api = 1")
+
+    fixture.runner(":frontend:eslintCheck").build()
+
+    val eslint = fixture.stub.invocations().single { it.arguments.contains("eslint") }
+    assertThat(eslint.arguments)
+      .containsSequence("--ignore-pattern", "src/generated/**")
+      .doesNotContain("!src/generated/**")
+  }
+
+  @Test
+  fun `passes the excludes to prettier as negated patterns`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          prettier { excludes("src/generated/**") }
+          """
+      )
+    fixture.write("frontend/src/generated/api.ts", "export const api = 1")
+
+    fixture.runner(":frontend:prettierCheck").build()
+
+    val prettier = fixture.stub.invocations().single { it.arguments.contains("prettier") }
+    assertThat(prettier.arguments).contains("!src/generated/**").doesNotContain("--ignore-pattern")
+  }
+
+  @Test
+  fun `keeps the declared order of the patterns on the command line`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          eslint { includes = listOf("z/**/*.ts", "a/**/*.ts") }
+          """
+      )
+    fixture.write("frontend/z/late.ts", "export const late = 1")
+
+    fixture.runner(":frontend:eslintCheck").build()
+
+    val eslint = fixture.stub.invocations().single { it.arguments.contains("eslint") }
+    assertThat(eslint.arguments).containsSequence("z/**/*.ts", "a/**/*.ts")
+  }
+
+  @Test
+  fun `runs a tool whose patterns match only in part`() {
+    val fixture = workspaceWithFrontend()
+
+    val result = fixture.runner(":frontend:eslintCheck").build()
+
+    // The frontend has no .tsx file, so the default pattern for one matches nothing. Only a tool
+    // told to tolerate that keeps going instead of failing over a pattern the plugin contributed.
+    assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    val eslint = fixture.stub.invocations().single { it.arguments.contains("eslint") }
+    assertThat(eslint.arguments).contains("--no-error-on-unmatched-pattern")
   }
 
   @Test
@@ -214,7 +302,7 @@ class PnpmPackageFunctionalTest {
           prettier { extraArguments("--cache") }
 
           tasks.register<PrettierTask>("prettierDocs") {
-            sources.setFrom(fileTree("docs") { include("**/*.md") })
+            includes = listOf("docs/**/*.md")
             arguments = listOf("--check")
           }
           """
@@ -226,7 +314,16 @@ class PnpmPackageFunctionalTest {
     // The task inherits the command, the extra arguments and the pnpmInstall dependency, and only
     // has to say which sources it works on.
     assertThat(fixture.stub.invocations().map { it.arguments })
-      .contains(listOf("exec", "prettier", "docs/guide.md", "--check", "--cache"))
+      .contains(
+        listOf(
+          "exec",
+          "prettier",
+          "--no-error-on-unmatched-pattern",
+          "docs/**/*.md",
+          "--check",
+          "--cache",
+        )
+      )
   }
 
   @Test
@@ -326,9 +423,9 @@ class PnpmPackageFunctionalTest {
   }
 
   private companion object {
-    /** The files of the `frontend` package that match the default patterns of each tool. */
-    val ESLINT_SOURCES: Array<String> = arrayOf("eslint.config.ts", "main.ts", "prettier.config.ts")
-    val PRETTIER_SOURCES: Array<String> =
-      arrayOf("eslint.config.ts", "main.ts", "package.json", "prettier.config.ts", "tsconfig.json")
+    /** The default patterns of each tool, the way they reach its command line. */
+    val ESLINT_PATTERNS: Array<String> =
+      arrayOf("--no-error-on-unmatched-pattern", "*.ts", "src/**/*.ts", "src/**/*.tsx")
+    val PRETTIER_PATTERNS: Array<String> = ESLINT_PATTERNS + arrayOf("*.json", "*.md")
   }
 }

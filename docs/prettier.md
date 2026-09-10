@@ -2,6 +2,9 @@
 
 **Enabled by**: `prettier.config.*` or `.prettierrc*` in the project directory
 
+`excludes` are passed as negated patterns (`!src/generated/**`). A negation only excludes what it
+matches literally, so an exclude naming a directory needs the trailing `/**`.
+
 ## Pre-defined tasks
 
 |      Task       | Default arguments  |                    Default includes                     | Contributes to |
@@ -17,7 +20,7 @@ Use `de.cronn.pnpm.task.PrettierTask` to register custom Prettier tasks:
 import de.cronn.pnpm.task.PrettierTask
 
 tasks.register<PrettierTask>("prettierDocs") {
-  sources.setFrom(fileTree("docs") { include("**/*.md") })
+  includes = listOf("docs/**/*.md")
   arguments = listOf("--check")
 }
 ```
