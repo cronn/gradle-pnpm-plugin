@@ -98,9 +98,11 @@ class PnpmStub(private val directory: File) {
       arg=${'$'}argument"
       done
       variables=${'$'}(set | while IFS= read -r variable; do
-        case "${'$'}variable" in
-          $ENVIRONMENT_PREFIX*) printf 'env=%s\n' "${'$'}variable" ;;
-        esac
+        # The prefix is matched by cutting it off rather than with `case`, which the bash 3.2 that
+        # is /bin/sh on macOS cannot parse inside a command substitution.
+        if [ "${'$'}{variable#$ENVIRONMENT_PREFIX}" != "${'$'}variable" ]; then
+          printf 'env=%s\n' "${'$'}variable"
+        fi
       done)
       if [ -n "${'$'}variables" ]; then
         record="${'$'}record
