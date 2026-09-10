@@ -373,6 +373,35 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
+  fun `passes the environment variables of a task to pnpm`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          import de.cronn.pnpm.task.PnpmRunTask
+
+          tasks.register<PnpmRunTask>("buildFrontend") {
+            script = "build"
+            environment.put("PNPM_TEST_TOKEN", "secret")
+            environment("PNPM_TEST_MODE", "production")
+          }
+          """
+      )
+
+    fixture.runner(":frontend:buildFrontend").build()
+
+    val invocation = fixture.stub.invocations().single { it.arguments.contains("build") }
+    assertThat(invocation.environment)
+      .containsEntry("PNPM_TEST_TOKEN", "secret")
+      .containsEntry("PNPM_TEST_MODE", "production")
+      // The variables are added to the environment of the build, not put in place of it.
+      .containsEntry(
+        GradleProjectFixture.INHERITED_VARIABLE,
+        GradleProjectFixture.INHERITED_VALUE,
+      )
+  }
+
+  @Test
   fun `reuses the configuration cache across runs`() {
     val fixture = workspaceWithFrontend()
 

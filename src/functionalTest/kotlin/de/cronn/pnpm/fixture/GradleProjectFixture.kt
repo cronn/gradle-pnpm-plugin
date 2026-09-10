@@ -282,9 +282,12 @@ class GradleProjectFixture(val rootDirectory: File) {
    * The environment of the test JVM, with every `PATH` entry that holds a pnpm removed and the
    * directory of [pnpmOnPath] put in front. The plugin reuses a pnpm from the `PATH`, so a pnpm
    * installed on the machine running the tests would otherwise decide the outcome of every test.
+   *
+   * [INHERITED_VARIABLE] stands for whatever a real build inherits from its environment, so that a
+   * test can tell an environment a task added to from one it replaced.
    */
   private fun environmentWith(pnpmOnPath: File?): Map<String, String> =
-    System.getenv().mapValues { (name, value) ->
+    (System.getenv() + mapOf(INHERITED_VARIABLE to INHERITED_VALUE)).mapValues { (name, value) ->
       if (!name.equals("PATH", ignoreCase = true)) {
         value
       } else {
@@ -302,6 +305,11 @@ class GradleProjectFixture(val rootDirectory: File) {
   private fun quoted(file: File): String = "\"${file.invariantSeparatorsPath}\""
 
   companion object {
+    /** Variable every runner's environment holds, recorded by [PnpmStub]. */
+    const val INHERITED_VARIABLE: String = "${PnpmStub.ENVIRONMENT_PREFIX}INHERITED"
+
+    const val INHERITED_VALUE: String = "inherited"
+
     const val PNPM_VERSION: String = "11.23.0"
 
     /**

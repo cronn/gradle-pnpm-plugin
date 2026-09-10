@@ -273,6 +273,7 @@ tasks.register<PnpmExecTask>("ngBuild") {
 
 tasks.register<PnpmRunTask>("buildFrontend") {
   script = "build"
+  environment("NODE_OPTIONS", "--max-old-space-size=4096")
 }
 ```
 

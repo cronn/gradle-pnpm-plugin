@@ -42,6 +42,22 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `adds no environment variable to a pnpm task on its own`(@TempDir directory: File) {
+    val project = workspaceProject(directory)
+    val task = pnpmTask(project, "pnpmInstall")
+
+    assertThat(task.environment.get()).isEmpty()
+
+    task.environment("NODE_OPTIONS", "--max-old-space-size=4096")
+    task.environment("CI", "true")
+
+    assertThat(task.environment.get())
+      .containsExactlyInAnyOrderEntriesOf(
+        mapOf("NODE_OPTIONS" to "--max-old-space-size=4096", "CI" to "true")
+      )
+  }
+
+  @Test
   fun `registers the tool tasks on the workspace root as well`(@TempDir directory: File) {
     val project = workspaceProject(directory)
 
