@@ -5,6 +5,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
@@ -45,6 +46,17 @@ public abstract class PnpmTask : DefaultTask() {
   /** Arguments passed to pnpm, after any arguments contributed by the task type itself. */
   @get:Input public abstract val arguments: ListProperty<String>
 
+  /**
+   * Environment variables the pnpm process is invoked with, added to the environment the build
+   * itself runs in. An entry whose name is already set in that environment overrides it.
+   */
+  @get:Input public abstract val environment: MapProperty<String, String>
+
+  /** Adds one environment variable, leaving the ones already declared in place. */
+  public fun environment(name: String, value: String) {
+    environment.put(name, value)
+  }
+
   /** Directory pnpm is executed in. Defaults to the project directory. */
   @get:Internal public abstract val workingDirectory: DirectoryProperty
 
@@ -61,10 +73,18 @@ public abstract class PnpmTask : DefaultTask() {
   public fun run() {
     val commandLine = listOf(executable.get()) + buildArguments()
     val directory = workingDirectory.get().asFile
-    logger.info("Running {} in {}", commandLine.joinToString(" "), directory)
+    val variables = environment.get()
+    // The names only: a variable set here is where a token or a credential would sit.
+    logger.info(
+      "Running {} in {} with the environment variables {}",
+      commandLine.joinToString(" "),
+      directory,
+      variables.keys,
+    )
     execOperations.exec { spec ->
       spec.commandLine(commandLine)
       spec.workingDir = directory
+      spec.environment(variables)
       spec.isIgnoreExitValue = ignoreExitValue.get()
     }
   }

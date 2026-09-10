@@ -5,7 +5,8 @@ import java.util.Locale
 
 /**
  * A fake pnpm executable that records how it was invoked, so that the functional tests can assert
- * the exact command lines and working directories the plugins produce without needing a real pnpm.
+ * the exact command lines, working directories and environment variables the plugins produce
+ * without needing a real pnpm.
  */
 class PnpmStub(private val directory: File) {
 
@@ -24,19 +25,28 @@ class PnpmStub(private val directory: File) {
     val invocations = mutableListOf<PnpmInvocation>()
     var workingDirectory: String? = null
     val arguments = mutableListOf<String>()
+    val environment = mutableMapOf<String, String>()
     recordFiles()
       .flatMap { it.readLines() }
       .forEach { line ->
         when {
           line == "---" -> {
-            invocations += PnpmInvocation(workingDirectory.orEmpty(), arguments.toList())
+            invocations +=
+              PnpmInvocation(workingDirectory.orEmpty(), arguments.toList(), environment.toMap())
             workingDirectory = null
             arguments.clear()
+            environment.clear()
           }
           line.startsWith("cwd=") -> workingDirectory = line.removePrefix("cwd=")
           // The shell stub records one argument per line, the batch file the whole command line.
           line.startsWith("arg=") -> arguments += line.removePrefix("arg=")
           line.startsWith("args=") -> arguments += splitCommandLine(line.removePrefix("args="))
+          line.startsWith("env=") ->
+            line.removePrefix("env=").let { entry ->
+              // `set` quotes a value, `set PNPM_TEST_` of the batch stub does not.
+              environment[entry.substringBefore('=')] =
+                entry.substringAfter('=').removeSurrounding("'")
+            }
         }
       }
     return invocations
@@ -63,16 +73,35 @@ class PnpmStub(private val directory: File) {
     return listOfNotNull(recordFile.takeIf { it.isFile }) + slots
   }
 
+  /**
+   * The shell stub, built from shell builtins alone: the tests run the build with every `PATH`
+   * entry that holds a pnpm removed, which on a machine that installed pnpm system wide takes `env`
+   * and `grep` with it.
+   *
+   * The record of an invocation is assembled in a variable and appended with a single `printf`,
+   * because two stubs started by tasks that Gradle runs in parallel append to the same file:
+   * written line by line, the lines of one invocation land between those of another.
+   */
   private fun installShellScript(exitCode: Int, standardOutput: String): File {
     val script = File(directory, "pnpm")
     script.writeText(
       """
       #!/bin/sh
-      {
-        printf 'cwd=%s\n' "${'$'}(pwd)"
-        for argument in "${'$'}@"; do printf 'arg=%s\n' "${'$'}argument"; done
-        printf -- '---\n'
-      } >> '${recordFile.absolutePath}'
+      record="cwd=${'$'}(pwd)"
+      for argument in "${'$'}@"; do
+        record="${'$'}record
+      arg=${'$'}argument"
+      done
+      variables=${'$'}(set | while IFS= read -r variable; do
+        case "${'$'}variable" in
+          $ENVIRONMENT_PREFIX*) printf 'env=%s\n' "${'$'}variable" ;;
+        esac
+      done)
+      if [ -n "${'$'}variables" ]; then
+        record="${'$'}record
+      ${'$'}variables"
+      fi
+      printf '%s\n---\n' "${'$'}record" >> '${recordFile.absolutePath}'
       ${if (standardOutput.isEmpty()) "" else "printf '%s\\n' '$standardOutput'"}
       exit $exitCode
       """
@@ -93,6 +122,10 @@ class PnpmStub(private val directory: File) {
     // and `2>nul ( ... ) || goto` both swallows the redirection error cmd.exe would print and
     // moves on to the next slot when another invocation won the race for this one. Sequential
     // invocations claim ascending slots, which is what keeps the recorded order meaningful.
+    //
+    // The environment variables are appended after the slot is claimed, because `set` needs its
+    // own error output suppressed and cmd.exe does not take that escape inside the nested
+    // redirection block claiming the slot.
     val script = File(directory, "pnpm.bat")
     script.writeText(
       """
@@ -106,7 +139,6 @@ class PnpmStub(private val directory: File) {
         >>"%RECORD%.%SLOT%" (
           echo cwd=%CD%
           echo args=%*
-          echo ---
         )
       ) || goto next
       if exist "%RECORD%.%SLOT%" goto recorded
@@ -116,6 +148,8 @@ class PnpmStub(private val directory: File) {
       echo failed to record an invocation next to %RECORD% 1>&2
       exit /b 1
       :recorded
+      for /f "delims=" %%v in ('set $ENVIRONMENT_PREFIX 2^>nul') do >>"%RECORD%.%SLOT%" echo env=%%v
+      >>"%RECORD%.%SLOT%" echo ---
       ${if (standardOutput.isEmpty()) "" else "echo $standardOutput"}
       exit /b $exitCode
       """
@@ -130,6 +164,13 @@ class PnpmStub(private val directory: File) {
   companion object {
     val isWindows: Boolean =
       System.getProperty("os.name").lowercase(Locale.ROOT).startsWith("windows")
+
+    /**
+     * Prefix of the environment variables the stub records. Recording only the variables the tests
+     * set themselves keeps the record small, and keeps the environment of the machine running the
+     * tests out of it.
+     */
+    const val ENVIRONMENT_PREFIX: String = "PNPM_TEST_"
 
     /** Upper bound on the numbered record files the batch stub will try to claim. */
     private const val MAX_SLOTS = 1000
@@ -166,5 +207,12 @@ class PnpmStub(private val directory: File) {
   }
 }
 
-/** A single recorded pnpm invocation. */
-data class PnpmInvocation(val workingDirectory: String, val arguments: List<String>)
+/**
+ * A single recorded pnpm invocation. The [environment] holds the variables named with the
+ * [PnpmStub.ENVIRONMENT_PREFIX] only.
+ */
+data class PnpmInvocation(
+  val workingDirectory: String,
+  val arguments: List<String>,
+  val environment: Map<String, String>,
+)
