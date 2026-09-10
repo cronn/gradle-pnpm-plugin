@@ -13,7 +13,6 @@ internal class TypescriptTasks(target: Project, extension: TypescriptExtension) 
     registerToolTask(
       name = "compileTypescript",
       description = "Checks the TypeScript sources with tsc",
-      arguments = listOf("--noEmit"),
     )
 
   companion object {

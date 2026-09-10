@@ -61,7 +61,7 @@ internal abstract class ToolTasks<T : PnpmToolTask>(
   protected fun registerToolTask(
     name: String,
     description: String,
-    arguments: List<String>,
+    arguments: List<String> = emptyList(),
     mutatesSources: Boolean = false,
   ): TaskProvider<T> =
     target.tasks.register(name, taskType) { task ->

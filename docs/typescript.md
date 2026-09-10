@@ -10,7 +10,10 @@ of the task, which is what decides when it is up to date; no pattern reaches `ts
 
 |        Task         | Default arguments |           Default includes            | Contributes to |
 |---------------------|-------------------|---------------------------------------|----------------|
-| `compileTypescript` | `--noEmit`        | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `check`        |
+| `compileTypescript` | none              | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `check`        |
+
+`compileTypescript` passes no arguments to `tsc`, so it emits output as the `tsconfig.json`
+prescribes. Set `noEmit` there, or pass `--noEmit` in `arguments`, to only type-check.
 
 ## Custom tasks
 
