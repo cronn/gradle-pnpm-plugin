@@ -14,9 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation
 
-- Add user-facing changes to the Unreleased section of the CHANGELOG.md
+- Describe user-facing changes in a changeset (`@changesets/cli`)
 - Keep documentation short and concise
-- Prefer overviews to detailed explanations
 
 ## GitHub Pull Requests
 

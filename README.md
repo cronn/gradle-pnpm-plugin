@@ -19,8 +19,10 @@ Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm
 works out what each project is from the files in its directory:
 
 - **workspace root**: project with a `pnpm-workspace.yaml`
-- **workspace package**: project with a `package.json` and an ancestor project with a `pnpm-workspace.yaml`
-- **standalone package**: project with a `package.json` and no ancestor project with a `pnpm-workspace.yaml`
+- **workspace package**: project with a `package.json` and an ancestor project with a
+  `pnpm-workspace.yaml`
+- **standalone package**: project with a `package.json` and no ancestor project with a
+  `pnpm-workspace.yaml`
 
 A project with neither takes no part in the pnpm build.
 
@@ -189,9 +191,9 @@ pnpm {
 ```
 
 `version`, `installDirectory`, `executable` and `repositoryUrl` describe the one pnpm installation
-the whole workspace shares, so configure them once, in the build script of the workspace root. Every package
-inherits its values from there. Setting one of them on a package overrides it for that project's own
-pnpm invocations only — pnpm is still provisioned by the workspace root.
+the whole workspace shares, so configure them once, in the build script of the workspace root. Every
+package inherits its values from there. Setting one of them on a package overrides it for that
+project's own pnpm invocations only — pnpm is still provisioned by the workspace root.
 
 `workspaceRootPath` is the one property that is per project. It says which project provisions pnpm
 for this one, and defaults to the nearest ancestor project holding a `pnpm-workspace.yaml`. Set it
@@ -300,10 +302,19 @@ pluginManagement {
 }
 ```
 
+## Releasing
+
+### Creating a changelog entry
+
+The changelog is assembled by [changesets](https://changesets.dev) from the files in `.changeset`.
+Run `pnpm changeset add` to create a new changeset.
+
 ### Publishing a new release
 
-Releases are published to the [Gradle Plugin Portal](https://plugins.gradle.org) by the
-`release` workflow when a `v*` tag is pushed; the version is derived from the tag.
+Run `pnpm changeset version` to update the changelog and bump the plugin version, then commit the
+result. Releases are published to the [Gradle Plugin Portal](https://plugins.gradle.org) by the
+`release` workflow. To trigger a release, create a new tag  `v<version>` and set the generated
+changelog as description.
 
 ## License
 
