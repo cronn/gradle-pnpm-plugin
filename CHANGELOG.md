@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - **Breaking:** `compileTypescript` no longer passes `--noEmit`; set `noEmit` in the
   `tsconfig.json` or add the argument in the task configuration to only type-check
