@@ -3,7 +3,6 @@ package de.cronn.pnpm.internal.tool
 import de.cronn.pnpm.PnpmToolExtension
 import de.cronn.pnpm.task.PnpmToolTask
 import org.gradle.api.Project
-import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
@@ -25,14 +24,23 @@ internal abstract class ToolTasks<T : PnpmToolTask>(
     // A value, not a convention: adding to a property that only has a convention discards it,
     // which would make the additive includes(...) method replace the defaults instead.
     extension.includes.set(defaultIncludes)
+    target.logger.debug(
+      "Default patterns of {} in {}: {}",
+      taskType.simpleName,
+      target.path,
+      defaultIncludes,
+    )
 
-    // A local, so that the onlyIf spec captures the extension instead of this registrar, which
-    // holds the Project and would fail to serialize into the configuration cache.
+    // Locals, so that the task configuration captures the extension properties instead of this
+    // registrar, which holds the Project and would fail to serialize into the configuration cache.
     val enabled = extension.enabled
+    val includes = extension.includes
+    val excludes = extension.excludes
 
     target.tasks.withType(taskType).configureEach { task ->
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
-      task.sources.convention(sourceFiles())
+      task.includes.convention(includes)
+      task.excludes.convention(excludes)
       task.extraArguments.convention(extension.extraArguments)
       task.onlyIf("the tool is enabled") { enabled.get() }
       configureTask(task)
@@ -63,25 +71,6 @@ internal abstract class ToolTasks<T : PnpmToolTask>(
       // Gradle could compare: it always runs, the way the other in-place maintenance tasks do.
       task.outputs.upToDateWhen { !mutatesSources }
     }
-
-  /**
-   * The files the tool inspects, resolved when a task is configured so that `prettier { ... }`
-   * blocks anywhere in the build script are taken into account.
-   */
-  private fun sourceFiles(): FileTree {
-    val includes = extension.includes.get()
-    val excludes = extension.excludes.get()
-    target.logger.debug(
-      "Sources of {}: including {}, excluding {}",
-      target.path,
-      includes,
-      excludes,
-    )
-    return target.fileTree(target.projectDir) { tree ->
-      tree.include(includes)
-      tree.exclude(excludes)
-    }
-  }
 
   companion object {
     /** The TypeScript sources every tool looks at. */

@@ -4,6 +4,7 @@ import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_MODULE
+import de.cronn.pnpm.internal.tool.EslintTasks
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
@@ -371,6 +372,36 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `takes the patterns of a tool over to its tasks`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    eslint(project).excludes("generated.ts")
+
+    assertThat(toolTask(project, "eslintCheck").includes.get()).containsExactly(*ESLINT_PATTERNS)
+    assertThat(toolTask(project, "eslintCheck").excludes.get()).containsExactly("generated.ts")
+    assertThat(toolTask(project, "eslintFix").excludes.get()).containsExactly("generated.ts")
+  }
+
+  @Test
+  fun `takes patterns added after a task was realized over to it`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    val task = toolTask(project, "eslintCheck")
+    eslint(project).includes("types/**")
+
+    assertThat(task.includes.get()).containsExactly(*ESLINT_PATTERNS, "types/**")
+  }
+
+  @Test
+  fun `overrides the patterns of a single task without affecting its siblings`(
+    @TempDir directory: File
+  ) {
+    val project = packageProject(directory)
+    toolTask(project, "eslintCheck").includes.set(listOf("app/**/*.ts"))
+
+    assertThat(toolTask(project, "eslintCheck").includes.get()).containsExactly("app/**/*.ts")
+    assertThat(toolTask(project, "eslintFix").includes.get()).containsExactly(*ESLINT_PATTERNS)
+  }
+
+  @Test
   fun `takes the extra arguments of a tool over to its tasks`(@TempDir directory: File) {
     val project = packageProject(directory)
     prettier(project).extraArguments("--cache", "--log-level=warn")
@@ -562,10 +593,10 @@ class PnpmPluginTest {
   private fun toolTask(project: Project, name: String): PnpmToolTask =
     project.tasks.getByName(name) as PnpmToolTask
 
-  /** The sources of [task] the way they reach the command line: relative and sorted. */
+  /** The files the patterns of [task] resolve to, relative to its working directory and sorted. */
   private fun sourceNames(task: PnpmToolTask): List<String> {
     val directory = task.workingDirectory.get().asFile
-    return task.sources.files.map { it.relativeTo(directory).invariantSeparatorsPath }.sorted()
+    return task.sourceFiles.files.map { it.relativeTo(directory).invariantSeparatorsPath }.sorted()
   }
 
   private fun pnpmTask(project: Project, name: String): PnpmTask =
@@ -584,6 +615,9 @@ class PnpmPluginTest {
   internal companion object {
     const val PNPM_VERSION = "11.23.0"
     const val PLUGIN_ID = "de.cronn.gradle-pnpm-plugin"
+
+    /** The default include patterns of ESLint. */
+    val ESLINT_PATTERNS: Array<String> = EslintTasks.INCLUDES.toTypedArray()
 
     /** The files of a package project that match the default patterns of each tool. */
     val BASE_SOURCES: Array<String> = arrayOf("eslint.config.ts", "prettier.config.ts")

@@ -5,8 +5,7 @@ package de.cronn.pnpm
  * extension.
  *
  * Enabled by default when the project contains a `prettier.config.*` or `.prettierrc*` file.
- * [includes] defaults to `*.ts`, `src/**/*.ts`, `src/**/*.tsx`, `*.json` and `*.md`; the files it
- * resolves to are both the inputs of `prettierCheck` and `prettierFix` and the operands Prettier is
- * invoked with.
+ * [includes] are the inputs of `prettierCheck` and `prettierFix`, and the patterns themselves are
+ * the operands Prettier is invoked with. [excludes] are passed as negated operands.
  */
 public abstract class PrettierExtension : PnpmToolExtension()

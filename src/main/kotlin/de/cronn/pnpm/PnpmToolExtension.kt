@@ -21,14 +21,23 @@ public abstract class PnpmToolExtension {
   public abstract val enabled: Property<Boolean>
 
   /**
-   * Ant-style patterns of files that are inputs of this tool's tasks.
+   * Ant-style patterns of files that are inputs of this tool's tasks, and which the tool itself is
+   * invoked with.
    *
    * Defaults to the patterns documented by the extension of the tool. Assigning it replaces those
    * defaults; the [includes] method adds to them.
+   *
+   * The patterns are resolved twice: by Gradle, to the files deciding when a task is up to date,
+   * and by the tool, which is handed the patterns rather than the files. They therefore have to be
+   * valid in both, which the README describes in more detail.
    */
   public abstract val includes: ListProperty<String>
 
-  /** Ant-style patterns excluded from this tool's inputs. */
+  /**
+   * Ant-style patterns excluded from this tool's inputs, passed on in whatever way the tool
+   * supports. An exclude naming a directory needs a trailing globstar, which an Ant pattern can
+   * leave out but a tool cannot.
+   */
   public abstract val excludes: ListProperty<String>
 
   /** Additional command line arguments appended to this tool's invocations. */

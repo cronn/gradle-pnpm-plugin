@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Breaking:** the tools are invoked with the `includes` and `excludes` patterns instead of the
+  files they resolve to, which keeps a large source set from overrunning the command line length
+  limit of Windows. The patterns now have to be understood by the tool as well, so they must be
+  valid globs, and an exclude naming a directory needs a trailing `/**` (Closes #24)
 - The plugin registers the repository serving the pnpm distribution itself, and steps aside when the
   build declares its repositories in `settings.gradle.kts`
 - New `pnpm { repositoryUrl }`, to point the repository at a mirror or a proxy
