@@ -71,13 +71,13 @@ playwright {
 
 ## Custom tasks
 
-Use `de.cronn.pnpm.task.PlaywrightTask` to register custom Playwright tasks:
+Use `de.cronn.pnpm.task.PlaywrightTestTask` to register custom Playwright tasks:
 
 ```kotlin
-import de.cronn.pnpm.task.PlaywrightTask
+import de.cronn.pnpm.task.PlaywrightTestTask
 
-tasks.register<PlaywrightTask>("playwrightSmokeTest") {
+tasks.register<PlaywrightTestTask>("playwrightSmokeTest") {
   includes = listOf("tests/smoke/**/*.ts")
-  arguments = listOf("test", "tests/smoke")
+  arguments = listOf("tests/smoke")
 }
 ```

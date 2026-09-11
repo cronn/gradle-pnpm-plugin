@@ -296,7 +296,7 @@ tasks.register<PnpmRunTask>("buildFrontend") {
 The supported API is what lives in `de.cronn.pnpm` and `de.cronn.pnpm.task`: the extensions the
 plugin registers (`pnpm`, `typescript`, `prettier`, `eslint`, `playwright`) and the task types a
 build script names -- `PnpmTask`, `PnpmExecTask`, `PnpmRunTask`, `TypescriptTask`, `PrettierTask`,
-`EslintTask` and `PlaywrightTask`.
+`EslintTask` and `PlaywrightTestTask`.
 
 Everything under `de.cronn.pnpm.internal` is implementation, including the base classes those types
 derive from, and changes in any release without a note in the changelog.

@@ -10,7 +10,7 @@ import org.gradle.work.DisableCachingByDefault
  * Runs the test suite of a Node test tool.
  *
  * One of the three [PnpmSourceTask] kinds, and the counterpart of [PnpmCheckTask]: the plugin
- * configures every task of a subclass -- `PlaywrightTask` today -- with the
+ * configures every task of a subclass -- `PlaywrightTestTask` today -- with the
  * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the
  * [extraArguments][PnpmSourceExtension.extraArguments], the
  * [alwaysRerun][PnpmTestExtension.alwaysRerun] and the [enabled][PnpmSourceExtension.enabled] state

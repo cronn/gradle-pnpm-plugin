@@ -3,7 +3,7 @@ package de.cronn.pnpm.internal.test
 import de.cronn.pnpm.PlaywrightExtension
 import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PlaywrightInstallTask
-import de.cronn.pnpm.task.PlaywrightTask
+import de.cronn.pnpm.task.PlaywrightTestTask
 import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -18,7 +18,14 @@ internal class PlaywrightTasks(
   target: Project,
   private val playwright: PlaywrightExtension,
   private val lockfile: File?,
-) : TestTasks<PlaywrightTask>(target, playwright, PlaywrightTask::class.java, INCLUDES, EXCLUDES) {
+) :
+  TestTasks<PlaywrightTestTask>(
+    target,
+    playwright,
+    PlaywrightTestTask::class.java,
+    INCLUDES,
+    EXCLUDES,
+  ) {
 
   fun registerAll(): RegisteredTestTasks {
     configureInstallTasks()
@@ -26,7 +33,7 @@ internal class PlaywrightTasks(
     val registered = register()
     // Locals again, so the configuration captures the property and not this registrar.
     val installBrowsers = playwright.installBrowsers
-    target.tasks.withType(PlaywrightTask::class.java).configureEach { task ->
+    target.tasks.withType(PlaywrightTestTask::class.java).configureEach { task ->
       // An empty list is no dependency at all, so switching installBrowsers off after the plugin
       // was applied still drops the edge.
       task.dependsOn(installBrowsers.map { wanted -> if (wanted) listOf(install) else emptyList() })
@@ -34,7 +41,7 @@ internal class PlaywrightTasks(
     return registered
   }
 
-  override fun configureTask(task: PlaywrightTask) {
+  override fun configureTask(task: PlaywrightTestTask) {
     val projectDirectory = target.layout.projectDirectory
     val buildDirectory = target.layout.buildDirectory
 
@@ -58,7 +65,7 @@ internal class PlaywrightTasks(
     task.environment.put("PLAYWRIGHT_HTML_REPORT", report)
   }
 
-  override fun registerTestTask(): TaskProvider<PlaywrightTask> =
+  override fun registerTestTask(): TaskProvider<PlaywrightTestTask> =
     registerTestTask(name = TEST_TASK_NAME, description = "Runs the Playwright test suite")
 
   /** Applies to every browser download task, the ones a build script registers included. */

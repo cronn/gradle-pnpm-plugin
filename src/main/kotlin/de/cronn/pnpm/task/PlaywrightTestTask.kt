@@ -32,7 +32,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs a Playwright suite; its effects are not fully described by declared outputs."
 )
-public abstract class PlaywrightTask : PnpmTestTask() {
+public abstract class PlaywrightTestTask : PnpmTestTask() {
 
   /**
    * The Playwright configuration, which decides what the suite is. Defaults to the

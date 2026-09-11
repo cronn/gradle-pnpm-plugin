@@ -11,7 +11,7 @@ import de.cronn.pnpm.internal.task.PnpmSetupTask
 import de.cronn.pnpm.internal.task.PnpmSourceTask
 import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.task.EslintTask
-import de.cronn.pnpm.task.PlaywrightTask
+import de.cronn.pnpm.task.PlaywrightTestTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmTask
 import de.cronn.pnpm.task.PrettierTask
@@ -609,7 +609,8 @@ class PnpmPluginTest {
   fun `registers the playwright tasks as the types of their tool`(@TempDir directory: File) {
     val project = playwrightProject(directory)
 
-    assertThat(project.tasks.getByName("playwrightTest")).isInstanceOf(PlaywrightTask::class.java)
+    assertThat(project.tasks.getByName("playwrightTest"))
+      .isInstanceOf(PlaywrightTestTask::class.java)
     assertThat(project.tasks.getByName("playwrightInstall"))
       .isInstanceOf(PlaywrightInstallTask::class.java)
   }
@@ -618,7 +619,7 @@ class PnpmPluginTest {
   fun `runs the suite through the playwright binary`(@TempDir directory: File) {
     val project = playwrightProject(directory)
 
-    val test = project.tasks.getByName("playwrightTest") as PlaywrightTask
+    val test = project.tasks.getByName("playwrightTest") as PlaywrightTestTask
     assertThat(test.command.get()).isEqualTo("playwright")
     assertThat(test.arguments.get()).containsExactly("test")
 
@@ -664,7 +665,7 @@ class PnpmPluginTest {
   fun `takes the test patterns as the inputs of the suite only`(@TempDir directory: File) {
     val project = playwrightProject(directory)
 
-    val test = project.tasks.getByName("playwrightTest") as PlaywrightTask
+    val test = project.tasks.getByName("playwrightTest") as PlaywrightTestTask
     assertThat(test.includes.get()).containsExactlyElementsOf(PlaywrightTasks.INCLUDES)
     // No pattern reaches Playwright: it picks the tests itself.
     assertThat(test.arguments.get()).containsExactly("test")
