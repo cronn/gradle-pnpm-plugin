@@ -4,12 +4,15 @@ import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_MODULE
+import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.internal.tool.EslintTasks
 import de.cronn.pnpm.task.EslintTask
+import de.cronn.pnpm.task.PlaywrightInstallTask
+import de.cronn.pnpm.task.PlaywrightTask
+import de.cronn.pnpm.task.PnpmCheckTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
 import de.cronn.pnpm.task.PnpmTask
-import de.cronn.pnpm.task.PnpmToolTask
 import de.cronn.pnpm.task.PrettierTask
 import de.cronn.pnpm.task.TypescriptTask
 import java.io.File
@@ -115,7 +118,7 @@ class PnpmPluginTest {
     extension(project).version.set("11.1.0")
 
     assertThat(pnpmTask(root, "pnpmInstall").pnpmVersion.get()).isEqualTo("11.0.0")
-    assertThat(toolTask(project, "prettierCheck").pnpmVersion.get()).isEqualTo("11.1.0")
+    assertThat(checkTask(project, "prettierCheck").pnpmVersion.get()).isEqualTo("11.1.0")
   }
 
   @Test
@@ -125,7 +128,7 @@ class PnpmPluginTest {
     extension(project.rootProject).workspaceRootPath.set(":other")
 
     assertThat(extension(project).workspaceRootPath.get()).isEqualTo(":other")
-    assertThat(dependencyPaths(toolTask(project, "prettierCheck")))
+    assertThat(dependencyPaths(checkTask(project, "prettierCheck")))
       .contains(":other:pnpmSetup", ":other:pnpmInstall")
   }
 
@@ -365,15 +368,16 @@ class PnpmPluginTest {
   fun `uses the same commands and arguments as the tools expect`(@TempDir directory: File) {
     val project = packageProject(directory)
 
-    assertThat(toolTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
-    assertThat(toolTask(project, "compileTypescript").arguments.get()).isEmpty()
-    assertThat(toolTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
-    assertThat(toolTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
-    assertThat(toolTask(project, "prettierFix").arguments.get())
+    assertThat(checkTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
+    assertThat(checkTask(project, "compileTypescript").arguments.get()).isEmpty()
+    assertThat(checkTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
+    assertThat(checkTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
+    assertThat(checkTask(project, "prettierFix").arguments.get())
       .containsExactly("--write", "--list-different")
-    assertThat(toolTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
-    assertThat(toolTask(project, "eslintCheck").arguments.get()).containsExactly("--max-warnings=0")
-    assertThat(toolTask(project, "eslintFix").arguments.get())
+    assertThat(checkTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
+    assertThat(checkTask(project, "eslintCheck").arguments.get())
+      .containsExactly("--max-warnings=0")
+    assertThat(checkTask(project, "eslintFix").arguments.get())
       .containsExactly("--max-warnings=0", "--fix")
   }
 
@@ -381,10 +385,10 @@ class PnpmPluginTest {
   fun `uses the sources of the tool as the inputs of its tasks`(@TempDir directory: File) {
     val project = packageProject(directory)
 
-    assertThat(sourceNames(toolTask(project, "prettierCheck"))).containsExactly(*PRETTIER_SOURCES)
-    assertThat(sourceNames(toolTask(project, "prettierFix"))).containsExactly(*PRETTIER_SOURCES)
-    assertThat(sourceNames(toolTask(project, "eslintCheck"))).containsExactly(*ESLINT_SOURCES)
-    assertThat(sourceNames(toolTask(project, "compileTypescript"))).containsExactly(*BASE_SOURCES)
+    assertThat(sourceNames(checkTask(project, "prettierCheck"))).containsExactly(*PRETTIER_SOURCES)
+    assertThat(sourceNames(checkTask(project, "prettierFix"))).containsExactly(*PRETTIER_SOURCES)
+    assertThat(sourceNames(checkTask(project, "eslintCheck"))).containsExactly(*ESLINT_SOURCES)
+    assertThat(sourceNames(checkTask(project, "compileTypescript"))).containsExactly(*BASE_SOURCES)
   }
 
   @Test
@@ -392,15 +396,15 @@ class PnpmPluginTest {
     val project = packageProject(directory)
     eslint(project).excludes("generated.ts")
 
-    assertThat(toolTask(project, "eslintCheck").includes.get()).containsExactly(*ESLINT_PATTERNS)
-    assertThat(toolTask(project, "eslintCheck").excludes.get()).containsExactly("generated.ts")
-    assertThat(toolTask(project, "eslintFix").excludes.get()).containsExactly("generated.ts")
+    assertThat(checkTask(project, "eslintCheck").includes.get()).containsExactly(*ESLINT_PATTERNS)
+    assertThat(checkTask(project, "eslintCheck").excludes.get()).containsExactly("generated.ts")
+    assertThat(checkTask(project, "eslintFix").excludes.get()).containsExactly("generated.ts")
   }
 
   @Test
   fun `takes patterns added after a task was realized over to it`(@TempDir directory: File) {
     val project = packageProject(directory)
-    val task = toolTask(project, "eslintCheck")
+    val task = checkTask(project, "eslintCheck")
     eslint(project).includes("types/**")
 
     assertThat(task.includes.get()).containsExactly(*ESLINT_PATTERNS, "types/**")
@@ -411,10 +415,10 @@ class PnpmPluginTest {
     @TempDir directory: File
   ) {
     val project = packageProject(directory)
-    toolTask(project, "eslintCheck").includes.set(listOf("app/**/*.ts"))
+    checkTask(project, "eslintCheck").includes.set(listOf("app/**/*.ts"))
 
-    assertThat(toolTask(project, "eslintCheck").includes.get()).containsExactly("app/**/*.ts")
-    assertThat(toolTask(project, "eslintFix").includes.get()).containsExactly(*ESLINT_PATTERNS)
+    assertThat(checkTask(project, "eslintCheck").includes.get()).containsExactly("app/**/*.ts")
+    assertThat(checkTask(project, "eslintFix").includes.get()).containsExactly(*ESLINT_PATTERNS)
   }
 
   @Test
@@ -422,7 +426,7 @@ class PnpmPluginTest {
     val project = packageProject(directory)
     prettier(project).extraArguments("--cache", "--log-level=warn")
 
-    assertThat(toolTask(project, "prettierCheck").extraArguments.get())
+    assertThat(checkTask(project, "prettierCheck").extraArguments.get())
       .containsExactly("--cache", "--log-level=warn")
   }
 
@@ -434,7 +438,7 @@ class PnpmPluginTest {
     File(project.projectDir, "generated.ts").writeText("export const generated = 1\n")
     eslint(project).excludes("generated.ts")
 
-    assertThat(sourceNames(toolTask(project, "eslintCheck")))
+    assertThat(sourceNames(checkTask(project, "eslintCheck")))
       .containsExactly("eslint.config.ts", "prettier.config.ts", "src/nested/app.ts")
   }
 
@@ -445,7 +449,7 @@ class PnpmPluginTest {
     File(project.projectDir, "types/api.d.ts").writeText("export {}\n")
     eslint(project).includes("types/**")
 
-    assertThat(sourceNames(toolTask(project, "eslintCheck")))
+    assertThat(sourceNames(checkTask(project, "eslintCheck")))
       .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
   }
 
@@ -460,7 +464,7 @@ class PnpmPluginTest {
     eslint(project).includes(listOf("types/**", "generated.ts"))
     eslint(project).excludes(listOf("generated.ts"))
 
-    assertThat(sourceNames(toolTask(project, "eslintCheck")))
+    assertThat(sourceNames(checkTask(project, "eslintCheck")))
       .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
   }
 
@@ -471,7 +475,7 @@ class PnpmPluginTest {
     File(project.projectDir, "src/app.ts").writeText("export const app = 1\n")
     eslint(project).includes.set(listOf("src/**/*.ts"))
 
-    assertThat(sourceNames(toolTask(project, "eslintCheck"))).containsExactly("src/app.ts")
+    assertThat(sourceNames(checkTask(project, "eslintCheck"))).containsExactly("src/app.ts")
   }
 
   @Test
@@ -539,6 +543,85 @@ class PnpmPluginTest {
     assertThat(project.plugins.hasPlugin("base")).isTrue()
   }
 
+  // Test tools
+
+  @Test
+  fun `registers the playwright tasks as the types of their tool`(@TempDir directory: File) {
+    val project = playwrightProject(directory)
+
+    assertThat(project.tasks.getByName("playwrightTest")).isInstanceOf(PlaywrightTask::class.java)
+    assertThat(project.tasks.getByName("playwrightInstall"))
+      .isInstanceOf(PlaywrightInstallTask::class.java)
+  }
+
+  @Test
+  fun `runs the suite through the playwright binary`(@TempDir directory: File) {
+    val project = playwrightProject(directory)
+
+    val test = project.tasks.getByName("playwrightTest") as PlaywrightTask
+    assertThat(test.command.get()).isEqualTo("playwright")
+    assertThat(test.arguments.get()).containsExactly("test")
+
+    val install = project.tasks.getByName("playwrightInstall") as PlaywrightInstallTask
+    assertThat(install.command.get()).isEqualTo("playwright")
+  }
+
+  @Test
+  fun `adds the suite to test but not to check`(@TempDir directory: File) {
+    val project = playwrightProject(directory)
+
+    assertThat(dependencyNames(project.tasks.getByName("test"))).contains("playwrightTest")
+    // An end-to-end suite is slow and usually needs a server the build does not start, so check
+    // deliberately stays out of it.
+    assertThat(dependencyNames(project.tasks.getByName("check"))).doesNotContain("test")
+  }
+
+  @Test
+  fun `drops a disabled test tool from test`(@TempDir directory: File) {
+    val project = playwrightProject(directory)
+
+    playwright(project).enabled.set(false)
+
+    assertThat(dependencyNames(project.tasks.getByName("test"))).doesNotContain("playwrightTest")
+  }
+
+  @Test
+  fun `runs the browser install before the suite unless it is switched off`(
+    @TempDir directory: File
+  ) {
+    val project = playwrightProject(directory)
+
+    assertThat(dependencyNames(project.tasks.getByName("playwrightTest")))
+      .contains("playwrightInstall")
+
+    playwright(project).installBrowsers.set(false)
+
+    assertThat(dependencyNames(project.tasks.getByName("playwrightTest")))
+      .doesNotContain("playwrightInstall")
+  }
+
+  @Test
+  fun `takes the test patterns as the inputs of the suite only`(@TempDir directory: File) {
+    val project = playwrightProject(directory)
+
+    val test = project.tasks.getByName("playwrightTest") as PlaywrightTask
+    assertThat(test.includes.get()).containsExactlyElementsOf(PlaywrightTasks.INCLUDES)
+    // No pattern reaches Playwright: it picks the tests itself.
+    assertThat(test.arguments.get()).containsExactly("test")
+  }
+
+  @Test
+  fun `installs the configured browsers with their system dependencies`(@TempDir directory: File) {
+    val project = playwrightProject(directory)
+
+    playwright(project).browsers.set(listOf("chromium"))
+    playwright(project).installSystemDependencies.set(true)
+
+    val install = project.tasks.getByName("playwrightInstall") as PlaywrightInstallTask
+    assertThat(install.browsers.get()).containsExactly("chromium")
+    assertThat(install.withDependencies.get()).isTrue()
+  }
+
   // Auto-discovery of the tools
 
   @Test
@@ -556,6 +639,15 @@ class PnpmPluginTest {
     assertThat(dependencyNames(project.tasks.getByName("check")))
       .contains("eslintCheck")
       .doesNotContain("compileTypescript", "prettierCheck")
+  }
+
+  @Test
+  fun `enables playwright only for a project with a playwright config`(@TempDir directory: File) {
+    val withoutConfig = packageProject(directory)
+    assertThat(playwright(withoutConfig).enabled.get()).isFalse()
+
+    val withConfig = playwrightProject(File(directory, "other").apply { mkdirs() })
+    assertThat(playwright(withConfig).enabled.get()).isTrue()
   }
 
   @Test
@@ -603,14 +695,17 @@ class PnpmPluginTest {
   private fun eslint(project: Project): EslintExtension =
     project.extensions.getByType(EslintExtension::class.java)
 
+  private fun playwright(project: Project): PlaywrightExtension =
+    project.extensions.getByType(PlaywrightExtension::class.java)
+
   private fun execTask(project: Project, name: String): PnpmExecTask =
     project.tasks.getByName(name) as PnpmExecTask
 
-  private fun toolTask(project: Project, name: String): PnpmToolTask =
-    project.tasks.getByName(name) as PnpmToolTask
+  private fun checkTask(project: Project, name: String): PnpmCheckTask =
+    project.tasks.getByName(name) as PnpmCheckTask
 
   /** The files the patterns of [task] resolve to, relative to its working directory and sorted. */
-  private fun sourceNames(task: PnpmToolTask): List<String> {
+  private fun sourceNames(task: PnpmCheckTask): List<String> {
     val directory = task.workingDirectory.get().asFile
     return task.sourceFiles.files.map { it.relativeTo(directory).invariantSeparatorsPath }.sorted()
   }
@@ -654,6 +749,14 @@ class PnpmPluginTest {
             .trimIndent()
         )
     }
+
+    /** A package project that is also configured for Playwright. */
+    fun playwrightProject(directory: File, name: String = "e2e"): Project =
+      packageProject(directory, name).also { project ->
+        File(project.projectDir, "playwright.config.ts").writeText("export default {}\n")
+        // The extension reads the config file when the plugin is applied, which already happened.
+        project.extensions.getByType(PlaywrightExtension::class.java).enabled.convention(true)
+      }
 
     /** Writes a config file for every tool, so that all of them are auto-enabled. */
     fun writeToolConfigs(directory: File) {

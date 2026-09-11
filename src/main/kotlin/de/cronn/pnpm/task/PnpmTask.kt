@@ -63,10 +63,21 @@ public abstract class PnpmTask : DefaultTask() {
   /** Whether a non-zero pnpm exit code is tolerated. Defaults to `false`. */
   @get:Input public abstract val ignoreExitValue: Property<Boolean>
 
+  /**
+   * Whether the standard input of the build is handed to the pnpm process, which an interactive
+   * command needs to read anything the user types. Defaults to `false`.
+   *
+   * This is deliberately not an input: it says how the process is wired up, not what it does. Note
+   * that a build running in the Gradle daemon has no terminal on its standard input, so this passes
+   * on a piped or redirected input but makes no task interactive on its own.
+   */
+  @get:Internal public abstract val forwardStandardInput: Property<Boolean>
+
   init {
     executable.convention("pnpm")
     workingDirectory.convention(projectLayout.projectDirectory)
     ignoreExitValue.convention(false)
+    forwardStandardInput.convention(false)
   }
 
   @TaskAction
@@ -81,11 +92,15 @@ public abstract class PnpmTask : DefaultTask() {
       directory,
       variables.keys,
     )
+    val standardInput = if (forwardStandardInput.get()) System.`in` else null
     execOperations.exec { spec ->
       spec.commandLine(commandLine)
       spec.workingDir = directory
       spec.environment(variables)
       spec.isIgnoreExitValue = ignoreExitValue.get()
+      if (standardInput != null) {
+        spec.standardInput = standardInput
+      }
     }
   }
 

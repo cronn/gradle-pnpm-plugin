@@ -13,7 +13,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs Prettier; its effects are not fully described by declared outputs."
 )
-public abstract class PrettierTask : PnpmToolTask() {
+public abstract class PrettierTask : PnpmCheckTask() {
 
   init {
     command.convention("prettier")

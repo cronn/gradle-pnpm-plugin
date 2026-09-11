@@ -21,6 +21,8 @@ internal object ToolConfigFiles {
   /** Only the flat config; the legacy `.eslintrc.*` format is deliberately not detected. */
   val ESLINT: List<String> = variants("eslint.config")
 
+  val PLAYWRIGHT: List<String> = variants("playwright.config")
+
   val PRETTIER: List<String> =
     variants("prettier.config") +
       listOf(".prettierrc") +
