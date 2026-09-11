@@ -1,7 +1,7 @@
 package de.cronn.pnpm.internal
 
 import de.cronn.pnpm.PnpmExtension
-import de.cronn.pnpm.task.PnpmSetupTask
+import de.cronn.pnpm.internal.task.PnpmSetupTask
 import de.cronn.pnpm.task.PnpmTask
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection

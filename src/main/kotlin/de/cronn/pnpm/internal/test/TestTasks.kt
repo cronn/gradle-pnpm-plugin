@@ -1,7 +1,7 @@
 package de.cronn.pnpm.internal.test
 
-import de.cronn.pnpm.PnpmTestExtension
-import de.cronn.pnpm.task.PnpmTestTask
+import de.cronn.pnpm.internal.extension.PnpmTestExtension
+import de.cronn.pnpm.internal.task.PnpmTestTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin

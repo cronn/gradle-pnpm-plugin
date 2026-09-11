@@ -1,10 +1,10 @@
-package de.cronn.pnpm
+package de.cronn.pnpm.internal.extension
 
 /**
  * Configuration shared by every Node tool that is handed its patterns on the command line, wired
- * into the Gradle lifecycle by [PnpmPlugin].
+ * into the Gradle lifecycle by `PnpmPlugin`.
  *
- * [PrettierExtension] and [EslintExtension] are the extensions of those tools. What sets them apart
+ * `PrettierExtension` and `EslintExtension` are the extensions of those tools. What sets them apart
  * from the rest of [PnpmSourceExtension] is that their patterns are resolved twice: by Gradle, to
  * the files deciding when a task is up to date, and by the tool, which is handed the patterns
  * rather than the files. They therefore have to be valid in both -- an exclude naming a directory

@@ -1,5 +1,6 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.task.PnpmCheckTask
 import org.gradle.work.DisableCachingByDefault
 
 /**

@@ -1,9 +1,9 @@
 package de.cronn.pnpm.internal
 
 import de.cronn.pnpm.PlaywrightExtension
+import de.cronn.pnpm.internal.task.PnpmTestTask
 import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.internal.test.RegisteredTestTasks
-import de.cronn.pnpm.task.PnpmTestTask
 import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider

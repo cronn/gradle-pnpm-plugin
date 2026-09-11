@@ -1,5 +1,6 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.task.PnpmTestTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty

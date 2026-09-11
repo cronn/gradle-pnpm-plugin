@@ -1,5 +1,7 @@
-package de.cronn.pnpm.task
+package de.cronn.pnpm.internal.task
 
+import de.cronn.pnpm.internal.extension.PnpmSourceExtension
+import de.cronn.pnpm.internal.extension.PnpmTestExtension
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Internal
 import org.gradle.work.DisableCachingByDefault
@@ -8,16 +10,14 @@ import org.gradle.work.DisableCachingByDefault
  * Runs the test suite of a Node test tool.
  *
  * One of the three [PnpmSourceTask] kinds, and the counterpart of [PnpmCheckTask]: the plugin
- * configures every task of a subclass -- [PlaywrightTask] today -- with the
- * [includes][de.cronn.pnpm.PnpmSourceExtension.includes], the
- * [excludes][de.cronn.pnpm.PnpmSourceExtension.excludes], the
- * [extraArguments][de.cronn.pnpm.PnpmSourceExtension.extraArguments], the
- * [alwaysRerun][de.cronn.pnpm.PnpmTestExtension.alwaysRerun] and the
- * [enabled][de.cronn.pnpm.PnpmSourceExtension.enabled] state of the tool's extension, so a task a
- * build script registers behaves like the predefined one and only has to say what is different
- * about it.
+ * configures every task of a subclass -- `PlaywrightTask` today -- with the
+ * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the
+ * [extraArguments][PnpmSourceExtension.extraArguments], the
+ * [alwaysRerun][PnpmTestExtension.alwaysRerun] and the [enabled][PnpmSourceExtension.enabled] state
+ * of the tool's extension, so a task a build script registers behaves like the predefined one and
+ * only has to say what is different about it.
  *
- * Like [TypescriptTask] and unlike a [PnpmCheckTask], a test tool is never handed the patterns:
+ * Like `TypescriptTask` and unlike a [PnpmCheckTask], a test tool is never handed the patterns:
  * which tests run is decided by its configuration file and by the command line options of the task.
  * [includes] and [excludes] therefore only describe the [sourceFiles] Gradle compares to decide
  * whether the suite has to run again. A test task declares where it writes, and those locations sit

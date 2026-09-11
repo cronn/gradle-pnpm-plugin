@@ -1,5 +1,6 @@
-package de.cronn.pnpm.task
+package de.cronn.pnpm.internal.task
 
+import de.cronn.pnpm.task.PnpmExecTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property

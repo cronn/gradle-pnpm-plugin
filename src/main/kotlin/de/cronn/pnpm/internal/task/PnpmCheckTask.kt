@@ -1,6 +1,7 @@
-package de.cronn.pnpm.task
+package de.cronn.pnpm.internal.task
 
 import de.cronn.pnpm.internal.SourcePatterns
+import de.cronn.pnpm.internal.extension.PnpmSourceExtension
 import org.gradle.work.DisableCachingByDefault
 
 /**
@@ -11,13 +12,12 @@ import org.gradle.work.DisableCachingByDefault
  * runs a suite and takes part in `test`.
  *
  * The plugin registers the predefined tasks of every such tool as one of the subclasses --
- * [PrettierTask] and [EslintTask] -- and configures every task of those types with the
- * [includes][de.cronn.pnpm.PnpmSourceExtension.includes], the
- * [excludes][de.cronn.pnpm.PnpmSourceExtension.excludes], the
- * [extraArguments][de.cronn.pnpm.PnpmSourceExtension.extraArguments] and the
- * [enabled][de.cronn.pnpm.PnpmSourceExtension.enabled] state of the tool's extension. A build
- * script that registers a task of one of those types therefore gets a task that behaves like the
- * predefined ones, and only has to say what is different about it.
+ * `PrettierTask` and `EslintTask` -- and configures every task of those types with the
+ * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the
+ * [extraArguments][PnpmSourceExtension.extraArguments] and the
+ * [enabled][PnpmSourceExtension.enabled] state of the tool's extension. A build script that
+ * registers a task of one of those types therefore gets a task that behaves like the predefined
+ * ones, and only has to say what is different about it.
  *
  * The patterns, not the files they resolve to, are what the tool is invoked with: naming every
  * source file on the command line overruns the command line length limit of Windows on a large
