@@ -1,13 +1,26 @@
 # ESLint
 
-**Enabled by**: `eslint.config.*` in the project directory
+## Configuration
+
+```kotlin
+eslint {
+  // Defaults to whether the project contains an `eslint.config.*` file
+  enabled = true
+  // Inputs of the tasks, and the operands ESLint is invoked with
+  includes = listOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
+  // Excluded from the inputs, and passed as `--ignore-pattern`
+  excludes = emptyList()
+  // Appended to every ESLint invocation
+  extraArguments = emptyList()
+}
+```
 
 ## Pre-defined tasks
 
-|     Task      | Default arguments  |           Default includes            | Contributes to |
-|---------------|--------------------|---------------------------------------|----------------|
-| `eslintCheck` | `--max-warnings=0` | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `check`        |
-| `eslintFix`   | `--max-warnings=0` | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `fix`          |
+|     Task      | Default arguments  | Contributes to |
+|---------------|--------------------|----------------|
+| `eslintCheck` | `--max-warnings=0` | `check`        |
+| `eslintFix`   | `--max-warnings=0` | `fix`          |
 
 ## Custom tasks
 
