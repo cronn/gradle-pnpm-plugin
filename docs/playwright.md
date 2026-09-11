@@ -42,17 +42,14 @@ takes goes into the `arguments` of the task or the `extraArguments` of the exten
 | `--grep=<regex>`     | `--grep`                                                                                                                  |
 | `--filter=<filter>`  | an operand: a regex matched against the path of a test file, optionally suffixed with `:<line>`; repeat for more than one |
 | `--repeat-each=<n>`  | `--repeat-each`, and `-x` with it                                                                                         |
+| `--trace=<mode>`     | `--trace`; one of `on`, `off`, `on-first-retry`, `on-all-retries`, `retain-on-failure`, `retain-on-first-failure`         |
 
 ```bash
 ./gradlew :e2e:playwrightTest --grep=login --update-snapshots
 ./gradlew :e2e:playwrightTest --filter=tests/login.spec.ts:42
 ./gradlew :e2e:playwrightTest --ui
+./gradlew :e2e:playwrightTest --trace=off
 ```
-
-`--repeat-each` implies `--fail-fast`: repeating a test is how a flaky one is hunted down, and the
-run is over as soon as it fails once.
-
-`--ui` and `--headed` open something a person drives, so such a run is never skipped as up to date.
 
 ## Configuration
 

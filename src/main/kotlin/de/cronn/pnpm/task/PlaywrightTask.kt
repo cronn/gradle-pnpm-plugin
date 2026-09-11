@@ -1,6 +1,7 @@
 package de.cronn.pnpm.task
 
 import de.cronn.pnpm.internal.task.PnpmTestTask
+import de.cronn.pnpm.internal.test.TraceMode
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
@@ -21,7 +22,7 @@ import org.gradle.work.DisableCachingByDefault
  * needs no edit to the build script:
  * ```bash
  * ./gradlew :e2e:playwrightTest --grep=login --update-snapshots
- * ./gradlew :e2e:playwrightTest --filter=tests/login.spec.ts:42
+ * ./gradlew :e2e:playwrightTest --filter=tests/login.spec.ts:42 --trace=on
  * ./gradlew :e2e:playwrightTest --ui
  * ```
  *
@@ -92,6 +93,17 @@ public abstract class PlaywrightTask : PnpmTestTask() {
   )
   public abstract val filters: ListProperty<String>
 
+  /**
+   * When Playwright records a trace of a test, passed as `--trace`. One of the modes Playwright
+   * takes: `on`, `off`, `on-first-retry`, `on-all-retries`, `retain-on-failure` or
+   * `retain-on-first-failure`. Unset by default, which leaves the decision to the Playwright
+   * configuration. The traces land in the [outputDirectory] along with the other artifacts.
+   */
+  @get:Input
+  @get:Optional
+  @get:Option(option = "trace", description = "Records a trace of a test in this mode")
+  public abstract val trace: Property<String>
+
   /** How often each test is repeated. */
   @get:Input
   @get:Optional
@@ -125,5 +137,6 @@ public abstract class PlaywrightTask : PnpmTestTask() {
     if (failFast.getOrElse(false) || repeatEach.isPresent) add("-x")
     grep.orNull?.let { add("--grep=$it") }
     repeatEach.orNull?.let { add("--repeat-each=$it") }
+    trace.orNull?.let { add("--trace=${TraceMode.require(it, path)}") }
   }
 }
