@@ -1,12 +1,25 @@
 # TypeScript
 
-**Enabled by**: `tsconfig.json` in the project directory
+## Configuration
+
+```kotlin
+typescript {
+  // Defaults to whether the project contains a `tsconfig.json`
+  enabled = true
+  // Inputs of the task; `tsc` takes the files it checks from the `tsconfig.json`
+  includes = listOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
+  // Excluded from the inputs
+  excludes = emptyList()
+  // Appended to every `tsc` invocation
+  extraArguments = emptyList()
+}
+```
 
 ## Pre-defined tasks
 
-|        Task         | Default arguments |           Default includes            | Contributes to |
-|---------------------|-------------------|---------------------------------------|----------------|
-| `compileTypescript` | none              | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `check`        |
+|        Task         | Default arguments | Contributes to |
+|---------------------|-------------------|----------------|
+| `compileTypescript` | none              | `check`        |
 
 ## Custom tasks
 
