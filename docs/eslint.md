@@ -10,10 +10,10 @@ pattern in Gradle.
 
 ## Pre-defined tasks
 
-|     Task      | Default arguments |           Default includes            | Contributes to |
-|---------------|-------------------|---------------------------------------|----------------|
-| `eslintCheck` | `--max-warnings`  | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `check`        |
-| `eslintFix`   | `--max-warnings`  | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `fix`          |
+|     Task      | Default arguments  |           Default includes            | Contributes to |
+|---------------|--------------------|---------------------------------------|----------------|
+| `eslintCheck` | `--max-warnings=0` | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `check`        |
+| `eslintFix`   | `--max-warnings=0` | `*.ts`, `src/**/*.ts`, `src/**/*.tsx` | `fix`          |
 
 ## Custom tasks
 
