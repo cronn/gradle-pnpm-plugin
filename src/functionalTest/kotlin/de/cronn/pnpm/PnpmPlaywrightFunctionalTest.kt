@@ -109,6 +109,25 @@ class PnpmPlaywrightFunctionalTest {
   }
 
   @Test
+  fun `records a trace in the requested mode`() {
+    val fixture = workspaceWithE2e()
+
+    fixture.runner(":e2e:playwrightTest", "--trace=retain-on-failure").build()
+
+    assertThat(playwrightTest(fixture).arguments).contains("--trace=retain-on-failure")
+  }
+
+  @Test
+  fun `fails on a trace mode Playwright does not know`() {
+    val fixture = workspaceWithE2e()
+
+    val result = fixture.runner(":e2e:playwrightTest", "--trace=always").buildAndFail()
+
+    // Playwright would reject it only once the browsers are up, which costs a whole run.
+    assertThat(result.output).contains("The trace mode \"always\"", "retain-on-first-failure")
+  }
+
+  @Test
   fun `appends the extra arguments last`() {
     val fixture =
       workspaceWithE2e(
