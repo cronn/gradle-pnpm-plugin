@@ -12,7 +12,11 @@ import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * Runs a Node tool over a set of sources.
+ * Inspects a set of sources with a Node tool.
+ *
+ * The counterpart of [PnpmTestTask]: a task of this type reports on sources that are already there
+ * -- type errors, lint findings, formatting -- and takes part in `check` and `fix`, where a test
+ * task runs a suite and takes part in `test`.
  *
  * The plugin registers the predefined tasks of every tool as one of the subclasses --
  * [TypescriptTask], [PrettierTask] and [EslintTask] -- and configures every task of those types
@@ -33,7 +37,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs an arbitrary Node tool; its effects are not fully described by declared outputs."
 )
-public abstract class PnpmToolTask : PnpmExecTask() {
+public abstract class PnpmCheckTask : PnpmExecTask() {
 
   @get:Inject protected abstract val objects: ObjectFactory
 
@@ -86,9 +90,8 @@ public abstract class PnpmToolTask : PnpmExecTask() {
     excludes: List<String>,
   ): List<String>
 
-  override fun buildArguments(): List<String> =
-    listOf("exec", command.get()) +
-      patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
+  override fun commandArguments(): List<String> =
+    patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
       arguments.get() +
       extraArguments.get()
 

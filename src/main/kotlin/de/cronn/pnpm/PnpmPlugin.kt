@@ -6,6 +6,7 @@ import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository
 import de.cronn.pnpm.internal.PnpmResolution
 import de.cronn.pnpm.internal.PnpmRole
+import de.cronn.pnpm.internal.PnpmTestTasks
 import de.cronn.pnpm.internal.PnpmToolTasks
 import de.cronn.pnpm.internal.PnpmWorkspaceLayout
 import de.cronn.pnpm.internal.PnpmWorkspaceTasks
@@ -13,6 +14,7 @@ import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmRunTask
 import de.cronn.pnpm.task.PnpmTask
+import java.io.File
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -85,7 +87,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
     }
 
-    registerToolTasks(target)
+    registerToolTasks(target, layout)
   }
 
   /**
@@ -237,13 +239,15 @@ public class PnpmPlugin : Plugin<Project> {
    * config files is checked, which Gradle tracks as a configuration cache input, so adding one
    * enables the tool on the next build.
    */
-  private fun registerToolTasks(target: Project) {
+  private fun registerToolTasks(target: Project, layout: PnpmWorkspaceLayout) {
     target.pluginManager.apply(BasePlugin::class.java)
 
     val typescript =
       target.extensions.create(TYPESCRIPT_EXTENSION_NAME, TypescriptExtension::class.java)
     val prettier = target.extensions.create(PRETTIER_EXTENSION_NAME, PrettierExtension::class.java)
     val eslint = target.extensions.create(ESLINT_EXTENSION_NAME, EslintExtension::class.java)
+    val playwright =
+      target.extensions.create(PLAYWRIGHT_EXTENSION_NAME, PlaywrightExtension::class.java)
 
     typescript.enabled.convention(
       configured(target, TYPESCRIPT_EXTENSION_NAME, ToolConfigFiles.TYPESCRIPT)
@@ -252,8 +256,33 @@ public class PnpmPlugin : Plugin<Project> {
       configured(target, PRETTIER_EXTENSION_NAME, ToolConfigFiles.PRETTIER)
     )
     eslint.enabled.convention(configured(target, ESLINT_EXTENSION_NAME, ToolConfigFiles.ESLINT))
+    playwright.enabled.convention(
+      configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT)
+    )
+    playwright.installBrowsers.convention(true)
+    playwright.installSystemDependencies.convention(false)
+    // A browser suite talks to a backend, a database, a fixture server -- none of which a Gradle
+    // input describes, so its inputs being unchanged is no reason to believe its result still
+    // holds.
+    playwright.alwaysRerun.convention(true)
 
     PnpmToolTasks(target, typescript, prettier, eslint).register()
+    PnpmTestTasks(target, playwright, workspaceLockfile(target, layout)).register()
+  }
+
+  /**
+   * The lockfile of the workspace [target] belongs to, which pins the version of every tool the
+   * packages run, or `null` for a project that takes no part in the pnpm build.
+   *
+   * Resolved from the discovered workspace root rather than from [PnpmExtension.workspaceRootPath],
+   * because the latter is a Gradle path that only a `Project` could turn back into a directory --
+   * and reading another project's model lazily is exactly what the rest of the plugin avoids.
+   */
+  private fun workspaceLockfile(target: Project, layout: PnpmWorkspaceLayout): File? {
+    val root = layout.workspaceRoot ?: return null
+    val lockfile = File(root.projectDir, LOCKFILE)
+    target.logger.debug("pnpm: the tools of {} are pinned by {}", target.path, lockfile)
+    return lockfile
   }
 
   /** Whether [target] contains one of [configFiles], logging the decision made for [name]. */
@@ -298,10 +327,12 @@ public class PnpmPlugin : Plugin<Project> {
     const val TYPESCRIPT_EXTENSION_NAME: String = "typescript"
     const val PRETTIER_EXTENSION_NAME: String = "prettier"
     const val ESLINT_EXTENSION_NAME: String = "eslint"
+    const val PLAYWRIGHT_EXTENSION_NAME: String = "playwright"
     const val TASK_GROUP: String = "pnpm"
     const val RESOLUTION_NAME: String = "pnpmResolution"
     const val DEFAULT_PNPM_VERSION: String = "11.25.0"
     private const val PATH_VARIABLE = "PATH"
+    private const val LOCKFILE = "pnpm-lock.yaml"
     private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")
   }
 }

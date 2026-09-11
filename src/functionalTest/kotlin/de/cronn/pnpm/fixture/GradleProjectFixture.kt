@@ -27,6 +27,8 @@ class GradleProjectFixture(val rootDirectory: File) {
     repositoryUrl: String? = null,
     /** Appended to the settings script, for example a `dependencyResolutionManagement` block. */
     settingsScript: String = "",
+    /** Whether every package also gets a `playwright.config.ts`, which enables Playwright. */
+    playwright: Boolean = false,
   ) {
     stubExecutable = stub.install()
 
@@ -51,7 +53,7 @@ class GradleProjectFixture(val rootDirectory: File) {
       """,
     )
 
-    packages.forEach { name -> writePackage(name, packageBuildScript) }
+    packages.forEach { name -> writePackage(name, packageBuildScript, playwright) }
   }
 
   /**
@@ -218,7 +220,11 @@ class GradleProjectFixture(val rootDirectory: File) {
   }
 
   /** A pnpm package at [path], with a config file for every tool so all of them are enabled. */
-  private fun writePackage(path: String, buildScript: String = "") {
+  private fun writePackage(
+    path: String,
+    buildScript: String = "",
+    playwright: Boolean = false,
+  ) {
     write(
       "$path/build.gradle.kts",
       """
@@ -229,6 +235,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     )
     write("$path/package.json", """{ "name": "${path.substringAfterLast('/')}" }""")
     writeToolConfigs(path)
+    if (playwright) writePlaywrightConfig(path)
   }
 
   /**
@@ -240,6 +247,17 @@ class GradleProjectFixture(val rootDirectory: File) {
     write("${prefix}tsconfig.json", "{}")
     write("${prefix}eslint.config.ts", "export default []")
     write("${prefix}prettier.config.ts", "export default {}")
+  }
+
+  /**
+   * Writes the `playwright.config.ts` that enables Playwright for [directory].
+   *
+   * Deliberately not part of [writeToolConfigs]: enabling Playwright everywhere would add its
+   * tasks, and its pnpm invocations, to every test that only cares about the source tools.
+   */
+  fun writePlaywrightConfig(directory: String) {
+    val prefix = if (directory.isEmpty()) "" else "$directory/"
+    write("${prefix}playwright.config.ts", "export default { testDir: \"tests\" }")
   }
 
   fun write(path: String, content: String) {

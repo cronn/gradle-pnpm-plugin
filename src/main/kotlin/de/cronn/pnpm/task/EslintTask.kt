@@ -13,7 +13,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs ESLint; its effects are not fully described by declared outputs."
 )
-public abstract class EslintTask : PnpmToolTask() {
+public abstract class EslintTask : PnpmCheckTask() {
 
   init {
     command.convention("eslint")

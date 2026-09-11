@@ -7,7 +7,7 @@ import de.cronn.pnpm.internal.tool.EslintTasks
 import de.cronn.pnpm.internal.tool.PrettierTasks
 import de.cronn.pnpm.internal.tool.RegisteredToolTasks
 import de.cronn.pnpm.internal.tool.TypescriptTasks
-import de.cronn.pnpm.task.PnpmToolTask
+import de.cronn.pnpm.task.PnpmCheckTask
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
@@ -67,8 +67,8 @@ internal class PnpmToolTasks(
    */
   private fun enabledTask(
     tool: RegisteredToolTasks,
-    task: TaskProvider<out PnpmToolTask>,
-  ): Provider<List<TaskProvider<out PnpmToolTask>>> =
+    task: TaskProvider<out PnpmCheckTask>,
+  ): Provider<List<TaskProvider<out PnpmCheckTask>>> =
     tool.extension.enabled.map { enabled -> if (enabled) listOf(task) else emptyList() }
 
   companion object {

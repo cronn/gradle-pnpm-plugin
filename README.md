@@ -220,6 +220,7 @@ documentation pages of each tool:
 - [TypeScript](docs/typescript.md)
 - [ESLint](docs/eslint.md)
 - [Prettier](docs/prettier.md)
+- [Playwright](docs/playwright.md)
 
 Each tool has its own extension for configuring `includes`, `excludes`, `extraArguments` and
 `enabled`:

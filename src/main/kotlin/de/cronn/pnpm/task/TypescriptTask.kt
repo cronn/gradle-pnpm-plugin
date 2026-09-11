@@ -13,7 +13,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs tsc; its effects are not fully described by declared outputs."
 )
-public abstract class TypescriptTask : PnpmToolTask() {
+public abstract class TypescriptTask : PnpmCheckTask() {
 
   init {
     command.convention("tsc")

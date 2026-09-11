@@ -14,5 +14,13 @@ public abstract class PnpmExecTask : PnpmTask() {
   /** The binary to execute, for example `eslint`. */
   @get:Input public abstract val command: Property<String>
 
-  override fun buildArguments(): List<String> = listOf("exec", command.get()) + arguments.get()
+  final override fun buildArguments(): List<String> =
+    listOf("exec", command.get()) + commandArguments()
+
+  /**
+   * The arguments of [command], which subclasses assemble from whatever they configure the binary
+   * with. Overriding this rather than [buildArguments] is what keeps every subclass on the same
+   * `pnpm exec <command>` prefix.
+   */
+  protected open fun commandArguments(): List<String> = arguments.get()
 }
