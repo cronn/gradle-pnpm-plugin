@@ -465,6 +465,32 @@ class PnpmPackageFunctionalTest {
     assertThat(fixture.stub.invocations().map { it.arguments }).noneMatch { it.contains("eslint") }
   }
 
+  @Test
+  fun `accepts a pattern no tool is handed and still invokes tsc without one`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          typescript { excludes("src/generated/") }
+          """
+      )
+    fixture.write("frontend/src/app.ts", "export const app = 1")
+    fixture.write("frontend/src/generated/api.ts", "export const api = 1")
+
+    val result = fixture.runner(":frontend:compileTypescript").build()
+
+    assertThat(result.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    // tsc reads its file set from the tsconfig.json, so the patterns stay Gradle inputs only.
+    val tsc = fixture.stub.invocations().single { it.arguments.contains("tsc") }
+    assertThat(tsc.arguments).containsExactly("exec", "tsc")
+
+    // The excluded directory is no input, so changing a file in it leaves the task up to date.
+    fixture.write("frontend/src/generated/api.ts", "export const api = 2")
+    val second = fixture.runner(":frontend:compileTypescript").build()
+    assertThat(second.task(":frontend:compileTypescript")?.outcome)
+      .isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
   private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)

@@ -12,6 +12,7 @@ import de.cronn.pnpm.task.PlaywrightTask
 import de.cronn.pnpm.task.PnpmCheckTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmSetupTask
+import de.cronn.pnpm.task.PnpmSourceTask
 import de.cronn.pnpm.task.PnpmTask
 import de.cronn.pnpm.task.PrettierTask
 import de.cronn.pnpm.task.TypescriptTask
@@ -368,8 +369,8 @@ class PnpmPluginTest {
   fun `uses the same commands and arguments as the tools expect`(@TempDir directory: File) {
     val project = packageProject(directory)
 
-    assertThat(checkTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
-    assertThat(checkTask(project, "compileTypescript").arguments.get()).isEmpty()
+    assertThat(execTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
+    assertThat(execTask(project, "compileTypescript").arguments.get()).isEmpty()
     assertThat(checkTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
     assertThat(checkTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
     assertThat(checkTask(project, "prettierFix").arguments.get())
@@ -388,7 +389,7 @@ class PnpmPluginTest {
     assertThat(sourceNames(checkTask(project, "prettierCheck"))).containsExactly(*PRETTIER_SOURCES)
     assertThat(sourceNames(checkTask(project, "prettierFix"))).containsExactly(*PRETTIER_SOURCES)
     assertThat(sourceNames(checkTask(project, "eslintCheck"))).containsExactly(*ESLINT_SOURCES)
-    assertThat(sourceNames(checkTask(project, "compileTypescript"))).containsExactly(*BASE_SOURCES)
+    assertThat(sourceNames(sourceTask(project, "compileTypescript"))).containsExactly(*BASE_SOURCES)
   }
 
   @Test
@@ -535,17 +536,50 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `fails over an exclude of a tool that is handed no pattern`(@TempDir directory: File) {
+  fun `accepts a pattern no tool is handed`(@TempDir directory: File) {
     val project = packageProject(directory)
+    File(project.projectDir, "src/generated").mkdirs()
+    File(project.projectDir, "src/app.ts").writeText("export const app = 1\n")
+    File(project.projectDir, "src/generated/api.ts").writeText("export const api = 1\n")
     typescript(project).excludes("src/generated/")
+    playwright(project).excludes("src/generated/")
 
-    // tsc takes its sources from the tsconfig.json, but the patterns still decide its inputs, and
-    // the excluded directory holds no file: neither keeps the pattern from being reported.
-    assertThatThrownBy { sourceNames(checkTask(project, "compileTypescript")) }
+    // Neither tsc nor Playwright is handed a pattern, so a trailing "/" is only ever read by the
+    // Ant matcher of Gradle, which takes it for the directory and everything in it.
+    assertThat(sourceNames(sourceTask(project, "compileTypescript")))
+      .containsExactly(*BASE_SOURCES, "src/app.ts")
+    assertThat(sourceNames(sourceTask(project, "playwrightTest"))).containsExactly("src/app.ts")
+  }
+
+  @Test
+  fun `fails over a pattern Gradle cannot resolve wherever it is declared`(
+    @TempDir directory: File
+  ) {
+    val project = packageProject(directory)
+    typescript(project).includes.set(listOf("src/**/*.{ts,tsx}"))
+    playwright(project).includes.set(listOf("tests/**/*.{ts,tsx}"))
+
+    // The Ant matcher matches the braces literally, so the pattern would leave the task without a
+    // source and skip it -- which no tool being handed the pattern does not make any better.
+    assertThatThrownBy { sourceNames(sourceTask(project, "compileTypescript")) }
       .isInstanceOf(GradleException::class.java)
       .hasMessageContaining(
-        "The excludes pattern \"src/generated/\" of :frontend:compileTypescript"
+        "The includes pattern \"src/**/*.{ts,tsx}\" of :frontend:compileTypescript"
       )
+      .hasMessageContaining("brace expansion")
+    assertThatThrownBy { sourceNames(sourceTask(project, "playwrightTest")) }
+      .isInstanceOf(GradleException::class.java)
+      .hasMessageContaining("brace expansion")
+  }
+
+  @Test
+  fun `fails over an exclude a tool reads differently than Gradle`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    prettier(project).excludes("src/generated/")
+
+    assertThatThrownBy { sourceNames(checkTask(project, "prettierCheck")) }
+      .isInstanceOf(GradleException::class.java)
+      .hasMessageContaining("The excludes pattern \"src/generated/\" of :frontend:prettierCheck")
       .hasMessageContaining("Write \"src/generated/**\"")
   }
 
@@ -730,8 +764,11 @@ class PnpmPluginTest {
   private fun checkTask(project: Project, name: String): PnpmCheckTask =
     project.tasks.getByName(name) as PnpmCheckTask
 
+  private fun sourceTask(project: Project, name: String): PnpmSourceTask =
+    project.tasks.getByName(name) as PnpmSourceTask
+
   /** The files the patterns of [task] resolve to, relative to its working directory and sorted. */
-  private fun sourceNames(task: PnpmCheckTask): List<String> {
+  private fun sourceNames(task: PnpmSourceTask): List<String> {
     val directory = task.workingDirectory.get().asFile
     return task.sourceFiles.files.map { it.relativeTo(directory).invariantSeparatorsPath }.sorted()
   }

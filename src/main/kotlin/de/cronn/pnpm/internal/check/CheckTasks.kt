@@ -1,7 +1,7 @@
 package de.cronn.pnpm.internal.check
 
-import de.cronn.pnpm.PnpmCheckExtension
-import de.cronn.pnpm.task.PnpmCheckTask
+import de.cronn.pnpm.PnpmSourceExtension
+import de.cronn.pnpm.task.PnpmSourceTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -13,9 +13,9 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
  * and their arguments; everything the tools have in common lives here. Adding a tool means adding
  * those three and one entry to the list in [PnpmCheckTasks][de.cronn.pnpm.internal.PnpmCheckTasks].
  */
-internal abstract class CheckTasks<T : PnpmCheckTask>(
+internal abstract class CheckTasks<T : PnpmSourceTask>(
   protected val target: Project,
-  val extension: PnpmCheckExtension,
+  val extension: PnpmSourceExtension,
   private val taskType: Class<T>,
   private val defaultIncludes: List<String>,
 ) {
@@ -80,7 +80,7 @@ internal abstract class CheckTasks<T : PnpmCheckTask>(
 
 /** What a tool contributes to the `check` and `fix` lifecycle tasks. */
 internal class RegisteredCheckTasks(
-  val extension: PnpmCheckExtension,
-  val check: TaskProvider<out PnpmCheckTask>,
-  val fix: TaskProvider<out PnpmCheckTask>?,
+  val extension: PnpmSourceExtension,
+  val check: TaskProvider<out PnpmSourceTask>,
+  val fix: TaskProvider<out PnpmSourceTask>?,
 )
