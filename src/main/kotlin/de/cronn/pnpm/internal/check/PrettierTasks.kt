@@ -1,4 +1,4 @@
-package de.cronn.pnpm.internal.tool
+package de.cronn.pnpm.internal.check
 
 import de.cronn.pnpm.PrettierExtension
 import de.cronn.pnpm.task.PrettierTask
@@ -7,17 +7,17 @@ import org.gradle.api.tasks.TaskProvider
 
 /** The Prettier tasks of a pnpm package. */
 internal class PrettierTasks(target: Project, extension: PrettierExtension) :
-  ToolTasks<PrettierTask>(target, extension, PrettierTask::class.java, INCLUDES) {
+  CheckTasks<PrettierTask>(target, extension, PrettierTask::class.java, INCLUDES) {
 
   override fun registerCheckTask(): TaskProvider<PrettierTask> =
-    registerToolTask(
+    registerTask(
       name = "prettierCheck",
       description = "Checks the formatting of the sources with Prettier",
       arguments = listOf("--check"),
     )
 
   override fun registerFixTask(): TaskProvider<PrettierTask> =
-    registerToolTask(
+    registerTask(
       name = "prettierFix",
       description = "Reformats the sources with Prettier",
       arguments = listOf("--write", "--list-different"),

@@ -6,7 +6,7 @@ import org.gradle.api.provider.Property
  * Configuration shared by every test tool wired into the Gradle lifecycle by [PnpmPlugin].
  *
  * A test tool runs a suite rather than inspecting a file set, which is what sets this apart from
- * the source tools deriving from [PnpmToolExtension] directly: [includes] and [excludes] describe
+ * the source tools deriving from [PnpmCheckExtension] directly: [includes] and [excludes] describe
  * the Gradle inputs of the tasks only, and no pattern reaches the tool itself. Which tests run is
  * the tool's own decision, steered by its configuration file and by the command line options of the
  * task.
@@ -20,7 +20,7 @@ import org.gradle.api.provider.Property
  *
  * [PlaywrightExtension] is the extension of the one test tool the plugin supports today.
  */
-public abstract class PnpmTestExtension : PnpmToolExtension() {
+public abstract class PnpmTestExtension : PnpmCheckExtension() {
 
   /**
    * Whether the test tasks of this tool run on every invocation, instead of being skipped when

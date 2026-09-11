@@ -9,7 +9,7 @@ import org.gradle.api.provider.Property
  * Each tool has its own extension deriving from this one: [TypescriptExtension],
  * [PrettierExtension] and [EslintExtension].
  */
-public abstract class PnpmToolExtension {
+public abstract class PnpmCheckExtension {
 
   /**
    * Whether the tasks of this tool run and take part in `check` and `fix`.

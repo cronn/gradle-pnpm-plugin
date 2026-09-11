@@ -8,4 +8,4 @@ package de.cronn.pnpm
  * [includes] are the inputs of `prettierCheck` and `prettierFix`, and the patterns themselves are
  * the operands Prettier is invoked with. [excludes] are passed as negated operands.
  */
-public abstract class PrettierExtension : PnpmToolExtension()
+public abstract class PrettierExtension : PnpmCheckExtension()

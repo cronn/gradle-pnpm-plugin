@@ -19,11 +19,11 @@ import org.gradle.work.DisableCachingByDefault
  *
  * This is the test-tool counterpart of [PnpmCheckTask]: the plugin configures every task of a
  * subclass -- [PlaywrightTask] today -- with the
- * [includes][de.cronn.pnpm.PnpmToolExtension.includes], the
- * [excludes][de.cronn.pnpm.PnpmToolExtension.excludes], the
- * [extraArguments][de.cronn.pnpm.PnpmToolExtension.extraArguments], the
+ * [includes][de.cronn.pnpm.PnpmCheckExtension.includes], the
+ * [excludes][de.cronn.pnpm.PnpmCheckExtension.excludes], the
+ * [extraArguments][de.cronn.pnpm.PnpmCheckExtension.extraArguments], the
  * [alwaysRerun][de.cronn.pnpm.PnpmTestExtension.alwaysRerun] and the
- * [enabled][de.cronn.pnpm.PnpmToolExtension.enabled] state of the tool's extension, so a task a
+ * [enabled][de.cronn.pnpm.PnpmCheckExtension.enabled] state of the tool's extension, so a task a
  * build script registers behaves like the predefined one and only has to say what is different
  * about it.
  *

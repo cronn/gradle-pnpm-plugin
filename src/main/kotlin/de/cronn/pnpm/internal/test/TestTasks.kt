@@ -9,7 +9,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 /**
  * The tasks of one Node test tool.
  *
- * The test-tool counterpart of [ToolTasks][de.cronn.pnpm.internal.tool.ToolTasks]: a tool
+ * The test-tool counterpart of [CheckTasks][de.cronn.pnpm.internal.check.CheckTasks]: a tool
  * contributes a task type, an extension and a subclass of this class that names its tasks;
  * everything the test tools have in common lives here. Adding a test tool means adding those three
  * and one entry to the list in [PnpmTestTasks][de.cronn.pnpm.internal.PnpmTestTasks].
