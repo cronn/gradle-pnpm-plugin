@@ -1,12 +1,6 @@
 # ESLint
 
-**Enabled by**: `eslint.config.*` in the project directory (the legacy `.eslintrc.*` is not
-detected)
-
-`excludes` are passed as [
-`--ignore-pattern`](https://eslint.org/docs/latest/use/command-line-interface#--ignore-pattern),
-which follows the gitignore syntax: a pattern without a slash matches at any depth, unlike the same
-pattern in Gradle.
+**Enabled by**: `eslint.config.*` in the project directory
 
 ## Pre-defined tasks
 

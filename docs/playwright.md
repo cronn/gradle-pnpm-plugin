@@ -2,36 +2,15 @@
 
 **Enabled by**: `playwright.config.*` in the project directory
 
-Playwright picks the tests it runs itself, from its configuration file and from the command line
-options of the task. `includes` and `excludes` therefore only describe the Gradle inputs of the
-task.
-
 ## Pre-defined tasks
 
-|        Task         | Default arguments  |        Default includes        |  Contributes to  |
-|---------------------|--------------------|--------------------------------|------------------|
-| `playwrightTest`    | `test`, `--output` | `tests/**/*.ts`, `src/**/*.ts` | `test`           |
-| `playwrightInstall` | `install`          | none                           | `playwrightTest` |
-
-`test` is a lifecycle task of the project that every test tool contributes to. `check` deliberately
-does not depend on it: an end-to-end suite is slow and usually needs a server the build does not
-start. Add the edge where that is not so:
-
-```kotlin
-tasks.check { dependsOn(tasks.test) }
-```
-
-`playwrightTest` runs on every invocation. A browser suite reaches a backend, a database or a
-fixture server, and none of those is a Gradle input, so unchanged inputs say nothing about whether
-the last result still holds. Set `alwaysRerun` to `false` for a suite that really is a function of
-the files it runs over; it is then skipped while its sources and its Playwright configuration are
-unchanged.
+|       Task       | Default arguments |        Default includes        | Contributes to |
+|------------------|-------------------|--------------------------------|----------------|
+| `playwrightTest` | none              | `tests/**/*.ts`, `src/**/*.ts` | `test`         |
 
 ## Command line options
 
-What a run is usually varied by is an option of `playwrightTest`, so an ad-hoc run needs no edit to
-the build script. `./gradlew help --task playwrightTest` lists them all; anything else Playwright
-takes goes into the `arguments` of the task or the `extraArguments` of the extension.
+`playwrightTest` accepts the following command line options:
 
 |        Option        |                                                  Passed to Playwright as                                                  |
 |----------------------|---------------------------------------------------------------------------------------------------------------------------|
