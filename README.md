@@ -15,20 +15,27 @@ Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 
 
 ## Setup
 
-Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm build. The plugin
-works out what each project is from the files in its directory:
+Apply `de.cronn.gradle-pnpm-plugin` to every project that takes part in the pnpm build:
 
-- **workspace root**: project with a `pnpm-workspace.yaml`
-- **workspace package**: project with a `package.json` and an ancestor project with a
-  `pnpm-workspace.yaml`
-- **standalone package**: project with a `package.json` and no ancestor project with a
-  `pnpm-workspace.yaml`
+```kotlin
+// settings.gradle.kts
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+  }
+}
+```
 
-A project with neither takes no part in the pnpm build.
+```kotlin
+// build.gradle.kts
+plugins {
+  id("de.cronn.gradle-pnpm-plugin") version "<version>"
+}
+```
 
-Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your workspace root:
+Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your workspace root with downloads enabled:
 
-```json
+```json5
 // package.json
 {
   "devEngines": {
@@ -43,74 +50,6 @@ Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your wo
       "onFail": "download"
     }
   }
-}
-```
-
-Then apply the plugin, in the workspace root and in every package:
-
-```kotlin
-// build.gradle.kts
-plugins {
-  id("de.cronn.gradle-pnpm-plugin") version "<version>"
-}
-```
-
-### Convention plugins
-
-The plugin can be applied from
-a [convention plugin](https://docs.gradle.org/current/samples/sample_convention_plugins.html)
-— a precompiled script plugin in `buildSrc`. Put the plugin on buildSrc's compile classpath:
-
-```kotlin
-// buildSrc/build.gradle.kts
-plugins {
-  `kotlin-dsl`
-}
-
-repositories {
-  gradlePluginPortal()
-}
-
-dependencies {
-  implementation("de.cronn:gradle-pnpm-plugin:<version>")
-}
-```
-
-and apply it from the convention plugin's `plugins` block:
-
-```kotlin
-// buildSrc/src/main/kotlin/pnpm-conventions.gradle.kts
-plugins {
-  id("de.cronn.gradle-pnpm-plugin")
-}
-
-pnpm {
-  version = "11.25.0"
-}
-
-prettier {
-  extraArguments("--cache")
-}
-```
-
-The same convention plugin can be applied to the workspace root and to every package: the `pnpm`,
-`typescript`, `prettier` and `eslint` extensions exist in every project, whatever role it plays.
-
-The pnpm lifecycle tasks are the exception, because they exist only on the workspace root. Gradle
-derives the type-safe accessors of a convention plugin by applying the plugin to a synthetic project
-over an empty directory, which is no workspace root, so there is no `tasks.pnpmInstall` accessor.
-Address them by name, from a convention plugin that only the workspace root applies:
-
-```kotlin
-// buildSrc/src/main/kotlin/pnpm-workspace-conventions.gradle.kts
-import de.cronn.pnpm.task.PnpmTask
-
-plugins {
-  id("pnpm-conventions")
-}
-
-tasks.named<PnpmTask>("pnpmInstall") {
-  // ...
 }
 ```
 
@@ -129,13 +68,7 @@ pnpm {
 }
 ```
 
-The plugin registers no repository when
-
-- the build declares one named `pnpm` itself
-- the build sets `RepositoriesMode.PREFER_SETTINGS` or `FAIL_ON_PROJECT_REPOS`
-- the repositories are defined in `settings.gradle.kts`
-
-To define the repository yourself, use the following snippet:
+The plugin registers no repository when the build sets `RepositoriesMode.PREFER_SETTINGS` or `FAIL_ON_PROJECT_REPOS`. In this case, you need to define the repository yourself:
 
 ```kotlin
 // settings.gradle.kts
@@ -161,19 +94,7 @@ To pin the archive by checksum, run `./gradlew pnpmSetup --write-verification-me
 commit `gradle/verification-metadata.xml`. Dependency locking applies to the
 `pnpmDistributionArchive` configuration.
 
-## Workspace tasks
-
-Registered on the workspace root, in the `pnpm` group:
-
-|     Task      |                    Description                    |
-|---------------|---------------------------------------------------|
-| `pnpmSetup`   | Resolves and extracts the pinned pnpm, if needed. |
-| `pnpmInstall` | Runs `pnpm install`.                              |
-| `pnpmDedupe`  | Runs `pnpm dedupe`.                               |
-| `pnpmClean`   | Runs `pnpm clean`.                                |
-
-Every task that runs pnpm depends on `pnpmSetup`, and every task that runs against the installed
-workspace additionally depends on `pnpmInstall`.
+## Workspace root
 
 ### Configuration
 
@@ -187,97 +108,57 @@ pnpm {
   executable = "/usr/local/bin/pnpm"
   // Where the pnpm distribution is downloaded from
   repositoryUrl = "https://github.com/pnpm/pnpm/releases/download/"
-}
-```
-
-`version`, `installDirectory`, `executable` and `repositoryUrl` describe the one pnpm installation
-the whole workspace shares, so configure them once, in the build script of the workspace root. Every
-package inherits its values from there. Setting one of them on a package overrides it for that
-project's own pnpm invocations only — pnpm is still provisioned by the workspace root.
-
-`workspaceRootPath` is the one property that is per project. It says which project provisions pnpm
-for this one, and defaults to the nearest ancestor project holding a `pnpm-workspace.yaml`. Set it
-to point a project at a workspace root the plugin cannot discover on its own, because it is not one
-of that project's Gradle ancestors:
-
-```kotlin
-pnpm {
+  // Gradle project path to the workspace root
   workspaceRootPath = ":frontend"
 }
 ```
+
+The settings describe the one pnpm installation
+the whole workspace shares, so configure them once, in the build script of the workspace root. Every
+package inherits its values from there. Setting one of them on a package overrides it for that
+project's own pnpm invocations only — pnpm is still provisioned by the workspace root.
 
 In CI, the pnpm distribution comes out of the Gradle dependency cache, so caching
 `~/.gradle/caches/modules-2` is enough to avoid downloading it on every run. Caching the workspace
 root's `.gradle/pnpm` (or an `installDirectory` you already cache) additionally skips the
 extraction, and caching pnpm's own download cache skips the package downloads.
 
-## Package tasks
+### Pre-defined tasks
 
-Registered in every package. Tasks related to a supported tool are enabled by default exactly when
-the project contains a configuration file for it. For a list of pre-defined tasks, see the
-documentation pages of each tool:
+|     Task      |                    Description                    |
+|---------------|---------------------------------------------------|
+| `pnpmSetup`   | Resolves and extracts the pinned pnpm, if needed. |
+| `pnpmInstall` | Runs `pnpm install`.                              |
+| `pnpmDedupe`  | Runs `pnpm dedupe`.                               |
+| `pnpmClean`   | Runs `pnpm clean`.                                |
+
+A workspace root also is a workspace package.
+
+## Workspace packages
+
+Workspace packages uses the tasks provided Gradle's [Base Plugin](https://docs.gradle.org/current/userguide/base_plugin.html). Tasks related to a supported tool are enabled by default exactly when
+the project contains a configuration file for it. Tools contribute to the base tasks and provide custom tasks with sensible defaults which should require little to no configuration for most projects.
+
+### Supported tools
 
 - [TypeScript](docs/typescript.md)
 - [ESLint](docs/eslint.md)
 - [Prettier](docs/prettier.md)
 - [Playwright](docs/playwright.md)
 
-Each tool has its own extension for configuring `includes`, `excludes`, `extraArguments` and
-`enabled`:
-
-```kotlin
-typescript {
-  // Adds to the default patterns
-  includes("types/**")
-}
-
-prettier {
-  includes("docs/**")
-  excludes("src/generated/**")
-  extraArguments("--cache")
-}
-
-eslint {
-  // Assigning replaces the default patterns instead of adding to them
-  includes = listOf("app/**/*.ts")
-
-  // Set it to false to keep eslintCheck and eslintFix out of check and fix
-  enabled = true
-}
-```
-
-Configuration defined via the available extension properties is also applied to custom tasks using
+Each tool has its own extension for configuration, which is also applied to custom tasks using
 the task classes provided for each tool.
-
-The patterns are always the Gradle inputs of the tasks, so they always have to be ones Gradle's Ant
-matcher resolves. It knows `*`, `**` and `?` and matches everything else literally, so a pattern
-written for a tool -- brace expansion, a character class, an extglob, a leading `!` -- finds no file
-at all, which would leave the task without a source and skip it. Such a pattern fails the build when
-the task resolves its inputs, as does an absolute one or one with a `..` segment.
-
-For ESLint and Prettier the patterns are what the tool is invoked with as well -- naming every source
-file on the command line overruns the command line length limit of Windows -- so there they have to
-be understood by the tool on top, and one the two read differently fails the build too.
-`compileTypescript` and `playwrightTest` are handed no pattern, because `tsc` and Playwright pick
-their files themselves, so an exclude may name a directory as `src/generated/` there.
-
-What the two resolvers merely read differently is left to the build script:
-
-- an exclude naming a directory needs a trailing `/**`: `excludes("src/generated/**")`
-- an include needs a file extension: `includes("sources/**/*.ts")`
-- an exclude without a slash is anchored to the project directory in Gradle, but matches at any
-  depth in ESLint, which follows the gitignore syntax
 
 ## Custom pnpm tasks
 
 `PnpmExecTask` runs a binary provided by a workspace dependency, `PnpmRunTask` runs a `package.json`
-script. Both inherit the resolved pnpm executable and the dependency on `pnpmInstall`.
+script.
 
 ```kotlin
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmRunTask
 
-tasks.register<PnpmExecTask>("ngBuild") {
+tasks.register<PnpmExecTask>("angularBuild") {
   group = "build"
   command = "ng"
   arguments = listOf("build")
@@ -286,28 +167,16 @@ tasks.register<PnpmExecTask>("ngBuild") {
 }
 
 tasks.register<PnpmRunTask>("buildFrontend") {
-  script = "build"
-  environment("NODE_OPTIONS", "--max-old-space-size=4096")
+  script = "build:frontend"
 }
 ```
-
-## Public API
-
-The supported API is what lives in `de.cronn.pnpm` and `de.cronn.pnpm.task`: the extensions the
-plugin registers (`pnpm`, `typescript`, `prettier`, `eslint`, `playwright`) and the task types a
-build script names -- `PnpmTask`, `PnpmExecTask`, `PnpmRunTask`, `TypescriptTask`, `PrettierTask`,
-`EslintTask` and `PlaywrightTestTask`.
-
-Everything under `de.cronn.pnpm.internal` is implementation, including the base classes those types
-derive from, and changes in any release without a note in the changelog.
 
 ## Development
 
 ```bash
-./gradlew build                                                 # spotless, unit tests, TestKit tests, validation
-./gradlew spotlessApply                                         # apply the formatting
-./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.7.1   # cross-version tier (downloads Gradle)
-./gradlew publishToMavenLocal                                   # publish to the local Maven repository
+./gradlew build               # spotless, tests, validation
+./gradlew spotlessApply       # apply the formatting
+./gradlew publishToMavenLocal # publish to the local Maven repository
 ```
 
 To try out uncommitted changes in a real build, run `./gradlew publishToMavenLocal` and add the
@@ -322,20 +191,25 @@ pluginManagement {
 }
 ```
 
-## Releasing
+Then set the version to `0.0.0-SNAPSHOT`:
 
-### Creating a changelog entry
+```kotlin
+// settings.gradle.kts
+plugins {
+  id("de.cronn.gradle-pnpm-plugin") version "0.0.0-SNAPSHOT"
+}
+```
+
+### Releases
+
+#### Creating a changelog entry
 
 The changelog is assembled by [changesets](https://changesets.dev) from the files in `.changeset`.
 Run `pnpm changeset add` to create a new changeset.
 
-### Publishing a new release
+#### Publishing a new release
 
 Run `pnpm changeset version` to update the changelog and bump the plugin version, then commit the
 result. Releases are published to the [Gradle Plugin Portal](https://plugins.gradle.org) by the
 `release` workflow. To trigger a release, create a new tag  `v<version>` and set the generated
 changelog as description.
-
-## License
-
-[Apache License 2.0](LICENSE)
