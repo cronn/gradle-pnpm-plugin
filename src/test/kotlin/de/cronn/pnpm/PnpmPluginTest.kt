@@ -524,6 +524,32 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `fails over an include only one of the two resolvers understands`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    eslint(project).includes("src/**/*.{ts,tsx}")
+
+    assertThatThrownBy { sourceNames(checkTask(project, "eslintCheck")) }
+      .isInstanceOf(GradleException::class.java)
+      .hasMessageContaining("The includes pattern \"src/**/*.{ts,tsx}\" of :frontend:eslintCheck")
+      .hasMessageContaining("brace expansion")
+  }
+
+  @Test
+  fun `fails over an exclude of a tool that is handed no pattern`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    typescript(project).excludes("src/generated/")
+
+    // tsc takes its sources from the tsconfig.json, but the patterns still decide its inputs, and
+    // the excluded directory holds no file: neither keeps the pattern from being reported.
+    assertThatThrownBy { sourceNames(checkTask(project, "compileTypescript")) }
+      .isInstanceOf(GradleException::class.java)
+      .hasMessageContaining(
+        "The excludes pattern \"src/generated/\" of :frontend:compileTypescript"
+      )
+      .hasMessageContaining("Write \"src/generated/**\"")
+  }
+
+  @Test
   fun `removes a disabled tool from check and fix`(@TempDir directory: File) {
     val project = packageProject(directory)
     eslint(project).enabled.set(false)

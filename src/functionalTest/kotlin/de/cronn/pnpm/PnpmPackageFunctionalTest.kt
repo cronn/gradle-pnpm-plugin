@@ -444,6 +444,27 @@ class PnpmPackageFunctionalTest {
     assertThat(afterAdding.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 
+  @Test
+  fun `fails the build naming an unsupported pattern`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          eslint { includes = listOf("src/**/*.{ts,tsx}") }
+          """
+      )
+    fixture.write("frontend/src/main.ts", "export const main = 1")
+
+    val result = fixture.runner(":frontend:eslintCheck").buildAndFail()
+
+    assertThat(result.output)
+      .contains("The includes pattern \"src/**/*.{ts,tsx}\" of :frontend:eslintCheck")
+      .contains("brace expansion")
+      .contains("Write one pattern per alternative")
+    // The build fails over the pattern instead of handing it to the tool.
+    assertThat(fixture.stub.invocations().map { it.arguments }).noneMatch { it.contains("eslint") }
+  }
+
   private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)

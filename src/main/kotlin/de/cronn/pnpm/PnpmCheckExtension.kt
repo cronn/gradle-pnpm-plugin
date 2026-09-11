@@ -29,7 +29,8 @@ public abstract class PnpmCheckExtension {
    *
    * The patterns are resolved twice: by Gradle, to the files deciding when a task is up to date,
    * and by the tool, which is handed the patterns rather than the files. They therefore have to be
-   * valid in both, which the README describes in more detail.
+   * valid in both, which the README describes in more detail. A pattern only one of the two
+   * understands fails the build when the task resolves its inputs.
    */
   public abstract val includes: ListProperty<String>
 
