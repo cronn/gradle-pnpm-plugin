@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- 002cc3c: New Playwright support: added `playwrightTest` and `playwrightInstall` tasks, enabled by a `playwright.config.*` file
+- dd98810: `includes` and `excludes` of a check task are now validated: a pattern that only Gradle's Ant
+  matcher or only the tool understands fails the build naming the pattern and the property.
+- 1d8db4b: **Breaking:** `compileTypescript` now behaves like `playwrightTest`: the `includes` and `excludes` are Gradle inputs only
+- 002cc3c: **Breaking:** the base classes behind the extensions and tasks moved to `de.cronn.pnpm.internal` and
+  are no longer API: `PnpmToolExtension`/`PnpmSourceExtension`, `PnpmCheckExtension`,
+  `PnpmTestExtension`, `PnpmToolTask`/`PnpmSourceTask`, `PnpmCheckTask`, `PnpmTestTask`, `PnpmSetupTask`
+  and `PlaywrightInstallTask`. The README now says what the supported surface is; a build script
+  registering a `PnpmTask`, `PnpmExecTask`, `PnpmRunTask`, `TypescriptTask`, `PrettierTask`,
+  `EslintTask` or `PlaywrightTask`, or configuring any of the extensions, is unaffected
+
 ## 0.2.0
 
 - **Breaking:** `compileTypescript` no longer passes `--noEmit`; set `noEmit` in the
