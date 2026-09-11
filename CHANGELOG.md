@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- 04795df: Renamed `PlaywrightTask` to `PlaywrightTestTask`
+- 4cfeb72: `playwrightTest` takes a `--trace=<mode>` option, passed on to Playwright as `--trace`
+
 ## 0.3.0
 
 - 002cc3c: New Playwright support: added `playwrightTest` and `playwrightInstall` tasks, enabled by a `playwright.config.*` file
