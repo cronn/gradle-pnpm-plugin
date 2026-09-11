@@ -160,7 +160,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     packages.forEach { name ->
       write("$name/build.gradle.kts", """plugins { id("$CONVENTION_PLUGIN_ID") }""")
       write("$name/package.json", """{ "name": "$name" }""")
-      writeToolConfigs(name)
+      writeCheckConfigs(name)
     }
   }
 
@@ -216,7 +216,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     )
     write("${prefix}pnpm-lock.yaml", "lockfileVersion: '9.0'")
     write("${prefix}pnpm-workspace.yaml", "packages:\n${packages.joinToString("\n") { "  - $it" }}")
-    writeToolConfigs(directory)
+    writeCheckConfigs(directory)
   }
 
   /** A pnpm package at [path], with a config file for every tool so all of them are enabled. */
@@ -234,7 +234,7 @@ class GradleProjectFixture(val rootDirectory: File) {
       """,
     )
     write("$path/package.json", """{ "name": "${path.substringAfterLast('/')}" }""")
-    writeToolConfigs(path)
+    writeCheckConfigs(path)
     if (playwright) writePlaywrightConfig(path)
   }
 
@@ -242,7 +242,7 @@ class GradleProjectFixture(val rootDirectory: File) {
    * Writes a config file for TypeScript, ESLint and Prettier, which is what makes the plugin enable
    * those tools for a project.
    */
-  fun writeToolConfigs(directory: String) {
+  fun writeCheckConfigs(directory: String) {
     val prefix = if (directory.isEmpty()) "" else "$directory/"
     write("${prefix}tsconfig.json", "{}")
     write("${prefix}eslint.config.ts", "export default []")
@@ -252,7 +252,7 @@ class GradleProjectFixture(val rootDirectory: File) {
   /**
    * Writes the `playwright.config.ts` that enables Playwright for [directory].
    *
-   * Deliberately not part of [writeToolConfigs]: enabling Playwright everywhere would add its
+   * Deliberately not part of [writeCheckConfigs]: enabling Playwright everywhere would add its
    * tasks, and its pnpm invocations, to every test that only cares about the source tools.
    */
   fun writePlaywrightConfig(directory: String) {

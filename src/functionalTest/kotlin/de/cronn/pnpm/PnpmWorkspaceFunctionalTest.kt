@@ -226,7 +226,7 @@ class PnpmWorkspaceFunctionalTest {
     // A tool config file but no package.json: the tool is enabled, so the task is actually asked
     // for the workspace root that this project does not have.
     fixture.write("docs/build.gradle.kts", """plugins { id("de.cronn.gradle-pnpm-plugin") }""")
-    fixture.writeToolConfigs("docs")
+    fixture.writeCheckConfigs("docs")
 
     val result = fixture.runner(":docs:prettierCheck").buildAndFail()
 

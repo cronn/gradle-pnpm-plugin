@@ -20,10 +20,10 @@ import org.gradle.work.DisableCachingByDefault
  *
  * The plugin registers the predefined tasks of every tool as one of the subclasses --
  * [TypescriptTask], [PrettierTask] and [EslintTask] -- and configures every task of those types
- * with the [includes][de.cronn.pnpm.PnpmToolExtension.includes], the
- * [excludes][de.cronn.pnpm.PnpmToolExtension.excludes], the
- * [extraArguments][de.cronn.pnpm.PnpmToolExtension.extraArguments] and the
- * [enabled][de.cronn.pnpm.PnpmToolExtension.enabled] state of the tool's extension. A build script
+ * with the [includes][de.cronn.pnpm.PnpmCheckExtension.includes], the
+ * [excludes][de.cronn.pnpm.PnpmCheckExtension.excludes], the
+ * [extraArguments][de.cronn.pnpm.PnpmCheckExtension.extraArguments] and the
+ * [enabled][de.cronn.pnpm.PnpmCheckExtension.enabled] state of the tool's extension. A build script
  * that registers a task of one of those types therefore gets a task that behaves like the
  * predefined ones, and only has to say what is different about it.
  *

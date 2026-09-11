@@ -3,10 +3,10 @@ package de.cronn.pnpm.internal
 import de.cronn.pnpm.EslintExtension
 import de.cronn.pnpm.PrettierExtension
 import de.cronn.pnpm.TypescriptExtension
-import de.cronn.pnpm.internal.tool.EslintTasks
-import de.cronn.pnpm.internal.tool.PrettierTasks
-import de.cronn.pnpm.internal.tool.RegisteredToolTasks
-import de.cronn.pnpm.internal.tool.TypescriptTasks
+import de.cronn.pnpm.internal.check.EslintTasks
+import de.cronn.pnpm.internal.check.PrettierTasks
+import de.cronn.pnpm.internal.check.RegisteredCheckTasks
+import de.cronn.pnpm.internal.check.TypescriptTasks
 import de.cronn.pnpm.task.PnpmCheckTask
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
@@ -19,7 +19,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
  *
  * A pnpm workspace root is a package like any other, so it gets the same tasks.
  */
-internal class PnpmToolTasks(
+internal class PnpmCheckTasks(
   private val target: Project,
   typescript: TypescriptExtension,
   prettier: PrettierExtension,
@@ -47,13 +47,13 @@ internal class PnpmToolTasks(
     registerFixTask(registered)
   }
 
-  private fun wireCheck(registered: List<RegisteredToolTasks>) {
+  private fun wireCheck(registered: List<RegisteredCheckTasks>) {
     target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure { task ->
       registered.forEach { tool -> task.dependsOn(enabledTask(tool, tool.check)) }
     }
   }
 
-  private fun registerFixTask(registered: List<RegisteredToolTasks>) {
+  private fun registerFixTask(registered: List<RegisteredCheckTasks>) {
     target.tasks.register(FIX_TASK_NAME) { task ->
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.description = "Applies all automatic source fixes of the configured tools"
@@ -66,7 +66,7 @@ internal class PnpmToolTasks(
    * lets `enabled` be configured after the plugin has been applied.
    */
   private fun enabledTask(
-    tool: RegisteredToolTasks,
+    tool: RegisteredCheckTasks,
     task: TaskProvider<out PnpmCheckTask>,
   ): Provider<List<TaskProvider<out PnpmCheckTask>>> =
     tool.extension.enabled.map { enabled -> if (enabled) listOf(task) else emptyList() }

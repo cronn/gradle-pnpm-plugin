@@ -1,4 +1,4 @@
-package de.cronn.pnpm.internal.tool
+package de.cronn.pnpm.internal.check
 
 import de.cronn.pnpm.EslintExtension
 import de.cronn.pnpm.task.EslintTask
@@ -8,7 +8,7 @@ import org.gradle.api.tasks.TaskProvider
 
 /** The ESLint tasks of a pnpm package. */
 internal class EslintTasks(target: Project, extension: EslintExtension) :
-  ToolTasks<EslintTask>(target, extension, EslintTask::class.java, INCLUDES) {
+  CheckTasks<EslintTask>(target, extension, EslintTask::class.java, INCLUDES) {
 
   /**
    * ESLint reports the type errors `tsc` would report as well, so type checking runs first to get
@@ -20,14 +20,14 @@ internal class EslintTasks(target: Project, extension: EslintExtension) :
   }
 
   override fun registerCheckTask(): TaskProvider<EslintTask> =
-    registerToolTask(
+    registerTask(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
       arguments = listOf("--max-warnings=0"),
     )
 
   override fun registerFixTask(): TaskProvider<EslintTask> =
-    registerToolTask(
+    registerTask(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
       arguments = listOf("--max-warnings=0", "--fix"),

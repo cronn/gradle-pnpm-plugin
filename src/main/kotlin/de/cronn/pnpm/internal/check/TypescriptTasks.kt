@@ -1,4 +1,4 @@
-package de.cronn.pnpm.internal.tool
+package de.cronn.pnpm.internal.check
 
 import de.cronn.pnpm.TypescriptExtension
 import de.cronn.pnpm.task.TypescriptTask
@@ -7,10 +7,10 @@ import org.gradle.api.tasks.TaskProvider
 
 /** The TypeScript tasks of a pnpm package. */
 internal class TypescriptTasks(target: Project, extension: TypescriptExtension) :
-  ToolTasks<TypescriptTask>(target, extension, TypescriptTask::class.java, INCLUDES) {
+  CheckTasks<TypescriptTask>(target, extension, TypescriptTask::class.java, INCLUDES) {
 
   override fun registerCheckTask(): TaskProvider<TypescriptTask> =
-    registerToolTask(
+    registerTask(
       name = "compileTypescript",
       description = "Checks the TypeScript sources with tsc",
     )

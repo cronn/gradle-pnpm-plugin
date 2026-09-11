@@ -1,5 +1,6 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.PnpmCheckTasks
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
@@ -7,7 +8,6 @@ import de.cronn.pnpm.internal.PnpmRepository
 import de.cronn.pnpm.internal.PnpmResolution
 import de.cronn.pnpm.internal.PnpmRole
 import de.cronn.pnpm.internal.PnpmTestTasks
-import de.cronn.pnpm.internal.PnpmToolTasks
 import de.cronn.pnpm.internal.PnpmWorkspaceLayout
 import de.cronn.pnpm.internal.PnpmWorkspaceTasks
 import de.cronn.pnpm.internal.ToolConfigFiles
@@ -87,7 +87,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
     }
 
-    registerToolTasks(target, layout)
+    registerCheckTasks(target, layout)
   }
 
   /**
@@ -239,7 +239,7 @@ public class PnpmPlugin : Plugin<Project> {
    * config files is checked, which Gradle tracks as a configuration cache input, so adding one
    * enables the tool on the next build.
    */
-  private fun registerToolTasks(target: Project, layout: PnpmWorkspaceLayout) {
+  private fun registerCheckTasks(target: Project, layout: PnpmWorkspaceLayout) {
     target.pluginManager.apply(BasePlugin::class.java)
 
     val typescript =
@@ -266,7 +266,7 @@ public class PnpmPlugin : Plugin<Project> {
     // holds.
     playwright.alwaysRerun.convention(true)
 
-    PnpmToolTasks(target, typescript, prettier, eslint).register()
+    PnpmCheckTasks(target, typescript, prettier, eslint).register()
     PnpmTestTasks(target, playwright, workspaceLockfile(target, layout)).register()
   }
 

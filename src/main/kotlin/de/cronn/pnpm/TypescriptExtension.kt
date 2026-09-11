@@ -8,4 +8,4 @@ package de.cronn.pnpm
  * checks from the `tsconfig.json`, so for this tool the patterns only describe the Gradle inputs of
  * `compileTypescript` and no pattern reaches the command line.
  */
-public abstract class TypescriptExtension : PnpmToolExtension()
+public abstract class TypescriptExtension : PnpmCheckExtension()

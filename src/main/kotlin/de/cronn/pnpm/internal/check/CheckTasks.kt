@@ -1,6 +1,6 @@
-package de.cronn.pnpm.internal.tool
+package de.cronn.pnpm.internal.check
 
-import de.cronn.pnpm.PnpmToolExtension
+import de.cronn.pnpm.PnpmCheckExtension
 import de.cronn.pnpm.task.PnpmCheckTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -11,16 +11,16 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
  *
  * A tool contributes a task type, an extension and a subclass of this class that names its tasks
  * and their arguments; everything the tools have in common lives here. Adding a tool means adding
- * those three and one entry to the list in [PnpmToolTasks][de.cronn.pnpm.internal.PnpmToolTasks].
+ * those three and one entry to the list in [PnpmCheckTasks][de.cronn.pnpm.internal.PnpmCheckTasks].
  */
-internal abstract class ToolTasks<T : PnpmCheckTask>(
+internal abstract class CheckTasks<T : PnpmCheckTask>(
   protected val target: Project,
-  val extension: PnpmToolExtension,
+  val extension: PnpmCheckExtension,
   private val taskType: Class<T>,
   private val defaultIncludes: List<String>,
 ) {
 
-  fun register(): RegisteredToolTasks {
+  fun register(): RegisteredCheckTasks {
     // A value, not a convention: adding to a property that only has a convention discards it,
     // which would make the additive includes(...) method replace the defaults instead.
     extension.includes.set(defaultIncludes)
@@ -46,7 +46,7 @@ internal abstract class ToolTasks<T : PnpmCheckTask>(
       configureTask(task)
     }
 
-    return RegisteredToolTasks(extension, check = registerCheckTask(), fix = registerFixTask())
+    return RegisteredCheckTasks(extension, check = registerCheckTask(), fix = registerFixTask())
   }
 
   /** The task of this tool that takes part in `check`. */
@@ -58,7 +58,7 @@ internal abstract class ToolTasks<T : PnpmCheckTask>(
   /** Applied to every task of this tool, the ones registered by a build script included. */
   protected open fun configureTask(task: T) {}
 
-  protected fun registerToolTask(
+  protected fun registerTask(
     name: String,
     description: String,
     arguments: List<String> = emptyList(),
@@ -79,8 +79,8 @@ internal abstract class ToolTasks<T : PnpmCheckTask>(
 }
 
 /** What a tool contributes to the `check` and `fix` lifecycle tasks. */
-internal class RegisteredToolTasks(
-  val extension: PnpmToolExtension,
+internal class RegisteredCheckTasks(
+  val extension: PnpmCheckExtension,
   val check: TaskProvider<out PnpmCheckTask>,
   val fix: TaskProvider<out PnpmCheckTask>?,
 )

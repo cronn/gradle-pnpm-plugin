@@ -8,4 +8,4 @@ package de.cronn.pnpm
  * and the patterns themselves are the operands ESLint is invoked with. [excludes] are passed as
  * `--ignore-pattern`.
  */
-public abstract class EslintExtension : PnpmToolExtension()
+public abstract class EslintExtension : PnpmCheckExtension()

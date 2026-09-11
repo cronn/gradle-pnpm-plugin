@@ -4,8 +4,8 @@ import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_MODULE
+import de.cronn.pnpm.internal.check.EslintTasks
 import de.cronn.pnpm.internal.test.PlaywrightTasks
-import de.cronn.pnpm.internal.tool.EslintTasks
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PlaywrightInstallTask
 import de.cronn.pnpm.task.PlaywrightTask
@@ -759,7 +759,7 @@ class PnpmPluginTest {
       }
 
     /** Writes a config file for every tool, so that all of them are auto-enabled. */
-    fun writeToolConfigs(directory: File) {
+    fun writeCheckConfigs(directory: File) {
       directory.mkdirs()
       File(directory, "tsconfig.json").writeText("{}")
       File(directory, "eslint.config.ts").writeText("export default []\n")
@@ -769,7 +769,7 @@ class PnpmPluginTest {
     /** A project that is a pnpm workspace root, because its directory has a pnpm-workspace.yaml. */
     fun workspaceProject(directory: File, name: String? = null, parent: Project? = null): Project {
       writePackageJson(directory)
-      writeToolConfigs(directory)
+      writeCheckConfigs(directory)
       File(directory, "pnpm-workspace.yaml").writeText("packages:\n  - frontend\n")
 
       val project =
@@ -797,7 +797,7 @@ class PnpmPluginTest {
 
       packageDirectory.mkdirs()
       File(packageDirectory, "package.json").writeText("""{ "name": "$name" }""")
-      writeToolConfigs(packageDirectory)
+      writeCheckConfigs(packageDirectory)
 
       return childProject(name, root, packageDirectory)
     }
