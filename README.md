@@ -251,11 +251,12 @@ the task classes provided for each tool.
 
 The patterns are both the Gradle inputs of the tasks and what the tool is invoked with -- naming
 every source file on the command line overruns the command line length limit of Windows. They
-therefore have to be understood by Gradle's Ant matcher *and* by the tool:
+therefore have to be understood by Gradle's Ant matcher *and* by the tool.
+
+A pattern only one of the two understands fails the build when the task resolves its inputs. What the two resolvers merely read differently is left to the build script:
 
 - an exclude naming a directory needs a trailing `/**`: `excludes("src/generated/**")`
 - an include needs a file extension: `includes("sources/**/*.ts")`
-- brace expansion (`src/**/*.{ts,tsx}`) matches nothing in Gradle, which skips the task
 - an exclude without a slash is anchored to the project directory in Gradle, but matches at any
   depth in ESLint, which follows the gitignore syntax
 

@@ -1,5 +1,6 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.check.CheckPatterns
 import javax.inject.Inject
 import org.gradle.api.file.FileTree
 import org.gradle.api.model.ObjectFactory
@@ -31,8 +32,9 @@ import org.gradle.work.DisableCachingByDefault
  * source file on the command line overruns the command line length limit of Windows on a large
  * source set. The patterns therefore have to be understood both by the Ant matcher of Gradle, which
  * resolves them to the [sourceFiles] deciding when the task is up to date, and by the tool itself.
- * Each tool translates them in [patternArguments], because the command line syntax for exclusions
- * differs between the tools.
+ * A pattern only one of the two understands is rejected; the README lists which constructs those
+ * are. Each tool translates the rest in [patternArguments], because the command line syntax for
+ * exclusions differs between the tools.
  */
 @DisableCachingByDefault(
   because = "Runs an arbitrary Node tool; its effects are not fully described by declared outputs."
@@ -58,12 +60,16 @@ public abstract class PnpmCheckTask : PnpmExecTask() {
    * fails instead of doing nothing. That covers the case of every pattern matching nothing; a tool
    * whose patterns match nothing only individually is left to the tool, which is why the tools are
    * invoked with `--no-error-on-unmatched-pattern`.
+   *
+   * Resolving the inputs is also where the patterns are validated, so that a pattern only one of
+   * the two resolvers understands fails the build instead of skipping the task as having no source.
    */
   @get:InputFiles
   @get:SkipWhenEmpty
   @get:PathSensitive(PathSensitivity.RELATIVE)
   public val sourceFiles: FileTree
     get() {
+      requireSupportedPatterns()
       val tree = objects.fileTree()
       tree.setDir(workingDirectory.get().asFile)
       tree.setIncludes(includes.get())
@@ -94,6 +100,17 @@ public abstract class PnpmCheckTask : PnpmExecTask() {
     patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
       arguments.get() +
       extraArguments.get()
+
+  /**
+   * Rejects a pattern the Ant matcher of Gradle and the globber of the tool do not both understand,
+   * before it can describe a different set of files on each side. Checked where Gradle resolves the
+   * inputs, so that it fires for a pattern matching nothing as well, and for [TypescriptTask],
+   * which is handed no pattern at all.
+   */
+  private fun requireSupportedPatterns() {
+    CheckPatterns.requireSupported(includes.get(), "includes", path)
+    CheckPatterns.requireSupported(excludes.get(), "excludes", path)
+  }
 
   /**
    * The Ant matcher of Gradle accepts a Windows separator in a pattern, the globbers of the tools
