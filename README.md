@@ -249,11 +249,19 @@ eslint {
 Configuration defined via the available extension properties is also applied to custom tasks using
 the task classes provided for each tool.
 
-The patterns are both the Gradle inputs of the tasks and what the tool is invoked with -- naming
-every source file on the command line overruns the command line length limit of Windows. They
-therefore have to be understood by Gradle's Ant matcher *and* by the tool.
+The patterns are always the Gradle inputs of the tasks, so they always have to be ones Gradle's Ant
+matcher resolves. It knows `*`, `**` and `?` and matches everything else literally, so a pattern
+written for a tool -- brace expansion, a character class, an extglob, a leading `!` -- finds no file
+at all, which would leave the task without a source and skip it. Such a pattern fails the build when
+the task resolves its inputs, as does an absolute one or one with a `..` segment.
 
-A pattern only one of the two understands fails the build when the task resolves its inputs. What the two resolvers merely read differently is left to the build script:
+For ESLint and Prettier the patterns are what the tool is invoked with as well -- naming every source
+file on the command line overruns the command line length limit of Windows -- so there they have to
+be understood by the tool on top, and one the two read differently fails the build too.
+`compileTypescript` and `playwrightTest` are handed no pattern, because `tsc` and Playwright pick
+their files themselves, so an exclude may name a directory as `src/generated/` there.
+
+What the two resolvers merely read differently is left to the build script:
 
 - an exclude naming a directory needs a trailing `/**`: `excludes("src/generated/**")`
 - an include needs a file extension: `includes("sources/**/*.ts")`

@@ -20,7 +20,7 @@ import org.gradle.api.provider.Property
  *
  * [PlaywrightExtension] is the extension of the one test tool the plugin supports today.
  */
-public abstract class PnpmTestExtension : PnpmCheckExtension() {
+public abstract class PnpmTestExtension : PnpmSourceExtension() {
 
   /**
    * Whether the test tasks of this tool run on every invocation, instead of being skipped when

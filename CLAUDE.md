@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Documentation
 
 - Describe user-facing changes in a changeset (`@changesets/cli`)
-- Keep documentation short and concise
+- Keep user-facing documentation short and concise without implementation details
 
 ## GitHub Pull Requests
 
