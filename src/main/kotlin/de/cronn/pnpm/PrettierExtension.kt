@@ -1,5 +1,7 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.extension.PnpmCheckExtension
+
 /**
  * Configuration of the Prettier check and fix tasks, added by [PnpmPlugin] as the `prettier`
  * extension.

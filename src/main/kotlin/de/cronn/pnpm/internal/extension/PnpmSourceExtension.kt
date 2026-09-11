@@ -1,13 +1,13 @@
-package de.cronn.pnpm
+package de.cronn.pnpm.internal.extension
 
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 
 /**
- * Configuration shared by every Node tool wired into the Gradle lifecycle by [PnpmPlugin].
+ * Configuration shared by every Node tool wired into the Gradle lifecycle by `PnpmPlugin`.
  *
  * The tools whose patterns reach a command line configure a [PnpmCheckExtension], the test tools a
- * [PnpmTestExtension], and [TypescriptExtension] derives from this one directly -- the same split
+ * [PnpmTestExtension], and `TypescriptExtension` derives from this one directly -- the same split
  * the tasks make.
  */
 public abstract class PnpmSourceExtension {

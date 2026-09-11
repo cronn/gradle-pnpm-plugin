@@ -1,6 +1,7 @@
-package de.cronn.pnpm.task
+package de.cronn.pnpm.internal.task
 
 import de.cronn.pnpm.internal.SourcePatterns
+import de.cronn.pnpm.task.PnpmExecTask
 import javax.inject.Inject
 import org.gradle.api.file.FileTree
 import org.gradle.api.model.ObjectFactory
@@ -16,7 +17,7 @@ import org.gradle.work.DisableCachingByDefault
  * Runs a Node tool over a set of sources described by Ant-style patterns.
  *
  * The base of every task the plugin registers for a tool: [PnpmCheckTask] for the tools that are
- * handed their patterns, [PnpmTestTask] for the ones that run a suite, and [TypescriptTask], which
+ * handed their patterns, [PnpmTestTask] for the ones that run a suite, and `TypescriptTask`, which
  * is handed no pattern but is no test task either. Everything the three have in common -- the
  * patterns, the [sourceFiles] they resolve to and the [extraArguments] appended to every invocation
  * -- lives here, so that a pattern means the same thing whichever task it is declared on.

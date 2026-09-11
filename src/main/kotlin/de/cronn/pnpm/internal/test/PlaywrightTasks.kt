@@ -2,7 +2,7 @@ package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.PlaywrightExtension
 import de.cronn.pnpm.internal.ToolConfigFiles
-import de.cronn.pnpm.task.PlaywrightInstallTask
+import de.cronn.pnpm.internal.task.PlaywrightInstallTask
 import de.cronn.pnpm.task.PlaywrightTask
 import java.io.File
 import org.gradle.api.Project

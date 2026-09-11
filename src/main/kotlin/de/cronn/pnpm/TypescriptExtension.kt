@@ -1,5 +1,7 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.extension.PnpmSourceExtension
+
 /**
  * Configuration of the TypeScript compiler check, added by [PnpmPlugin] as the `typescript`
  * extension.

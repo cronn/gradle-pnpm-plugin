@@ -1,5 +1,6 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.extension.PnpmTestExtension
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property

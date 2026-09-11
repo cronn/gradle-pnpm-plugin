@@ -7,7 +7,7 @@ import de.cronn.pnpm.internal.check.EslintTasks
 import de.cronn.pnpm.internal.check.PrettierTasks
 import de.cronn.pnpm.internal.check.RegisteredCheckTasks
 import de.cronn.pnpm.internal.check.TypescriptTasks
-import de.cronn.pnpm.task.PnpmSourceTask
+import de.cronn.pnpm.internal.task.PnpmSourceTask
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider

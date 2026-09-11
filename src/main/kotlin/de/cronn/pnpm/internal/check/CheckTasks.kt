@@ -1,7 +1,7 @@
 package de.cronn.pnpm.internal.check
 
-import de.cronn.pnpm.PnpmSourceExtension
-import de.cronn.pnpm.task.PnpmSourceTask
+import de.cronn.pnpm.internal.extension.PnpmSourceExtension
+import de.cronn.pnpm.internal.task.PnpmSourceTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin

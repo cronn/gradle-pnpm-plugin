@@ -1,9 +1,9 @@
-package de.cronn.pnpm
+package de.cronn.pnpm.internal.extension
 
 import org.gradle.api.provider.Property
 
 /**
- * Configuration shared by every test tool wired into the Gradle lifecycle by [PnpmPlugin].
+ * Configuration shared by every test tool wired into the Gradle lifecycle by `PnpmPlugin`.
  *
  * A test tool runs a suite rather than inspecting a file set, which is what sets this apart from
  * the source tools deriving from [PnpmCheckExtension] directly: [includes] and [excludes] describe
@@ -18,7 +18,7 @@ import org.gradle.api.provider.Property
  * tasks.named("check") { dependsOn(tasks.named("test")) }
  * ```
  *
- * [PlaywrightExtension] is the extension of the one test tool the plugin supports today.
+ * `PlaywrightExtension` is the extension of the one test tool the plugin supports today.
  */
 public abstract class PnpmTestExtension : PnpmSourceExtension() {
 

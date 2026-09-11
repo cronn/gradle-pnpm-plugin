@@ -1,4 +1,4 @@
-package de.cronn.pnpm.task
+package de.cronn.pnpm.internal.task
 
 import java.io.File
 import javax.inject.Inject

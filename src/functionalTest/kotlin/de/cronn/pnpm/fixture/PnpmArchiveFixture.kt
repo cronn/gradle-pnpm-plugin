@@ -10,7 +10,8 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 
 /**
  * Creates a local pnpm "release", laid out the way the pnpm repository expects it, so that
- * [de.cronn.pnpm.task.PnpmSetupTask] resolves a fixture instead of a real pnpm distribution.
+ * [de.cronn.pnpm.internal.task.PnpmSetupTask] resolves a fixture instead of a real pnpm
+ * distribution.
  */
 object PnpmArchiveFixture {
 
