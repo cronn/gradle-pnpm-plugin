@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Format CHANGELOG
+
 ## 0.5.0
 
 - e1f2af3: Add Vitest support. A project containing a `vitest.config.*` gets a `vitestTest` task and a `vitest` extension configuring it.
