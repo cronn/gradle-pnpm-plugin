@@ -176,8 +176,11 @@ task classes provided for each tool.
 
 ## Custom pnpm tasks
 
-`PnpmExecTask` runs a binary provided by a workspace dependency, `PnpmRunTask` runs a `package.json`
-script and `NodeTask` runs a Node program.
+|   Task type    |                    Description                    |
+|----------------|---------------------------------------------------|
+| `PnpmExecTask` | Runs a binary provided by a workspace dependency. |
+| `PnpmRunTask`  | Runs a script declared in a `package.json`.       |
+| `NodeTask`     | Runs a Node program.                              |
 
 ```kotlin
 import de.cronn.pnpm.task.NodeTask
