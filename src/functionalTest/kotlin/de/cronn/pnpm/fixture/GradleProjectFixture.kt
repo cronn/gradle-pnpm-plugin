@@ -29,6 +29,8 @@ class GradleProjectFixture(val rootDirectory: File) {
     settingsScript: String = "",
     /** Whether every package also gets a `playwright.config.ts`, which enables Playwright. */
     playwright: Boolean = false,
+    /** Whether every package also gets a `vitest.config.ts`, which enables Vitest. */
+    vitest: Boolean = false,
   ) {
     stubExecutable = stub.install()
 
@@ -53,7 +55,7 @@ class GradleProjectFixture(val rootDirectory: File) {
       """,
     )
 
-    packages.forEach { name -> writePackage(name, packageBuildScript, playwright) }
+    packages.forEach { name -> writePackage(name, packageBuildScript, playwright, vitest) }
   }
 
   /**
@@ -224,6 +226,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     path: String,
     buildScript: String = "",
     playwright: Boolean = false,
+    vitest: Boolean = false,
   ) {
     write(
       "$path/build.gradle.kts",
@@ -236,6 +239,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write("$path/package.json", """{ "name": "${path.substringAfterLast('/')}" }""")
     writeCheckConfigs(path)
     if (playwright) writePlaywrightConfig(path)
+    if (vitest) writeVitestConfig(path)
   }
 
   /**
@@ -259,6 +263,18 @@ class GradleProjectFixture(val rootDirectory: File) {
   fun writePlaywrightConfig(directory: String) {
     val prefix = if (directory.isEmpty()) "" else "$directory/"
     write("${prefix}playwright.config.ts", "export default { testDir: \"tests\" }")
+  }
+
+  /**
+   * Writes the `vitest.config.ts` that makes the plugin register the Vitest tasks for [directory].
+   *
+   * Deliberately not part of [writeCheckConfigs], for the same reason as [writePlaywrightConfig]:
+   * registering the suite everywhere would add it, and its pnpm invocations, to every test that
+   * only cares about the source tools.
+   */
+  fun writeVitestConfig(directory: String) {
+    val prefix = if (directory.isEmpty()) "" else "$directory/"
+    write("${prefix}vitest.config.ts", "export default {}")
   }
 
   fun write(path: String, content: String) {

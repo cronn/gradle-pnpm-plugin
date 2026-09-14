@@ -1,38 +1,46 @@
 package de.cronn.pnpm.internal
 
 import de.cronn.pnpm.PlaywrightExtension
+import de.cronn.pnpm.VitestExtension
 import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.internal.test.RegisteredTestTasks
+import de.cronn.pnpm.internal.test.VitestTasks
 import java.io.File
 import org.gradle.api.Project
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
  * Registers the tasks of every Node test tool of a single pnpm package and wires them into the
- * `test` lifecycle task. Each tool defines its own tasks; what is left here is what crosses tool
- * boundaries.
+ * `test` and `check` lifecycle tasks. Each tool defines its own tasks; what is left here is what
+ * crosses tool boundaries.
  *
- * `check` deliberately does not depend on `test`: an end-to-end suite is slow and usually needs a
- * server the build does not start. A build that wants it adds the edge itself.
+ * Every test tool contributes its suite to `test`. `check` is the tool's own decision, carried by
+ * [RegisteredTestTasks.contributesToCheck]: a unit suite belongs in `build`, while an end-to-end
+ * suite is slow and usually needs a server the build does not start. `check` therefore runs
+ * `vitestTest` but not `playwrightTest`; a build that wants the latter adds the edge itself.
  */
 internal class PnpmTestTasks(
   private val target: Project,
   playwright: PlaywrightExtension,
+  vitest: VitestExtension,
   lockfile: File?,
 ) {
 
   private val playwrightTasks = PlaywrightTasks(target, playwright, lockfile)
+  private val vitestTasks = VitestTasks(target, vitest)
 
   /**
    * Registers the tasks of every test tool the project is configured for, and wires them into
-   * `test`. A tool whose config file is absent contributes no task at all.
+   * `test` and `check`. A tool whose config file is absent contributes no task at all.
    */
-  fun register(playwright: Boolean) {
+  fun register(playwright: Boolean, vitest: Boolean) {
     // A further test tool is registered here and added to the list below.
     val playwrightTasks = playwrightTasks.registerAll(playwright)
+    val vitestTasks = vitestTasks.register(vitest)
 
-    val registered = listOfNotNull(playwrightTasks)
+    val registered = listOfNotNull(playwrightTasks, vitestTasks)
     wireTest(registered)
+    wireCheck(registered.filter { tool -> tool.contributesToCheck })
   }
 
   /**
@@ -60,6 +68,20 @@ internal class PnpmTestTasks(
       }
 
     test.configure { task ->
+      registered.forEach { tool -> task.dependsOn(tool.test) }
+    }
+  }
+
+  /**
+   * Adds the test task of every tool that belongs in `check` to it. `check` is always there:
+   * `PnpmPlugin` applies the Base Plugin before any tool is registered.
+   */
+  private fun wireCheck(registered: List<RegisteredTestTasks>) {
+    if (registered.isEmpty()) {
+      return
+    }
+
+    target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure { task ->
       registered.forEach { tool -> task.dependsOn(tool.test) }
     }
   }

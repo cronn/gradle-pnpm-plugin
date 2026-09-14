@@ -10,12 +10,14 @@ import de.cronn.pnpm.internal.task.PnpmCheckTask
 import de.cronn.pnpm.internal.task.PnpmSetupTask
 import de.cronn.pnpm.internal.task.PnpmSourceTask
 import de.cronn.pnpm.internal.test.PlaywrightTasks
+import de.cronn.pnpm.internal.test.VitestTasks
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.PlaywrightTestTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmTask
 import de.cronn.pnpm.task.PrettierTask
 import de.cronn.pnpm.task.TypescriptTask
+import de.cronn.pnpm.task.VitestTask
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -703,6 +705,72 @@ class PnpmPluginTest {
     assertThat(install.withDependencies.get()).isTrue()
   }
 
+  @Test
+  fun `registers the vitest task as the type of its tool`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    assertThat(project.tasks.getByName("vitestTest")).isInstanceOf(VitestTask::class.java)
+  }
+
+  @Test
+  fun `runs the suite through the vitest binary, in the run mode`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.command.get()).isEqualTo("vitest")
+    // `run`, because a bare `vitest` would start the watch mode.
+    assertThat(test.arguments.get()).containsExactly("run")
+  }
+
+  @Test
+  fun `adds the unit suite to both test and check`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    assertThat(dependencyNames(project.tasks.getByName("test"))).contains("vitestTest")
+    // A unit suite is fast and reaches nothing the build does not start, so it belongs in `build`.
+    assertThat(dependencyNames(project.tasks.getByName("check"))).contains("vitestTest")
+  }
+
+  @Test
+  fun `skips the unit suite when its sources are unchanged`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.alwaysRerun.get()).isFalse()
+    assertThat(test.rerunRequested()).isFalse()
+  }
+
+  @Test
+  fun `writes the coverage report below the build directory`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.reportDirectory.get().asFile)
+      .isEqualTo(File(project.layout.buildDirectory.get().asFile, "reports/vitest"))
+  }
+
+  @Test
+  fun `takes the coverage report directory from the extension`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+    val report = File(directory, "coverage")
+
+    vitest(project).reportDirectory.set(report)
+
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.reportDirectory.get().asFile).isEqualTo(report)
+  }
+
+  @Test
+  fun `takes the vitest patterns as the inputs of the suite only`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.includes.get()).containsExactlyElementsOf(VitestTasks.INCLUDES)
+    assertThat(test.excludes.get()).containsExactlyElementsOf(VitestTasks.EXCLUDES)
+    // No pattern reaches Vitest: it picks the tests itself.
+    assertThat(test.arguments.get()).containsExactly("run")
+  }
+
   // Auto-discovery of the tools
 
   @Test
@@ -729,6 +797,28 @@ class PnpmPluginTest {
 
     val withConfig = playwrightProject(File(directory, "other").apply { mkdirs() })
     assertThat(withConfig.tasks.names).contains("playwrightTest", "playwrightInstall")
+  }
+
+  @Test
+  fun `enables vitest only for a project with a vitest config`(@TempDir directory: File) {
+    val withoutConfig = packageProject(directory)
+    assertThat(withoutConfig.tasks.names).doesNotContain("vitestTest")
+    assertThat(dependencyNames(withoutConfig.tasks.getByName("check"))).doesNotContain("vitestTest")
+
+    val withConfig = vitestProject(File(directory, "other").apply { mkdirs() })
+    assertThat(withConfig.tasks.names).contains("vitestTest")
+  }
+
+  @Test
+  fun `does not enable vitest for a vite config alone`(@TempDir directory: File) {
+    val root = workspaceProject(directory)
+    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
+    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
+    // A `vite.config.*` may well belong to a project without any tests.
+    File(packageDirectory, "vite.config.ts").writeText("export default {}\n")
+    val project = childProject("frontend", root, packageDirectory)
+
+    assertThat(project.tasks.names).doesNotContain("vitestTest")
   }
 
   @Test
@@ -765,6 +855,9 @@ class PnpmPluginTest {
 
   private fun playwright(project: Project): PlaywrightExtension =
     project.extensions.getByType(PlaywrightExtension::class.java)
+
+  private fun vitest(project: Project): VitestExtension =
+    project.extensions.getByType(VitestExtension::class.java)
 
   private fun execTask(project: Project, name: String): PnpmExecTask =
     project.tasks.getByName(name) as PnpmExecTask
@@ -841,6 +934,28 @@ class PnpmPluginTest {
     fun writePlaywrightConfig(directory: File) {
       directory.mkdirs()
       File(directory, "playwright.config.ts").writeText("export default {}\n")
+    }
+
+    /**
+     * A package project that is also configured for Vitest.
+     *
+     * The config file is written before the plugin is applied, because that is when the plugin
+     * decides whether to register the Vitest tasks.
+     */
+    fun vitestProject(directory: File, name: String = "frontend"): Project {
+      val root = workspaceProject(directory)
+      val packageDirectory = File(directory, name)
+      packageDirectory.mkdirs()
+      File(packageDirectory, "package.json").writeText("""{ "name": "$name" }""")
+      writeCheckConfigs(packageDirectory)
+      writeVitestConfig(packageDirectory)
+      return childProject(name, root, packageDirectory)
+    }
+
+    /** Writes the config file that makes the plugin register the Vitest tasks. */
+    fun writeVitestConfig(directory: File) {
+      directory.mkdirs()
+      File(directory, "vitest.config.ts").writeText("export default {}\n")
     }
 
     /** Writes a config file for every check tool, so that all of their tasks are registered. */

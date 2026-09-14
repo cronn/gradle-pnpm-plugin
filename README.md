@@ -160,14 +160,15 @@ Every project the plugin is applied to provides the following tasks:
 Prefer these tasks over the tool-specific ones: adding the configuration file of a tool to a project
 makes it part of aggregate and lifecycle tasks without any further change to the build script.
 
-`check` does not depend on `test` by default, so `build` does not run the test suites. Run `test` explicitly to
-do that.
+Whether a test suite takes part in `check`, and therefore in `build`, is the tool's own decision: a
+unit suite does, an end-to-end suite does not. Run `test` explicitly to run every suite.
 
 ### Supported tools
 
 - [TypeScript](docs/typescript.md)
 - [ESLint](docs/eslint.md)
 - [Prettier](docs/prettier.md)
+- [Vitest](docs/vitest.md)
 - [Playwright](docs/playwright.md)
 
 Each tool has its own extension for configuration, which is also applied to custom tasks using the
