@@ -177,9 +177,10 @@ task classes provided for each tool.
 ## Custom pnpm tasks
 
 `PnpmExecTask` runs a binary provided by a workspace dependency, `PnpmRunTask` runs a `package.json`
-script.
+script and `NodeTask` runs a Node program.
 
 ```kotlin
+import de.cronn.pnpm.task.NodeTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmRunTask
 
@@ -194,7 +195,20 @@ tasks.register<PnpmExecTask>("angularBuild") {
 tasks.register<PnpmRunTask>("buildFrontend") {
   script = "build:frontend"
 }
+
+tasks.register<NodeTask>("generateApiClient") {
+  entryPoint = layout.projectDirectory.file("scripts/generate.mjs")
+  // Options for Node itself, which go before the program
+  nodeOptions = listOf("--enable-source-maps")
+  // Arguments for the program
+  arguments = listOf("--out", "build/generated")
+  outputs.dir(layout.buildDirectory.dir("generated"))
+}
 ```
+
+A `NodeTask` runs its program on the Node version pinned in the `devEngines.runtime` field
+of the `package.json` (see [Setup](#setup)), which pnpm downloads into its own store — Node is
+never installed globally.
 
 ## Development
 

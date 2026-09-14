@@ -12,6 +12,7 @@ import de.cronn.pnpm.internal.task.PnpmSourceTask
 import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.internal.test.VitestTasks
 import de.cronn.pnpm.task.EslintTask
+import de.cronn.pnpm.task.NodeTask
 import de.cronn.pnpm.task.PlaywrightTestTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmTask
@@ -327,6 +328,42 @@ class PnpmPluginTest {
       .hasMessageContaining(": takes no part in the pnpm build")
       .hasMessageContaining("neither a pnpm-workspace.yaml nor a package.json")
       .hasMessageContaining("Add a pnpm-workspace.yaml to the workspace root")
+  }
+
+  @Test
+  fun `a node task runs the entry point through pnpm exec node`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    val entryPoint = File(project.projectDir, "scripts/generate.mjs")
+    entryPoint.parentFile.mkdirs()
+    entryPoint.writeText("console.log(1)\n")
+
+    val task =
+      project.tasks
+        .register("generate", NodeTask::class.java) { it.entryPoint.set(entryPoint) }
+        .get()
+
+    assertThat(task.command.get()).isEqualTo("node")
+    assertThat(task.entryPoint.get().asFile).isEqualTo(entryPoint)
+    assertThat(task.nodeOptions.getOrElse(emptyList())).isEmpty()
+  }
+
+  @Test
+  fun `a node task is provisioned and installed like any other pnpm task`(
+    @TempDir directory: File
+  ) {
+    val project = packageProject(directory)
+    val entryPoint = File(project.projectDir, "generate.mjs")
+    entryPoint.writeText("console.log(1)\n")
+
+    val task =
+      project.tasks
+        .register("generate", NodeTask::class.java) { it.entryPoint.set(entryPoint) }
+        .get()
+
+    // Inherited from the PnpmTask and PnpmExecTask wiring rather than declared by the task type.
+    assertThat(dependencyPaths(task)).contains(":pnpmSetup", ":pnpmInstall")
+    assertThat(task.executable.get()).isNotEmpty()
+    assertThat(task.pnpmVersion.get()).isEqualTo(PnpmPlugin.DEFAULT_PNPM_VERSION)
   }
 
   @Test
