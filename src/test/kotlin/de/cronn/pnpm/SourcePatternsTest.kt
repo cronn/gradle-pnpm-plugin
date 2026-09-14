@@ -5,6 +5,7 @@ import de.cronn.pnpm.internal.check.EslintTasks
 import de.cronn.pnpm.internal.check.PrettierTasks
 import de.cronn.pnpm.internal.check.TypescriptTasks
 import de.cronn.pnpm.internal.test.PlaywrightTasks
+import de.cronn.pnpm.internal.test.VitestTasks
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.gradle.api.GradleException
@@ -50,7 +51,9 @@ class SourcePatternsTest {
         PrettierTasks.INCLUDES +
         EslintTasks.INCLUDES +
         PlaywrightTasks.INCLUDES +
-        PlaywrightTasks.EXCLUDES
+        PlaywrightTasks.EXCLUDES +
+        VitestTasks.INCLUDES +
+        VitestTasks.EXCLUDES
 
     assertThat(defaults).allSatisfy { pattern ->
       assertThat(SourcePatterns.reasonUnresolvable(pattern)).isNull()

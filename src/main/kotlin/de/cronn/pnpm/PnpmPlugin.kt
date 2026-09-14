@@ -37,8 +37,8 @@ import org.gradle.util.GradleVersion
  *   but no pnpm lifecycle tasks, and only reports the missing workspace root if one of its tasks is
  *   requested after all.
  *
- * Every project gets the `pnpm` extension and the `typescript`, `prettier`, `eslint` and
- * `playwright` extensions, the workspace root included, because a workspace root is a pnpm package
+ * Every project gets the `pnpm` extension and the `typescript`, `prettier`, `eslint`, `playwright`
+ * and `vitest` extensions, the workspace root included, because a workspace root is a pnpm package
  * like any other. The tasks of a tool are registered exactly when the project contains a
  * configuration file for that tool.
  *
@@ -254,6 +254,7 @@ public class PnpmPlugin : Plugin<Project> {
     val eslint = target.extensions.create(ESLINT_EXTENSION_NAME, EslintExtension::class.java)
     val playwright =
       target.extensions.create(PLAYWRIGHT_EXTENSION_NAME, PlaywrightExtension::class.java)
+    val vitest = target.extensions.create(VITEST_EXTENSION_NAME, VitestExtension::class.java)
 
     playwright.installBrowsers.convention(true)
     playwright.installSystemDependencies.convention(false)
@@ -261,6 +262,9 @@ public class PnpmPlugin : Plugin<Project> {
     // input describes, so its inputs being unchanged is no reason to believe its result still
     // holds.
     playwright.alwaysRerun.convention(true)
+    // A unit suite, by contrast, really is a function of the files it runs over -- and it takes
+    // part in `check`, so skipping it on an unchanged source tree is worth having.
+    vitest.alwaysRerun.convention(false)
 
     PnpmCheckTasks(target, typescript, prettier, eslint)
       .register(
@@ -268,9 +272,10 @@ public class PnpmPlugin : Plugin<Project> {
         prettier = configured(target, PRETTIER_EXTENSION_NAME, ToolConfigFiles.PRETTIER),
         eslint = configured(target, ESLINT_EXTENSION_NAME, ToolConfigFiles.ESLINT),
       )
-    PnpmTestTasks(target, playwright, workspaceLockfile(target, layout))
+    PnpmTestTasks(target, playwright, vitest, workspaceLockfile(target, layout))
       .register(
-        playwright = configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT)
+        playwright = configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT),
+        vitest = configured(target, VITEST_EXTENSION_NAME, ToolConfigFiles.VITEST),
       )
   }
 
@@ -336,6 +341,7 @@ public class PnpmPlugin : Plugin<Project> {
     const val PRETTIER_EXTENSION_NAME: String = "prettier"
     const val ESLINT_EXTENSION_NAME: String = "eslint"
     const val PLAYWRIGHT_EXTENSION_NAME: String = "playwright"
+    const val VITEST_EXTENSION_NAME: String = "vitest"
     const val TASK_GROUP: String = "pnpm"
     const val RESOLUTION_NAME: String = "pnpmResolution"
     const val DEFAULT_PNPM_VERSION: String = "11.25.0"

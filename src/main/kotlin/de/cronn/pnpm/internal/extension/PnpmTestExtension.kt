@@ -11,14 +11,16 @@ import org.gradle.api.provider.Property
  * the tool's own decision, steered by its configuration file and by the command line options of the
  * task.
  *
- * Every test tool contributes its test task to the `test` lifecycle task of the project. `check`
- * deliberately does not depend on `test`: an end-to-end suite is slow and usually needs a server
- * that the build does not start. Add the dependency where that is not so:
+ * Every test tool contributes its test task to the `test` lifecycle task of the project. Whether it
+ * also takes part in `check` is the tool's own decision: `vitestTest` does, because a unit suite is
+ * fast and self-contained, while `playwrightTest` does not, because an end-to-end suite is slow and
+ * usually needs a server that the build does not start. Add the missing edge where that is not so:
  * ```kotlin
  * tasks.named("check") { dependsOn(tasks.named("test")) }
  * ```
  *
- * `PlaywrightExtension` is the extension of the one test tool the plugin supports today.
+ * `VitestExtension` and `PlaywrightExtension` are the extensions of the test tools the plugin
+ * supports today.
  */
 public abstract class PnpmTestExtension : PnpmSourceExtension() {
 
