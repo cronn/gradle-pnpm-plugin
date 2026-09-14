@@ -33,14 +33,14 @@ import org.gradle.util.GradleVersion
  * - a project below such a project is a **package** of that workspace;
  * - a project with a `package.json` but no `pnpm-workspace.yaml` anywhere above it is a standalone
  *   package that is its own workspace root;
- * - a project with neither takes no part in the pnpm build. It stays inert: it gets the extensions
- *   and the (disabled) tool tasks, but no pnpm lifecycle tasks, and only reports the missing
- *   workspace root if one of its pnpm tasks is requested after all.
+ * - a project with neither takes no part in the pnpm build. It stays inert: it gets the extensions,
+ *   but no pnpm lifecycle tasks, and only reports the missing workspace root if one of its tasks is
+ *   requested after all.
  *
- * Every project gets the `pnpm` extension, the Node tool tasks and the `typescript`, `prettier` and
- * `eslint` extensions that configure them, the workspace root included, because a workspace root is
- * a pnpm package like any other. Each tool is enabled by default exactly when the project contains
- * a configuration file for it.
+ * Every project gets the `pnpm` extension and the `typescript`, `prettier`, `eslint` and
+ * `playwright` extensions, the workspace root included, because a workspace root is a pnpm package
+ * like any other. The tasks of a tool are registered exactly when the project contains a
+ * configuration file for that tool.
  *
  * The plugin surface deliberately does not depend on the role, because Gradle derives the type-safe
  * accessors of a convention plugin by applying the plugin to a synthetic project over an empty
@@ -233,11 +233,17 @@ public class PnpmPlugin : Plugin<Project> {
   }
 
   /**
-   * Creates the extension of each Node tool and registers its tasks.
+   * Creates the extension of each Node tool and registers the tasks of the tools the project is
+   * configured for.
    *
-   * A tool is enabled exactly when the project is configured for it. Only the existence of the
-   * config files is checked, which Gradle tracks as a configuration cache input, so adding one
-   * enables the tool on the next build.
+   * A tool contributes its tasks exactly when the project is configured for it, so that a project
+   * does not carry tasks for tools it does not use. Only the existence of the config files is
+   * checked, which Gradle tracks as a configuration cache input, so adding one registers the tasks
+   * of the tool on the next build.
+   *
+   * The extensions are created whatever the project contains: they are the part of the plugin
+   * surface a convention plugin derives its accessors from, and those come from a synthetic project
+   * over an empty directory.
    */
   private fun registerCheckTasks(target: Project, layout: PnpmWorkspaceLayout) {
     target.pluginManager.apply(BasePlugin::class.java)
@@ -249,16 +255,6 @@ public class PnpmPlugin : Plugin<Project> {
     val playwright =
       target.extensions.create(PLAYWRIGHT_EXTENSION_NAME, PlaywrightExtension::class.java)
 
-    typescript.enabled.convention(
-      configured(target, TYPESCRIPT_EXTENSION_NAME, ToolConfigFiles.TYPESCRIPT)
-    )
-    prettier.enabled.convention(
-      configured(target, PRETTIER_EXTENSION_NAME, ToolConfigFiles.PRETTIER)
-    )
-    eslint.enabled.convention(configured(target, ESLINT_EXTENSION_NAME, ToolConfigFiles.ESLINT))
-    playwright.enabled.convention(
-      configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT)
-    )
     playwright.installBrowsers.convention(true)
     playwright.installSystemDependencies.convention(false)
     // A browser suite talks to a backend, a database, a fixture server -- none of which a Gradle
@@ -266,8 +262,16 @@ public class PnpmPlugin : Plugin<Project> {
     // holds.
     playwright.alwaysRerun.convention(true)
 
-    PnpmCheckTasks(target, typescript, prettier, eslint).register()
-    PnpmTestTasks(target, playwright, workspaceLockfile(target, layout)).register()
+    PnpmCheckTasks(target, typescript, prettier, eslint)
+      .register(
+        typescript = configured(target, TYPESCRIPT_EXTENSION_NAME, ToolConfigFiles.TYPESCRIPT),
+        prettier = configured(target, PRETTIER_EXTENSION_NAME, ToolConfigFiles.PRETTIER),
+        eslint = configured(target, ESLINT_EXTENSION_NAME, ToolConfigFiles.ESLINT),
+      )
+    PnpmTestTasks(target, playwright, workspaceLockfile(target, layout))
+      .register(
+        playwright = configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT)
+      )
   }
 
   /**
@@ -289,10 +293,14 @@ public class PnpmPlugin : Plugin<Project> {
   private fun configured(target: Project, name: String, configFiles: List<String>): Boolean {
     val present = ToolConfigFiles.anyPresent(target, configFiles)
     if (present) {
-      target.logger.debug("pnpm: enabling {} in {}, it has a config file", name, target.path)
+      target.logger.debug(
+        "pnpm: registering the {} tasks in {}, it has a config file",
+        name,
+        target.path,
+      )
     } else {
       target.logger.debug(
-        "pnpm: disabling {} in {}, none of {} exists",
+        "pnpm: not registering the {} tasks in {}, none of {} exists",
         name,
         target.path,
         configFiles.joinToString(", "),

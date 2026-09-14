@@ -1,13 +1,10 @@
 package de.cronn.pnpm.internal
 
 import de.cronn.pnpm.PlaywrightExtension
-import de.cronn.pnpm.internal.task.PnpmTestTask
 import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.internal.test.RegisteredTestTasks
 import java.io.File
 import org.gradle.api.Project
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
@@ -26,11 +23,15 @@ internal class PnpmTestTasks(
 
   private val playwrightTasks = PlaywrightTasks(target, playwright, lockfile)
 
-  fun register() {
+  /**
+   * Registers the tasks of every test tool the project is configured for, and wires them into
+   * `test`. A tool whose config file is absent contributes no task at all.
+   */
+  fun register(playwright: Boolean) {
     // A further test tool is registered here and added to the list below.
-    val playwright = playwrightTasks.registerAll()
+    val playwrightTasks = playwrightTasks.registerAll(playwright)
 
-    val registered = listOf(playwright)
+    val registered = listOfNotNull(playwrightTasks)
     wireTest(registered)
   }
 
@@ -38,6 +39,9 @@ internal class PnpmTestTasks(
    * Adds the test task of every tool to `test`, which is registered unless the project already has
    * a task of that name -- the Java plugin brings its own, and a project applying both should end
    * up with one `test` running everything.
+   *
+   * `test` is registered whatever the project is configured for, so that a build script can always
+   * name it. A project with no test tool gets one with nothing to do.
    */
   private fun wireTest(registered: List<RegisteredTestTasks>) {
     val test =
@@ -56,19 +60,9 @@ internal class PnpmTestTasks(
       }
 
     test.configure { task ->
-      registered.forEach { tool -> task.dependsOn(enabledTask(tool, tool.test)) }
+      registered.forEach { tool -> task.dependsOn(tool.test) }
     }
   }
-
-  /**
-   * A dependency on [task] that disappears when the tool is disabled. Resolving this lazily is what
-   * lets `enabled` be configured after the plugin has been applied.
-   */
-  private fun enabledTask(
-    tool: RegisteredTestTasks,
-    task: TaskProvider<out PnpmTestTask>,
-  ): Provider<List<TaskProvider<out PnpmTestTask>>> =
-    tool.extension.enabled.map { enabled -> if (enabled) listOf(task) else emptyList() }
 
   companion object {
     const val TEST_TASK_NAME: String = "test"

@@ -4,8 +4,6 @@
 
 ```kotlin
 typescript {
-  // Defaults to whether the project contains a `tsconfig.json`
-  enabled = true
   // Inputs of the task; `tsc` takes the files it checks from the `tsconfig.json`
   includes = listOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
   // Excluded from the inputs
@@ -16,6 +14,8 @@ typescript {
 ```
 
 ## Pre-defined tasks
+
+The tasks are registered only when the project contains a `tsconfig.json` file.
 
 |        Task         | Default arguments | Contributes to |
 |---------------------|-------------------|----------------|

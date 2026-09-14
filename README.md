@@ -136,7 +136,7 @@ A workspace root also is a workspace package.
 
 ## Workspace packages
 
-Workspace packages uses the tasks provided Gradle's [Base Plugin](https://docs.gradle.org/current/userguide/base_plugin.html). Tasks related to a supported tool are enabled by default exactly when
+Workspace packages use the tasks provided Gradle's [Base Plugin](https://docs.gradle.org/current/userguide/base_plugin.html). The tasks of a supported tool are registered exactly when
 the project contains a configuration file for it. Tools contribute to the base tasks and provide custom tasks with sensible defaults which should require little to no configuration for most projects.
 
 ### Supported tools

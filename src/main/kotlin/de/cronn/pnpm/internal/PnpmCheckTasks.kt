@@ -7,10 +7,7 @@ import de.cronn.pnpm.internal.check.EslintTasks
 import de.cronn.pnpm.internal.check.PrettierTasks
 import de.cronn.pnpm.internal.check.RegisteredCheckTasks
 import de.cronn.pnpm.internal.check.TypescriptTasks
-import de.cronn.pnpm.internal.task.PnpmSourceTask
 import org.gradle.api.Project
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
@@ -30,46 +27,45 @@ internal class PnpmCheckTasks(
   private val prettierTasks = PrettierTasks(target, prettier)
   private val eslintTasks = EslintTasks(target, eslint)
 
-  fun register() {
+  /**
+   * Registers the tasks of every tool the project is configured for, and wires them into `check`
+   * and `fix`. A tool whose config file is absent contributes no task at all.
+   */
+  fun register(typescript: Boolean, prettier: Boolean, eslint: Boolean) {
     // A further tool is registered here and added to the list below.
-    val typescript = typescriptTasks.register()
-    val prettier = prettierTasks.register()
-    val eslint = eslintTasks.register()
+    val typescriptTasks = typescriptTasks.register(typescript)
+    val prettierTasks = prettierTasks.register(prettier)
+    val eslintTasks = eslintTasks.register(eslint)
 
-    // Prettier has the final say on formatting, so it must not run before ESLint's --fix.
-    val eslintFix = eslint.fix
+    // Prettier has the final say on formatting, so it must not run before ESLint's --fix. Either
+    // tool may be missing entirely, so both sides of the edge are optional.
+    val eslintFix = eslintTasks?.fix
     if (eslintFix != null) {
-      prettier.fix?.configure { task -> task.mustRunAfter(eslintFix) }
+      prettierTasks?.fix?.configure { task -> task.mustRunAfter(eslintFix) }
     }
 
-    val registered = listOf(typescript, prettier, eslint)
+    val registered = listOfNotNull(typescriptTasks, prettierTasks, eslintTasks)
     wireCheck(registered)
     registerFixTask(registered)
   }
 
   private fun wireCheck(registered: List<RegisteredCheckTasks>) {
     target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure { task ->
-      registered.forEach { tool -> task.dependsOn(enabledTask(tool, tool.check)) }
-    }
-  }
-
-  private fun registerFixTask(registered: List<RegisteredCheckTasks>) {
-    target.tasks.register(FIX_TASK_NAME) { task ->
-      task.group = LifecycleBasePlugin.VERIFICATION_GROUP
-      task.description = "Applies all automatic source fixes of the configured tools"
-      registered.forEach { tool -> tool.fix?.let { fix -> task.dependsOn(enabledTask(tool, fix)) } }
+      registered.forEach { tool -> task.dependsOn(tool.check) }
     }
   }
 
   /**
-   * A dependency on [task] that disappears when the tool is disabled. Resolving this lazily is what
-   * lets `enabled` be configured after the plugin has been applied.
+   * Registers `fix` whatever the project is configured for, so that a build script can always name
+   * it. A project with no fix-capable tool gets one with nothing to do.
    */
-  private fun enabledTask(
-    tool: RegisteredCheckTasks,
-    task: TaskProvider<out PnpmSourceTask>,
-  ): Provider<List<TaskProvider<out PnpmSourceTask>>> =
-    tool.extension.enabled.map { enabled -> if (enabled) listOf(task) else emptyList() }
+  private fun registerFixTask(registered: List<RegisteredCheckTasks>) {
+    target.tasks.register(FIX_TASK_NAME) { task ->
+      task.group = LifecycleBasePlugin.VERIFICATION_GROUP
+      task.description = "Applies all automatic source fixes of the configured tools"
+      registered.forEach { tool -> tool.fix?.let { fix -> task.dependsOn(fix) } }
+    }
+  }
 
   companion object {
     const val FIX_TASK_NAME: String = "fix"

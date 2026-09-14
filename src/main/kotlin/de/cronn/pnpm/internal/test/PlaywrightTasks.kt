@@ -27,10 +27,22 @@ internal class PlaywrightTasks(
     EXCLUDES,
   ) {
 
-  fun registerAll(): RegisteredTestTasks {
+  /**
+   * Registers the Playwright tasks when [discovered] says the project has a `playwright.config.*`.
+   *
+   * The conventions of both task types are applied whatever [discovered] is, so a suite a build
+   * script registers behaves like the predefined one. The browser download is a predefined task
+   * like the suite, so a project without a Playwright configuration gets neither, and there is then
+   * no edge to wire.
+   */
+  fun registerAll(discovered: Boolean): RegisteredTestTasks? {
     configureInstallTasks()
+    val registered = register(discovered)
+    if (registered == null) {
+      return null
+    }
+
     val install = registerInstallTask()
-    val registered = register()
     // Locals again, so the configuration captures the property and not this registrar.
     val installBrowsers = playwright.installBrowsers
     target.tasks.withType(PlaywrightTestTask::class.java).configureEach { task ->
@@ -70,7 +82,6 @@ internal class PlaywrightTasks(
 
   /** Applies to every browser download task, the ones a build script registers included. */
   private fun configureInstallTasks() {
-    val enabled = playwright.enabled
     val browsers = playwright.browsers
     val withDependencies = playwright.installSystemDependencies
     val stamp = target.layout.buildDirectory.file("playwright/install.stamp")
@@ -84,7 +95,6 @@ internal class PlaywrightTasks(
       if (lockfile != null) {
         task.lockfile.convention(lockfile)
       }
-      task.onlyIf("the tool is enabled") { enabled.get() }
       // The stamp is what gives the task an output to be up to date about; the browsers themselves
       // land in a cache outside the project. Written in an action rather than in the task class, so
       // that a task a build script registers gets it too.

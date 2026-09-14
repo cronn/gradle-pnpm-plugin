@@ -268,7 +268,7 @@ class PnpmPluginTest {
 
     project.pluginManager.apply(PLUGIN_ID)
 
-    assertThat(project.tasks.names).contains("pnpmInstall", "prettierCheck")
+    assertThat(project.tasks.names).contains("pnpmInstall")
     assertThat(extension(project).workspaceRootPath.get()).isEqualTo(":")
   }
 
@@ -290,7 +290,14 @@ class PnpmPluginTest {
     assertThat(project.extensions.findByName("prettier"))
       .isInstanceOf(PrettierExtension::class.java)
     assertThat(project.extensions.findByName("eslint")).isInstanceOf(EslintExtension::class.java)
-    assertThat(project.tasks.names).contains("compileTypescript", "prettierCheck", "eslintCheck")
+
+    // The extensions are the surface a convention plugin derives its accessors from, so they exist
+    // whatever the directory holds. The tasks of a tool follow its config file, and there is none.
+    assertThat(project.tasks.names)
+      .doesNotContain("compileTypescript", "prettierCheck", "eslintCheck", "playwrightTest")
+    // `fix` and `test` are registered whatever the project is configured for, so a build script can
+    // always name them.
+    assertThat(project.tasks.names).contains("fix", "test")
 
     // It takes no part in the pnpm build, so it owns neither the lifecycle tasks nor the
     // distribution of a workspace root.
@@ -537,7 +544,8 @@ class PnpmPluginTest {
 
   @Test
   fun `accepts a pattern no tool is handed`(@TempDir directory: File) {
-    val project = packageProject(directory)
+    // Configured for Playwright too, because this asserts over a task of each kind.
+    val project = playwrightProject(directory, name = "frontend")
     File(project.projectDir, "src/generated").mkdirs()
     File(project.projectDir, "src/app.ts").writeText("export const app = 1\n")
     File(project.projectDir, "src/generated/api.ts").writeText("export const api = 1\n")
@@ -547,7 +555,12 @@ class PnpmPluginTest {
     // Neither tsc nor Playwright is handed a pattern, so a trailing "/" is only ever read by the
     // Ant matcher of Gradle, which takes it for the directory and everything in it.
     assertThat(sourceNames(sourceTask(project, "compileTypescript")))
-      .containsExactly(*BASE_SOURCES, "src/app.ts")
+      .containsExactly(
+        "eslint.config.ts",
+        "playwright.config.ts",
+        "prettier.config.ts",
+        "src/app.ts",
+      )
     assertThat(sourceNames(sourceTask(project, "playwrightTest"))).containsExactly("src/app.ts")
   }
 
@@ -555,7 +568,8 @@ class PnpmPluginTest {
   fun `fails over a pattern Gradle cannot resolve wherever it is declared`(
     @TempDir directory: File
   ) {
-    val project = packageProject(directory)
+    // Configured for Playwright too, because this asserts over a task of each kind.
+    val project = playwrightProject(directory, name = "frontend")
     typescript(project).includes.set(listOf("src/**/*.{ts,tsx}"))
     playwright(project).includes.set(listOf("tests/**/*.{ts,tsx}"))
 
@@ -584,10 +598,16 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `removes a disabled tool from check and fix`(@TempDir directory: File) {
-    val project = packageProject(directory)
-    eslint(project).enabled.set(false)
+  fun `leaves a tool without a config file out of check and fix`(@TempDir directory: File) {
+    val root = workspaceProject(directory)
+    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
+    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
+    // Every tool but ESLint is configured.
+    File(packageDirectory, "tsconfig.json").writeText("{}")
+    File(packageDirectory, "prettier.config.ts").writeText("export default {}\n")
+    val project = childProject("frontend", root, packageDirectory)
 
+    assertThat(project.tasks.names).doesNotContain("eslintCheck", "eslintFix")
     assertThat(dependencyNames(project.tasks.getByName("check")))
       .contains("prettierCheck")
       .doesNotContain("eslintCheck")
@@ -638,11 +658,11 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `drops a disabled test tool from test`(@TempDir directory: File) {
-    val project = playwrightProject(directory)
+  fun `leaves a test tool without a config file out of test`(@TempDir directory: File) {
+    val project = packageProject(directory)
 
-    playwright(project).enabled.set(false)
-
+    assertThat(project.tasks.names).doesNotContain("playwrightTest", "playwrightInstall")
+    // `test` is registered whatever the project is configured for, it just has nothing to run.
     assertThat(dependencyNames(project.tasks.getByName("test"))).doesNotContain("playwrightTest")
   }
 
@@ -693,9 +713,9 @@ class PnpmPluginTest {
     File(packageDirectory, "eslint.config.mjs").writeText("export default []\n")
     val project = childProject("frontend", root, packageDirectory)
 
-    assertThat(eslint(project).enabled.get()).isTrue()
-    assertThat(typescript(project).enabled.get()).isFalse()
-    assertThat(prettier(project).enabled.get()).isFalse()
+    assertThat(project.tasks.names)
+      .contains("eslintCheck", "eslintFix")
+      .doesNotContain("compileTypescript", "prettierCheck", "prettierFix")
 
     assertThat(dependencyNames(project.tasks.getByName("check")))
       .contains("eslintCheck")
@@ -705,10 +725,10 @@ class PnpmPluginTest {
   @Test
   fun `enables playwright only for a project with a playwright config`(@TempDir directory: File) {
     val withoutConfig = packageProject(directory)
-    assertThat(playwright(withoutConfig).enabled.get()).isFalse()
+    assertThat(withoutConfig.tasks.names).doesNotContain("playwrightTest", "playwrightInstall")
 
     val withConfig = playwrightProject(File(directory, "other").apply { mkdirs() })
-    assertThat(playwright(withConfig).enabled.get()).isTrue()
+    assertThat(withConfig.tasks.names).contains("playwrightTest", "playwrightInstall")
   }
 
   @Test
@@ -719,20 +739,7 @@ class PnpmPluginTest {
     File(packageDirectory, ".eslintrc.json").writeText("{}")
     val project = childProject("frontend", root, packageDirectory)
 
-    assertThat(eslint(project).enabled.get()).isFalse()
-  }
-
-  @Test
-  fun `an explicitly enabled tool wins over the discovery`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    val project = childProject("frontend", root, packageDirectory)
-
-    typescript(project).enabled.set(true)
-
-    assertThat(typescript(project).enabled.get()).isTrue()
-    assertThat(dependencyNames(project.tasks.getByName("check"))).contains("compileTypescript")
+    assertThat(project.tasks.names).doesNotContain("eslintCheck", "eslintFix")
   }
 
   private fun distributionDependency(project: Project): ExternalModuleDependency =
@@ -814,15 +821,29 @@ class PnpmPluginTest {
         )
     }
 
-    /** A package project that is also configured for Playwright. */
-    fun playwrightProject(directory: File, name: String = "e2e"): Project =
-      packageProject(directory, name).also { project ->
-        File(project.projectDir, "playwright.config.ts").writeText("export default {}\n")
-        // The extension reads the config file when the plugin is applied, which already happened.
-        project.extensions.getByType(PlaywrightExtension::class.java).enabled.convention(true)
-      }
+    /**
+     * A package project that is also configured for Playwright.
+     *
+     * The config file is written before the plugin is applied, because that is when the plugin
+     * decides whether to register the Playwright tasks.
+     */
+    fun playwrightProject(directory: File, name: String = "e2e"): Project {
+      val root = workspaceProject(directory)
+      val packageDirectory = File(directory, name)
+      packageDirectory.mkdirs()
+      File(packageDirectory, "package.json").writeText("""{ "name": "$name" }""")
+      writeCheckConfigs(packageDirectory)
+      writePlaywrightConfig(packageDirectory)
+      return childProject(name, root, packageDirectory)
+    }
 
-    /** Writes a config file for every tool, so that all of them are auto-enabled. */
+    /** Writes the config file that makes the plugin register the Playwright tasks. */
+    fun writePlaywrightConfig(directory: File) {
+      directory.mkdirs()
+      File(directory, "playwright.config.ts").writeText("export default {}\n")
+    }
+
+    /** Writes a config file for every check tool, so that all of their tasks are registered. */
     fun writeCheckConfigs(directory: File) {
       directory.mkdirs()
       File(directory, "tsconfig.json").writeText("{}")

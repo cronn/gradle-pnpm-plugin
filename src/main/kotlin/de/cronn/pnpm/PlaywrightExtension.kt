@@ -8,9 +8,7 @@ import org.gradle.api.provider.Property
 /**
  * Configuration of the Playwright tasks, added by [PnpmPlugin] as the `playwright` extension.
  *
- * Enabled by default when the project contains a `playwright.config.*` file. Playwright selects the
- * tests it runs itself, from that file and from the command line options of the task, so no pattern
- * ever reaches it: [includes] and [excludes] only describe the Gradle inputs of `playwrightTest`.
+ * Pre-defined tasks are registered only when the project contains a `playwright.config.*` file.
  *
  * [alwaysRerun] defaults to `true` here: a browser suite reaches a backend, a database or a fixture
  * server, and none of those is a Gradle input, so unchanged inputs say nothing about whether the

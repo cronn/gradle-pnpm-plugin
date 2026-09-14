@@ -1,7 +1,6 @@
 package de.cronn.pnpm.internal.extension
 
 import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Property
 
 /**
  * Configuration shared by every Node tool wired into the Gradle lifecycle by `PnpmPlugin`.
@@ -11,15 +10,6 @@ import org.gradle.api.provider.Property
  * the tasks make.
  */
 public abstract class PnpmSourceExtension {
-
-  /**
-   * Whether the tasks of this tool run and take part in `check` and `fix`.
-   *
-   * Defaults to whether the project contains a configuration file for the tool; the extension of
-   * each tool documents which files those are. Set it explicitly to enable a tool that is
-   * configured some other way, or to switch one off.
-   */
-  public abstract val enabled: Property<Boolean>
 
   /**
    * Ant-style patterns of files that are inputs of this tool's tasks, and which the tool itself is
