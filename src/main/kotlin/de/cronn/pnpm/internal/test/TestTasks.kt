@@ -22,7 +22,12 @@ internal abstract class TestTasks<T : PnpmTestTask>(
   private val defaultExcludes: List<String>,
 ) {
 
-  fun register(): RegisteredTestTasks {
+  /**
+   * Configures every task of this tool, and registers the predefined ones when [discovered] says
+   * the project is configured for the tool. `null` means the tool contributes none; see
+   * [CheckTasks.register][de.cronn.pnpm.internal.check.CheckTasks.register].
+   */
+  fun register(discovered: Boolean): RegisteredTestTasks? {
     // Values, not conventions: adding to a property that only has a convention discards it, which
     // would make the additive includes(...) and excludes(...) methods replace the defaults.
     extension.includes.set(defaultIncludes)
@@ -37,7 +42,6 @@ internal abstract class TestTasks<T : PnpmTestTask>(
 
     // Locals, so that the task configuration captures the extension properties instead of this
     // registrar, which holds the Project and would fail to serialize into the configuration cache.
-    val enabled = extension.enabled
     val includes = extension.includes
     val excludes = extension.excludes
     val extraArguments = extension.extraArguments
@@ -49,14 +53,17 @@ internal abstract class TestTasks<T : PnpmTestTask>(
       task.excludes.convention(excludes)
       task.extraArguments.convention(extraArguments)
       task.alwaysRerun.convention(alwaysRerun)
-      task.onlyIf("the tool is enabled") { enabled.get() }
       // The spec must not capture anything: the configuration cache serializes it, so the decision
       // is read off the task the way PnpmSetupTask carries its own.
       task.outputs.upToDateWhen { candidate -> !(candidate as PnpmTestTask).rerunRequested() }
       configureTask(task)
     }
 
-    return RegisteredTestTasks(extension, test = registerTestTask())
+    if (!discovered) {
+      return null
+    }
+
+    return RegisteredTestTasks(test = registerTestTask())
   }
 
   /** The task of this tool that takes part in `test`. */
@@ -70,7 +77,4 @@ internal abstract class TestTasks<T : PnpmTestTask>(
 }
 
 /** What a test tool contributes to the `test` lifecycle task. */
-internal class RegisteredTestTasks(
-  val extension: PnpmTestExtension,
-  val test: TaskProvider<out PnpmTestTask>,
-)
+internal class RegisteredTestTasks(val test: TaskProvider<out PnpmTestTask>)

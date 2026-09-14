@@ -12,10 +12,11 @@ import org.gradle.work.DisableCachingByDefault
  * One of the three [PnpmSourceTask] kinds, and the counterpart of [PnpmCheckTask]: the plugin
  * configures every task of a subclass -- `PlaywrightTestTask` today -- with the
  * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the
- * [extraArguments][PnpmSourceExtension.extraArguments], the
- * [alwaysRerun][PnpmTestExtension.alwaysRerun] and the [enabled][PnpmSourceExtension.enabled] state
- * of the tool's extension, so a task a build script registers behaves like the predefined one and
- * only has to say what is different about it.
+ * [extraArguments][PnpmSourceExtension.extraArguments] and the
+ * [alwaysRerun][PnpmTestExtension.alwaysRerun] of the tool's extension, so a task a build script
+ * registers behaves like the predefined one and only has to say what is different about it -- in a
+ * project that has no configuration file for the tool, and therefore none of its predefined tasks,
+ * as well.
  *
  * Like `TypescriptTask` and unlike a [PnpmCheckTask], a test tool is never handed the patterns:
  * which tests run is decided by its configuration file and by the command line options of the task.

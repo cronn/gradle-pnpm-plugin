@@ -4,8 +4,6 @@
 
 ```kotlin
 eslint {
-  // Defaults to whether the project contains an `eslint.config.*` file
-  enabled = true
   // Inputs of the tasks, and the operands ESLint is invoked with
   includes = listOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
   // Excluded from the inputs, and passed as `--ignore-pattern`
@@ -16,6 +14,9 @@ eslint {
 ```
 
 ## Pre-defined tasks
+
+The tasks are registered only when the project contains an `eslint.config.*`
+file.
 
 |     Task      | Default arguments  | Contributes to |
 |---------------|--------------------|----------------|

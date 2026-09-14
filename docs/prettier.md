@@ -4,8 +4,6 @@
 
 ```kotlin
 prettier {
-  // Defaults to whether the project contains a `prettier.config.*` or `.prettierrc*` file
-  enabled = true
   // Inputs of the tasks, and the operands Prettier is invoked with
   includes = listOf("*.ts", "src/**/*.ts", "src/**/*.tsx", "*.json", "*.md")
   // Excluded from the inputs, and passed as negated operands
@@ -16,6 +14,9 @@ prettier {
 ```
 
 ## Pre-defined tasks
+
+The tasks are registered only when the project contains a
+`prettier.config.*` or `.prettierrc*` file.
 
 |      Task       | Default arguments  | Contributes to |
 |-----------------|--------------------|----------------|

@@ -13,11 +13,11 @@ import org.gradle.work.DisableCachingByDefault
  *
  * The plugin registers the predefined tasks of every such tool as one of the subclasses --
  * `PrettierTask` and `EslintTask` -- and configures every task of those types with the
- * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the
- * [extraArguments][PnpmSourceExtension.extraArguments] and the
- * [enabled][PnpmSourceExtension.enabled] state of the tool's extension. A build script that
- * registers a task of one of those types therefore gets a task that behaves like the predefined
- * ones, and only has to say what is different about it.
+ * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the and
+ * the [extraArguments][PnpmSourceExtension.extraArguments] of the tool's extension. A build script
+ * that registers a task of one of those types therefore gets a task that behaves like the
+ * predefined ones, and only has to say what is different about it -- in a project that has no
+ * configuration file for the tool, and therefore none of its predefined tasks, as well.
  *
  * The patterns, not the files they resolve to, are what the tool is invoked with: naming every
  * source file on the command line overruns the command line length limit of Windows on a large

@@ -219,7 +219,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     writeCheckConfigs(directory)
   }
 
-  /** A pnpm package at [path], with a config file for every tool so all of them are enabled. */
+  /** A pnpm package at [path], with a config file for every tool so their tasks exist. */
   private fun writePackage(
     path: String,
     buildScript: String = "",
@@ -239,8 +239,8 @@ class GradleProjectFixture(val rootDirectory: File) {
   }
 
   /**
-   * Writes a config file for TypeScript, ESLint and Prettier, which is what makes the plugin enable
-   * those tools for a project.
+   * Writes a config file for TypeScript, ESLint and Prettier, which is what makes the plugin
+   * register the tasks of those tools for a project.
    */
   fun writeCheckConfigs(directory: String) {
     val prefix = if (directory.isEmpty()) "" else "$directory/"
@@ -250,10 +250,11 @@ class GradleProjectFixture(val rootDirectory: File) {
   }
 
   /**
-   * Writes the `playwright.config.ts` that enables Playwright for [directory].
+   * Writes the `playwright.config.ts` that makes the plugin register the Playwright tasks for
+   * [directory].
    *
-   * Deliberately not part of [writeCheckConfigs]: enabling Playwright everywhere would add its
-   * tasks, and its pnpm invocations, to every test that only cares about the source tools.
+   * Deliberately not part of [writeCheckConfigs]: registering the Playwright tasks everywhere would
+   * add them, and their pnpm invocations, to every test that only cares about the source tools.
    */
   fun writePlaywrightConfig(directory: String) {
     val prefix = if (directory.isEmpty()) "" else "$directory/"

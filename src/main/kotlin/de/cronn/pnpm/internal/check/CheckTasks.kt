@@ -20,7 +20,15 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
   private val defaultIncludes: List<String>,
 ) {
 
-  fun register(): RegisteredCheckTasks {
+  /**
+   * Configures every task of this tool, and registers the predefined ones when [discovered] says
+   * the project is configured for the tool.
+   *
+   * The conventions are applied whatever [discovered] is, so that a task a build script registers
+   * behaves like a predefined one even in a project that has no config file for the tool. Only the
+   * predefined tasks depend on the discovery; `null` means the tool contributes none.
+   */
+  fun register(discovered: Boolean): RegisteredCheckTasks? {
     // A value, not a convention: adding to a property that only has a convention discards it,
     // which would make the additive includes(...) method replace the defaults instead.
     extension.includes.set(defaultIncludes)
@@ -33,7 +41,6 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
 
     // Locals, so that the task configuration captures the extension properties instead of this
     // registrar, which holds the Project and would fail to serialize into the configuration cache.
-    val enabled = extension.enabled
     val includes = extension.includes
     val excludes = extension.excludes
 
@@ -42,11 +49,14 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
       task.includes.convention(includes)
       task.excludes.convention(excludes)
       task.extraArguments.convention(extension.extraArguments)
-      task.onlyIf("the tool is enabled") { enabled.get() }
       configureTask(task)
     }
 
-    return RegisteredCheckTasks(extension, check = registerCheckTask(), fix = registerFixTask())
+    if (!discovered) {
+      return null
+    }
+
+    return RegisteredCheckTasks(check = registerCheckTask(), fix = registerFixTask())
   }
 
   /** The task of this tool that takes part in `check`. */
@@ -80,7 +90,7 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
 
 /** What a tool contributes to the `check` and `fix` lifecycle tasks. */
 internal class RegisteredCheckTasks(
-  val extension: PnpmSourceExtension,
   val check: TaskProvider<out PnpmSourceTask>,
+  /** The task taking part in `fix`, or `null` for a tool that fixes nothing, such as TypeScript. */
   val fix: TaskProvider<out PnpmSourceTask>?,
 )

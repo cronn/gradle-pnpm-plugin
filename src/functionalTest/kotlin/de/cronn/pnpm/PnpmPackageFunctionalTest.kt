@@ -86,25 +86,6 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
-  fun `skips a disabled tool and drops it from check`() {
-    val fixture =
-      workspaceWithFrontend(
-        packageBuildScript =
-          """
-          eslint { enabled = false }
-          """
-      )
-
-    val result = fixture.runner(":frontend:check").build()
-
-    assertThat(result.task(":frontend:eslintCheck")).isNull()
-    assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(fixture.stub.invocations().map { it.arguments }).noneSatisfy { arguments ->
-      assertThat(arguments).contains("eslint")
-    }
-  }
-
-  @Test
   fun `is up to date when the sources are unchanged and reruns when they change`() {
     val fixture = workspaceWithFrontend()
 
@@ -327,23 +308,25 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
-  fun `skips a tool task of the build script when the tool is disabled`() {
+  fun `configures a tool task of the build script where the tool has no config file`() {
     val fixture =
       workspaceWithFrontend(
         packageBuildScript =
           """
           import de.cronn.pnpm.task.EslintTask
 
-          eslint { enabled = false }
-
           tasks.register<EslintTask>("eslintSources")
           """
       )
+    fixture.directory("frontend/eslint.config.ts").delete()
 
     val result = fixture.runner(":frontend:eslintSources").build()
 
-    assertThat(result.task(":frontend:eslintSources")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
-    assertThat(fixture.stub.invocations().map { it.arguments }).noneSatisfy { arguments ->
+    // The predefined tasks follow the config file, but the conventions of a tool apply to every
+    // task of its type, so a task a build script registers still runs with them.
+    assertThat(result.task(":frontend:eslintCheck")).isNull()
+    assertThat(result.task(":frontend:eslintSources")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.stub.invocations().map { it.arguments }).anySatisfy { arguments ->
       assertThat(arguments).contains("eslint")
     }
   }
@@ -431,7 +414,8 @@ class PnpmPackageFunctionalTest {
     val config = fixture.directory("frontend/eslint.config.ts")
     config.delete()
 
-    fixture.runner(":frontend:check").build()
+    val first = fixture.runner(":frontend:check").build()
+    assertThat(first.task(":frontend:eslintCheck")).isNull()
     val reused = fixture.runner(":frontend:check").build()
     assertThat(reused.output).contains("Configuration cache entry reused")
 

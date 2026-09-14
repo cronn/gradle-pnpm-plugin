@@ -6,10 +6,10 @@ import org.gradle.api.Project
 /**
  * The configuration files that mark a Node tool as being used by a project.
  *
- * A tool whose configuration file is present is enabled by default, so that applying the plugin to
- * a project -- a workspace root in particular -- does not add tasks for tools that project does not
- * use. Only the existence of the files is checked, which Gradle tracks as a configuration cache
- * input, so creating or deleting one invalidates the cached configuration.
+ * The tasks of a tool are registered only when its configuration file is present, so that applying
+ * the plugin to a project -- a workspace root in particular -- does not add tasks for tools that
+ * project does not use. Only the existence of the files is checked, which Gradle tracks as a
+ * configuration cache input, so creating or deleting one invalidates the cached configuration.
  */
 internal object ToolConfigFiles {
 

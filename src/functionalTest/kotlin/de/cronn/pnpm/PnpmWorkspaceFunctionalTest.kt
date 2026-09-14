@@ -211,20 +211,29 @@ class PnpmWorkspaceFunctionalTest {
     assertThat(result.task(":frontend:app:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(result.task(":frontend:pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
 
-    // The lifecycle tasks belong to the workspace root, not to a project with no pnpm files. The
-    // task list of a subproject holds only its own tasks, unlike the root project's.
+    // The lifecycle tasks belong to the workspace root, not to a project with no pnpm files, and
+    // the tool tasks follow the config files this project does not have either. What is left is
+    // what the base plugin brings. The task list of a subproject holds only its own tasks, unlike
+    // the root project's.
     val listed = fixture.runner(":docs:tasks").build().output
     assertThat(listed)
-      .contains("prettierCheck - ")
-      .doesNotContain("pnpmInstall - ", "pnpmSetup - ", "pnpmDedupe - ", "pnpmClean - ")
+      .doesNotContain(
+        "prettierCheck - ",
+        "eslintCheck - ",
+        "compileTypescript - ",
+        "pnpmInstall - ",
+        "pnpmSetup - ",
+        "pnpmDedupe - ",
+        "pnpmClean - ",
+      )
   }
 
   @Test
   fun `reports the missing workspace root when a pnpm task outside the workspace runs`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeNestedWorkspace(extraProjects = listOf("docs"))
-    // A tool config file but no package.json: the tool is enabled, so the task is actually asked
-    // for the workspace root that this project does not have.
+    // A tool config file but no package.json: the task is registered, so it is actually asked for
+    // the workspace root that this project does not have.
     fixture.write("docs/build.gradle.kts", """plugins { id("de.cronn.gradle-pnpm-plugin") }""")
     fixture.writeCheckConfigs("docs")
 

@@ -221,34 +221,19 @@ class PnpmPlaywrightFunctionalTest {
   }
 
   @Test
-  fun `skips a disabled tool and drops it from test`() {
-    val fixture =
-      workspaceWithE2e(
-        packageBuildScript =
-          """
-          playwright { enabled = false }
-          """
-      )
-
-    val result = fixture.runner(":e2e:test").build()
-
-    assertThat(result.task(":e2e:playwrightTest")).isNull()
-    assertThat(fixture.stub.invocations().map { it.arguments }).noneSatisfy { arguments ->
-      assertThat(arguments).contains("playwright")
-    }
-  }
-
-  @Test
-  fun `skips the suite of a package without a playwright config`() {
+  fun `registers no playwright task for a package without a playwright config`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(packages = listOf("e2e"))
     fixture.write("e2e/tests/login.spec.ts", "export const login = 1")
 
-    val result = fixture.runner(":e2e:playwrightTest").build()
+    // A project with no playwright.config.* does not carry the tasks at all, so asking for one is
+    // an error rather than a build that quietly does nothing.
+    val result = fixture.runner(":e2e:playwrightTest").buildAndFail()
 
-    // The task exists whatever the project looks like -- that is what a convention plugin relies
-    // on -- but a project with no playwright.config.* never runs it.
-    assertThat(result.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(result.output).contains("Cannot locate tasks that match ':e2e:playwrightTest'")
+
+    val listed = fixture.runner(":e2e:tasks").build().output
+    assertThat(listed).doesNotContain("playwrightTest - ", "playwrightInstall - ")
     assertThat(fixture.stub.invocations().map { it.arguments }).noneSatisfy { arguments ->
       assertThat(arguments).contains("playwright")
     }

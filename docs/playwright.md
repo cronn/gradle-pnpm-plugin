@@ -4,8 +4,6 @@
 
 ```kotlin
 playwright {
-  // Defaults to whether the project contains a `playwright.config.*` file
-  enabled = true
   // Inputs of the task; Playwright selects the tests it runs itself
   includes = listOf("tests/**/*.ts", "src/**/*.ts")
   // Excluded from the inputs
@@ -30,6 +28,9 @@ playwright {
 ```
 
 ## Pre-defined tasks
+
+The tasks are registered only when the project contains a
+`playwright.config.*` file.
 
 |       Task       | Default arguments | Contributes to |
 |------------------|-------------------|----------------|
