@@ -33,7 +33,8 @@ plugins {
 }
 ```
 
-Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your workspace root with downloads enabled:
+Pin the pnpm (and, optionally, Node.js) version in the `package.json` of your workspace root with
+downloads enabled:
 
 ```json5
 // package.json
@@ -68,7 +69,8 @@ pnpm {
 }
 ```
 
-The plugin registers no repository when the build sets `RepositoriesMode.PREFER_SETTINGS` or `FAIL_ON_PROJECT_REPOS`. In this case, you need to define the repository yourself:
+The plugin registers no repository when the build sets `RepositoriesMode.PREFER_SETTINGS` or
+`FAIL_ON_PROJECT_REPOS`. In this case, you need to define the repository yourself:
 
 ```kotlin
 // settings.gradle.kts
@@ -113,10 +115,10 @@ pnpm {
 }
 ```
 
-The settings describe the one pnpm installation
-the whole workspace shares, so configure them once, in the build script of the workspace root. Every
-package inherits its values from there. Setting one of them on a package overrides it for that
-project's own pnpm invocations only — pnpm is still provisioned by the workspace root.
+The settings describe the one pnpm installation the whole workspace shares, so configure them once,
+in the build script of the workspace root. Every package inherits its values from there. Setting one
+of them on a package overrides it for that project's own pnpm invocations only — pnpm is still
+provisioned by the workspace root.
 
 In CI, the pnpm distribution comes out of the Gradle dependency cache, so caching
 `~/.gradle/caches/modules-2` is enough to avoid downloading it on every run. Caching the workspace
@@ -136,8 +138,30 @@ A workspace root also is a workspace package.
 
 ## Workspace packages
 
-Workspace packages use the tasks provided Gradle's [Base Plugin](https://docs.gradle.org/current/userguide/base_plugin.html). The tasks of a supported tool are registered exactly when
-the project contains a configuration file for it. Tools contribute to the base tasks and provide custom tasks with sensible defaults which should require little to no configuration for most projects.
+Workspace packages use the tasks provided by
+Gradle's [Base Plugin](https://docs.gradle.org/current/userguide/base_plugin.html). The tasks of a
+supported tool are registered exactly when the project contains a configuration file for it. Tools
+contribute to the aggregate tasks and provide custom tasks with sensible defaults which should
+require little to no configuration for most projects.
+
+### Aggregate and lifecycle tasks
+
+Every project the plugin is applied to provides the following tasks:
+
+|    Task    |                         Description                         |
+|------------|-------------------------------------------------------------|
+| `check`    | Runs the verification tasks of the configured tools.        |
+| `fix`      | Applies the automatic source fixes of the configured tools. |
+| `test`     | Runs the test suites of the configured tools.               |
+| `build`    | Runs `assemble` and `check`.                                |
+| `assemble` | Assembles the outputs.                                      |
+| `clean`    | Deletes the build outputs.                                  |
+
+Prefer these tasks over the tool-specific ones: adding the configuration file of a tool to a project
+makes it part of aggregate and lifecycle tasks without any further change to the build script.
+
+`check` does not depend on `test` by default, so `build` does not run the test suites. Run `test` explicitly to
+do that.
 
 ### Supported tools
 
@@ -146,8 +170,8 @@ the project contains a configuration file for it. Tools contribute to the base t
 - [Prettier](docs/prettier.md)
 - [Playwright](docs/playwright.md)
 
-Each tool has its own extension for configuration, which is also applied to custom tasks using
-the task classes provided for each tool.
+Each tool has its own extension for configuration, which is also applied to custom tasks using the
+task classes provided for each tool.
 
 ## Custom pnpm tasks
 
