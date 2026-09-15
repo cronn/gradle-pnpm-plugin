@@ -20,7 +20,8 @@ vitest {
 
 ## Pre-defined tasks
 
-The tasks are registered only when the project contains a `vitest.config.*` file.
+The tasks are registered only when the project contains a `vitest.config.*` or a `vite.config.*`
+file.
 
 |     Task     | Default arguments | Contributes to  |
 |--------------|-------------------|-----------------|

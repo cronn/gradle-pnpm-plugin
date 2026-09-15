@@ -6,7 +6,8 @@ import org.gradle.api.file.DirectoryProperty
 /**
  * Configuration of the Vitest tasks, added by [PnpmPlugin] as the `vitest` extension.
  *
- * Pre-defined tasks are registered only when the project contains a `vitest.config.*` file.
+ * Pre-defined tasks are registered only when the project contains a `vitest.config.*` or a
+ * `vite.config.*` file.
  *
  * [alwaysRerun] defaults to `false` here, unlike [PlaywrightExtension]: a unit suite really is a
  * function of the files it runs over, so an unchanged source tree is a good reason to skip it --
