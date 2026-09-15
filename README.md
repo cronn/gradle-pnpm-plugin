@@ -221,6 +221,8 @@ never installed globally.
 ./gradlew publishToMavenLocal # publish to the local Maven repository
 ```
 
+### Testing the plugin locally
+
 To try out uncommitted changes in a real build, run `./gradlew publishToMavenLocal` and add the
 following configuration to the target project's `settings.gradle.kts`:
 
@@ -242,6 +244,31 @@ plugins {
 }
 ```
 
+### Testing against other Gradle versions
+
+`./gradlew build` runs the TestKit suite against the Gradle version of the wrapper only. To
+additionally run it against other versions, pass them as a comma-separated list:
+
+```bash
+./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.7.1
+```
+
+Each version is downloaded on demand. Without the property the version-specific tests are skipped.
+CI runs this tier in a separate job.
+
+### Refreshing the dependency lockfiles
+
+Every configuration is locked, so a dependency change fails the build until the lockfiles are
+regenerated:
+
+```bash
+./gradlew dependencies --write-locks
+./gradlew buildEnvironment --write-locks
+```
+
+Dependabot does not update `gradle.lockfile` for dependencies declared in the version catalog, so
+its Gradle update pull requests need the lockfiles refreshed by hand.
+
 ### Releases
 
 #### Creating a changelog entry
@@ -252,7 +279,7 @@ Run `pnpm changeset add` to create a new changeset.
 #### Publishing a new release
 
 Run `./scripts/prepare-release.sh`. It consumes the pending changesets, bumps the plugin version,
-and commits the result as `chore(release): <version>` together with a `v<version>` tag.
+and commits the result as `chore: Version plugin` together with a `v<version>` tag.
 
 Review the commit, then push it:
 
