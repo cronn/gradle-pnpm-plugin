@@ -251,7 +251,15 @@ Run `pnpm changeset add` to create a new changeset.
 
 #### Publishing a new release
 
-Run `pnpm changeset version` to update the changelog and bump the plugin version, then commit the
-result. Releases are published to the [Gradle Plugin Portal](https://plugins.gradle.org) by the
-`release` workflow. To trigger a release, create a new tag  `v<version>` and set the generated
-changelog as description.
+Run `./scripts/prepare-release.sh`. It consumes the pending changesets, bumps the plugin version,
+and commits the result as `chore(release): <version>` together with a `v<version>` tag.
+
+Review the commit, then push it:
+
+```shell
+git push --follow-tags
+```
+
+The tag starts the `release` workflow, which publishes to the
+[Gradle Plugin Portal](https://plugins.gradle.org) and creates the GitHub release from the changelog
+entry of that version.
