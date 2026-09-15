@@ -4,6 +4,10 @@ on:
   pull_request:
   merge_group:
   workflow_dispatch:
+  # setup-gradle only writes cache entries from the default branch, and neither pull_request nor
+  # merge_group runs there. Without this trigger every job starts from a cold Gradle User Home.
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,6 +20,7 @@ jobs:
   check:
     name: Check (${{ matrix.os }}, JDK ${{ matrix.java }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +38,8 @@ jobs:
             java: '25'
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-java@v6.0.0
         with:
@@ -48,13 +55,19 @@ jobs:
         uses: actions/upload-artifact@v7.0.1
         with:
           name: reports-${{ matrix.os }}-jdk${{ matrix.java }}
-          path: build/reports/
+          path: |
+            build/reports/
+            build/test-results/
+          if-no-files-found: ignore
 
   gradle-compatibility:
     name: Gradle compatibility
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-java@v6.0.0
         with:
@@ -65,3 +78,12 @@ jobs:
 
       # Downloads the named Gradle distributions and runs the TestKit suite against each of them.
       - run: ./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.7.1 --stacktrace
+
+      - if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: reports-gradle-compatibility
+          path: |
+            build/reports/
+            build/test-results/
+          if-no-files-found: ignore

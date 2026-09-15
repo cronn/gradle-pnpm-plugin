@@ -5,7 +5,7 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency: ${{ github.workflow }}
 
@@ -13,6 +13,9 @@ jobs:
   publish:
     name: Publish to the Gradle Plugin Portal
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
     # Holds GRADLE_PUBLISH_KEY and GRADLE_PUBLISH_SECRET, so publishing needs an approved
     # deployment rather than any push that can create a tag.
     environment: release
@@ -42,6 +45,15 @@ jobs:
 
       - run: ./gradlew build --stacktrace
 
+      - if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: reports-release
+          path: |
+            build/reports/
+            build/test-results/
+          if-no-files-found: ignore
+
       # publishPlugins is not idempotent and the portal rejects re-publishing a version, so the
       # publication is validated before anything is uploaded.
       - name: Validate the publication
@@ -69,4 +81,4 @@ jobs:
             echo "CHANGELOG.md has no section for $ARTIFACT_VERSION"
             exit 1
           fi
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes-file release-notes.md
