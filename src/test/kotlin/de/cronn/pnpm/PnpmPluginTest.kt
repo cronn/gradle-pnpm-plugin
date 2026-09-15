@@ -847,15 +847,18 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `does not enable vitest for a vite config alone`(@TempDir directory: File) {
+  fun `enables vitest for a vite config alone`(@TempDir directory: File) {
     val root = workspaceProject(directory)
     val packageDirectory = File(directory, "frontend").apply { mkdirs() }
     File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    // A `vite.config.*` may well belong to a project without any tests.
-    File(packageDirectory, "vite.config.ts").writeText("export default {}\n")
+    // Vitest reads the Vite config when there is no dedicated one of its own.
+    val config = File(packageDirectory, "vite.config.ts")
+    config.writeText("export default {}\n")
     val project = childProject("frontend", root, packageDirectory)
 
-    assertThat(project.tasks.names).doesNotContain("vitestTest")
+    assertThat(project.tasks.names).contains("vitestTest")
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.configFiles.files).containsExactly(config)
   }
 
   @Test

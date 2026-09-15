@@ -23,8 +23,12 @@ internal object ToolConfigFiles {
 
   val PLAYWRIGHT: List<String> = variants("playwright.config")
 
-  /** Only a Vitest configuration; a `vite.config.*` may well belong to a project without tests. */
-  val VITEST: List<String> = variants("vitest.config")
+  /**
+   * A dedicated Vitest configuration, or the Vite one it falls back to: Vitest reads
+   * `vite.config.*` when no `vitest.config.*` is there, so a Vite project carrying only the former
+   * still runs its suite.
+   */
+  val VITEST: List<String> = variants("vitest.config") + variants("vite.config")
 
   val PRETTIER: List<String> =
     variants("prettier.config") +

@@ -122,7 +122,21 @@ class PnpmVitestFunctionalTest {
   }
 
   @Test
-  fun `registers no vitest task for a package without a vitest config`() {
+  fun `runs the suite for a package configured through a vite config alone`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(packages = listOf("frontend"))
+    // Vitest reads the Vite config when there is no dedicated one of its own.
+    fixture.write("frontend/vite.config.ts", "export default {}")
+    fixture.write("frontend/src/login.test.ts", "export const login = 1")
+
+    val result = fixture.runner(":frontend:vitestTest").build()
+
+    assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(vitestTest(fixture).arguments).startsWith("exec", "vitest", "run")
+  }
+
+  @Test
+  fun `registers no vitest task for a package without a vitest or vite config`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(packages = listOf("frontend"))
 

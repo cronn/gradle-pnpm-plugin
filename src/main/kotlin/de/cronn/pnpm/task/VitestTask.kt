@@ -33,7 +33,8 @@ public abstract class VitestTask : PnpmTestTask() {
 
   /**
    * The Vitest configuration, which decides what the suite is. Defaults to the `vitest.config.*`
-   * files of the project.
+   * and `vite.config.*` files of the project -- Vitest falls back to the latter when there is no
+   * dedicated config.
    */
   @get:InputFiles
   @get:PathSensitive(PathSensitivity.RELATIVE)
