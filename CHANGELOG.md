@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+- d60d3f1: Register the Vitest tasks for a project that only has a `vite.config.*` file
+- 982f4a2: Add `NodeTask`, which runs a Node program through the Node version pinned in the `devEngines.runtime` field of the `package.json` (Closes #27)
+
 ## 0.5.1
 
 - Format CHANGELOG
