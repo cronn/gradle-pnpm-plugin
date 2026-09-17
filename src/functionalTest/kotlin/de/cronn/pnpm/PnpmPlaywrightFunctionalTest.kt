@@ -78,11 +78,12 @@ class PnpmPlaywrightFunctionalTest {
         "--grep=login",
         "--update-snapshots",
         "--fail-fast",
+        "--last-failed",
       )
       .build()
 
     assertThat(playwrightTest(fixture).arguments)
-      .containsSubsequence("--update-snapshots", "-x", "--grep=login")
+      .containsSubsequence("--update-snapshots", "--last-failed", "-x", "--grep=login")
   }
 
   @Test

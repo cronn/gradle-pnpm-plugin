@@ -72,6 +72,15 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
   @get:Option(option = "fail-fast", description = "Stops the suite after the first failure")
   public abstract val failFast: Property<Boolean>
 
+  /** Runs only the tests that failed in the last run, as `--last-failed`. */
+  @get:Input
+  @get:Optional
+  @get:Option(
+    option = "last-failed",
+    description = "Runs only the tests that failed in the last run",
+  )
+  public abstract val lastFailed: Property<Boolean>
+
   /** Runs only the tests whose title matches this regular expression. */
   @get:Input
   @get:Optional
@@ -132,6 +141,7 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
     if (ui.getOrElse(false)) add("--ui")
     if (headed.getOrElse(false)) add("--headed")
     if (updateSnapshots.getOrElse(false)) add("--update-snapshots")
+    if (lastFailed.getOrElse(false)) add("--last-failed")
     // Repeating a test is how a flaky one is hunted down, and the run is over as soon as it fails
     // once -- so asking for the repetitions asks for stopping at the first failure as well.
     if (failFast.getOrElse(false) || repeatEach.isPresent) add("-x")

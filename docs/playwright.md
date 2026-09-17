@@ -46,6 +46,7 @@ The tasks are registered only when the project contains a
 | `--headed`           | `--headed`                                                                                                                |
 | `--update-snapshots` | `--update-snapshots`                                                                                                      |
 | `--fail-fast`        | `-x`                                                                                                                      |
+| `--last-failed`      | `--last-failed`                                                                                                           |
 | `--grep=<regex>`     | `--grep`                                                                                                                  |
 | `--filter=<filter>`  | an operand: a regex matched against the path of a test file, optionally suffixed with `:<line>`; repeat for more than one |
 | `--repeat-each=<n>`  | `--repeat-each`, and `-x` with it                                                                                         |
