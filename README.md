@@ -284,7 +284,7 @@ and commits the result as `chore: Version plugin` together with a `v<version>` t
 Review the commit, then push it:
 
 ```shell
-git push --follow-tags
+git push origin main v<version>
 ```
 
 The tag starts the `release` workflow, which publishes to the
