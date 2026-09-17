@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+### Minor Changes
+
+- 022ca80: Add `--last-failed` command line option to `PlaywrightTestTask` to rerun only the tests that failed in the last run
+
 ## 0.6.0
 
 - d60d3f1: Register the Vitest tasks for a project that only has a `vite.config.*` file
