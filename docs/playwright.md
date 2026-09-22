@@ -34,7 +34,7 @@ The tasks are registered only when the project contains a
 
 |       Task       | Default arguments | Contributes to |
 |------------------|-------------------|----------------|
-| `playwrightTest` | none              | `test`         |
+| `playwrightTest` | none              | none           |
 
 ## Command line options
 

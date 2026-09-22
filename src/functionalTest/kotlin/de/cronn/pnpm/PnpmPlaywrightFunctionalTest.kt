@@ -48,12 +48,14 @@ class PnpmPlaywrightFunctionalTest {
   }
 
   @Test
-  fun `test runs the suite`() {
+  fun `test does not run the suite`() {
     val fixture = workspaceWithE2e()
 
     val result = fixture.runner(":e2e:test").build()
 
-    assertThat(result.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    // An end-to-end suite is slow and usually needs a server the build does not start, so it is
+    // deliberately no part of `test`.
+    assertThat(result.task(":e2e:playwrightTest")).isNull()
   }
 
   @Test
@@ -63,8 +65,11 @@ class PnpmPlaywrightFunctionalTest {
     val result = fixture.runner(":e2e:check").build()
 
     // An end-to-end suite is slow and usually needs a server the build does not start, so it is
-    // deliberately no part of check.
+    // deliberately no part of check -- which it would otherwise reach through `test`.
     assertThat(result.task(":e2e:playwrightTest")).isNull()
+    // `test` itself has no actions, so Gradle reports it as UP-TO-DATE rather than SUCCESS; its
+    // presence in the graph is enough to show that check now runs it.
+    assertThat(result.task(":e2e:test")).isNotNull()
     assertThat(result.task(":e2e:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 

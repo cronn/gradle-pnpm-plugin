@@ -687,13 +687,13 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `adds the suite to test but not to check`(@TempDir directory: File) {
+  fun `does not add the suite to test or check`(@TempDir directory: File) {
     val project = playwrightProject(directory)
 
-    assertThat(dependencyNames(project.tasks.getByName("test"))).contains("playwrightTest")
-    // An end-to-end suite is slow and usually needs a server the build does not start, so check
-    // deliberately stays out of it.
-    assertThat(dependencyNames(project.tasks.getByName("check"))).doesNotContain("test")
+    // An end-to-end suite is slow and usually needs a server the build does not start, so both
+    // `test` and, therefore, `check` deliberately stay out of it.
+    assertThat(dependencyNames(project.tasks.getByName("test"))).doesNotContain("playwrightTest")
+    assertThat(dependencyNames(project.tasks.getByName("check"))).contains("test")
   }
 
   @Test
@@ -760,12 +760,12 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `adds the unit suite to both test and check`(@TempDir directory: File) {
+  fun `adds the unit suite to test, which check always runs`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
     assertThat(dependencyNames(project.tasks.getByName("test"))).contains("vitestTest")
     // A unit suite is fast and reaches nothing the build does not start, so it belongs in `build`.
-    assertThat(dependencyNames(project.tasks.getByName("check"))).contains("vitestTest")
+    assertThat(dependencyNames(project.tasks.getByName("check"))).contains("test")
   }
 
   @Test

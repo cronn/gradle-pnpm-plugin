@@ -20,7 +20,7 @@ internal abstract class TestTasks<T : PnpmTestTask>(
   private val taskType: Class<T>,
   private val defaultIncludes: List<String>,
   private val defaultExcludes: List<String>,
-  private val contributesToCheck: Boolean = false,
+  private val contributesToTest: Boolean = false,
 ) {
 
   /**
@@ -66,7 +66,7 @@ internal abstract class TestTasks<T : PnpmTestTask>(
 
     return RegisteredTestTasks(
       test = registerTestTask(),
-      contributesToCheck = contributesToCheck,
+      contributesToTest = contributesToTest,
     )
   }
 
@@ -83,11 +83,12 @@ internal abstract class TestTasks<T : PnpmTestTask>(
 /**
  * What a test tool contributes to the lifecycle tasks.
  *
- * Every test tool contributes its suite to `test`. Whether it also belongs in `check` is the tool's
- * own decision: a unit suite is fast and self-contained, while an end-to-end suite is slow and
- * usually needs a server the build does not start.
+ * Whether a tool's suite is added to the aggregate `test` task is the tool's own decision, carried
+ * by [RegisteredTestTasks.contributesToTest]: a unit suite is fast and self-contained, while an
+ * end-to-end suite is slow and usually needs a server the build does not start. `check` always
+ * depends on `test`, so this flag is also what decides whether the suite takes part in `check`.
  */
 internal class RegisteredTestTasks(
   val test: TaskProvider<out PnpmTestTask>,
-  val contributesToCheck: Boolean,
+  val contributesToTest: Boolean,
 )
