@@ -20,7 +20,7 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
     VitestTask::class.java,
     INCLUDES,
     EXCLUDES,
-    contributesToCheck = true,
+    contributesToTest = true,
   ) {
 
   override fun configureTask(task: VitestTask) {

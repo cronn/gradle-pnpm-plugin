@@ -160,8 +160,10 @@ Every project the plugin is applied to provides the following tasks:
 Prefer these tasks over the tool-specific ones: adding the configuration file of a tool to a project
 makes it part of aggregate and lifecycle tasks without any further change to the build script.
 
-Whether a test suite takes part in `check`, and therefore in `build`, is the tool's own decision: a
-unit suite does, an end-to-end suite does not. Run `test` explicitly to run every suite.
+`check` always runs `test`. Whether a test suite takes part in `test`, and therefore in `check` and
+`build`, is the tool's own decision: a unit suite does, an end-to-end suite does not, since it is
+usually slow and needs a server the build does not start. Run `playwrightTest` explicitly to run the
+Playwright suite.
 
 ### Supported tools
 

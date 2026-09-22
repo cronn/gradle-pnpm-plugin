@@ -7,6 +7,8 @@ import de.cronn.pnpm.internal.test.RegisteredTestTasks
 import de.cronn.pnpm.internal.test.VitestTasks
 import java.io.File
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
@@ -14,10 +16,10 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
  * `test` and `check` lifecycle tasks. Each tool defines its own tasks; what is left here is what
  * crosses tool boundaries.
  *
- * Every test tool contributes its suite to `test`. `check` is the tool's own decision, carried by
- * [RegisteredTestTasks.contributesToCheck]: a unit suite belongs in `build`, while an end-to-end
- * suite is slow and usually needs a server the build does not start. `check` therefore runs
- * `vitestTest` but not `playwrightTest`; a build that wants the latter adds the edge itself.
+ * `check` always depends on `test`, so that any suite the build script adds to `test` itself also
+ * runs as part of `check`. Whether a tool's own suite is added to `test` is the tool's own
+ * decision, carried by [RegisteredTestTasks.contributesToTest]: a unit suite belongs in `build`,
+ * while an end-to-end suite is slow and usually needs a server the build does not start.
  */
 internal class PnpmTestTasks(
   private val target: Project,
@@ -39,19 +41,19 @@ internal class PnpmTestTasks(
     val vitestTasks = vitestTasks.register(vitest)
 
     val registered = listOfNotNull(playwrightTasks, vitestTasks)
-    wireTest(registered)
-    wireCheck(registered.filter { tool -> tool.contributesToCheck })
+    val test = wireTest(registered.filter { tool -> tool.contributesToTest })
+    wireCheck(test)
   }
 
   /**
-   * Adds the test task of every tool to `test`, which is registered unless the project already has
-   * a task of that name -- the Java plugin brings its own, and a project applying both should end
-   * up with one `test` running everything.
+   * Adds the test task of every tool that belongs in `test` to it. `test` is registered unless the
+   * project already has a task of that name -- the Java plugin brings its own, and a project
+   * applying both should end up with one `test` running everything.
    *
    * `test` is registered whatever the project is configured for, so that a build script can always
-   * name it. A project with no test tool gets one with nothing to do.
+   * name it. A project with no suite contributing to it gets one with nothing to do.
    */
-  private fun wireTest(registered: List<RegisteredTestTasks>) {
+  private fun wireTest(registered: List<RegisteredTestTasks>): TaskProvider<Task> {
     val test =
       if (target.tasks.names.contains(TEST_TASK_NAME)) {
         target.logger.debug(
@@ -70,19 +72,17 @@ internal class PnpmTestTasks(
     test.configure { task ->
       registered.forEach { tool -> task.dependsOn(tool.test) }
     }
+    return test
   }
 
   /**
-   * Adds the test task of every tool that belongs in `check` to it. `check` is always there:
-   * `PnpmPlugin` applies the Base Plugin before any tool is registered.
+   * Adds `test` to `check`. `check` is always there: `PnpmPlugin` applies the Base Plugin before
+   * any tool is registered. This is unconditional, so a suite a build script adds to `test` itself
+   * also runs as part of `check`.
    */
-  private fun wireCheck(registered: List<RegisteredTestTasks>) {
-    if (registered.isEmpty()) {
-      return
-    }
-
+  private fun wireCheck(test: TaskProvider<Task>) {
     target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure { task ->
-      registered.forEach { tool -> task.dependsOn(tool.test) }
+      task.dependsOn(test)
     }
   }
 
