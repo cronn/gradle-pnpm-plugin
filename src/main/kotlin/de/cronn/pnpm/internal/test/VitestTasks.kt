@@ -1,7 +1,6 @@
 package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.VitestExtension
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.VitestTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -24,12 +23,8 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
   ) {
 
   override fun configureTask(task: VitestTask) {
-    val projectDirectory = target.layout.projectDirectory
     val buildDirectory = target.layout.buildDirectory
 
-    task.configFiles.convention(
-      ToolConfigFiles.VITEST.map { name -> projectDirectory.file(name) }.filter { it.asFile.isFile }
-    )
     task.reportDirectory.convention(
       vitest.reportDirectory.orElse(buildDirectory.dir("reports/vitest"))
     )
