@@ -7,7 +7,12 @@ import org.gradle.api.tasks.TaskProvider
 
 /** The Prettier tasks of a pnpm package. */
 internal class PrettierTasks(target: Project, extension: PrettierExtension) :
-  CheckTasks<PrettierTask>(target, extension, PrettierTask::class.java, INCLUDES) {
+  CheckTasks<PrettierTask>(
+    target,
+    extension,
+    PrettierTask::class.java,
+    INCLUDES,
+  ) {
 
   override fun registerCheckTask(): TaskProvider<PrettierTask> =
     registerTask(

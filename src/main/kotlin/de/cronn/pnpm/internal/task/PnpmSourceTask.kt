@@ -1,13 +1,16 @@
 package de.cronn.pnpm.internal.task
 
 import de.cronn.pnpm.internal.SourcePatterns
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.PnpmExecTask
 import javax.inject.Inject
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
@@ -43,6 +46,26 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
 
   /** Ant-style patterns excluded from [includes]. Defaults to the `excludes` of the extension. */
   @get:Input public abstract val excludes: ListProperty<String>
+
+  /**
+   * The candidate config file names of the tool, owned by the concrete task type -- the same way it
+   * owns the [command][de.cronn.pnpm.task.PnpmExecTask.command] it runs. Not a Gradle input itself;
+   * only [configFiles], the subset of these that exist in the project, is.
+   */
+  @get:Internal protected abstract val configFileNames: List<String>
+
+  /**
+   * The configuration file(s) of the tool, if present, which decide what it does even though they
+   * are not always passed as one of its [sourceFiles]. Whichever of [configFileNames] exist in the
+   * project -- an implementation detail of the tool, not something a build script configures.
+   */
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  public val configFiles: FileCollection
+    get() =
+      objects
+        .fileCollection()
+        .from(ToolConfigFiles.existingFiles(projectLayout.projectDirectory, configFileNames))
 
   /**
    * The files [includes] and [excludes] resolve to, which are the inputs deciding when this task is

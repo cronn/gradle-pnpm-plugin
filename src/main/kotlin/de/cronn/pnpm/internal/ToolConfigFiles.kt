@@ -2,6 +2,8 @@ package de.cronn.pnpm.internal
 
 import java.io.File
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.file.RegularFile
 
 /**
  * The configuration files that mark a Node tool as being used by a project.
@@ -39,6 +41,13 @@ internal object ToolConfigFiles {
   fun anyPresent(project: Project, fileNames: List<String>): Boolean = fileNames.any {
     File(project.projectDir, it).isFile
   }
+
+  /**
+   * The [fileNames] that exist in [projectDirectory], as the task inputs of an autoconfigured tool.
+   * Resolved eagerly, the same as [anyPresent], for the same reason.
+   */
+  fun existingFiles(projectDirectory: Directory, fileNames: List<String>): List<RegularFile> =
+    fileNames.map { projectDirectory.file(it) }.filter { it.asFile.isFile }
 
   private fun variants(baseName: String): List<String> = CONFIG_EXTENSIONS.map { extension ->
     "$baseName.$extension"

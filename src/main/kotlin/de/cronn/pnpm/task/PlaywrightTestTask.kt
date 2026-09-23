@@ -1,17 +1,14 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmTestTask
 import de.cronn.pnpm.internal.test.TraceMode
-import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.options.Option
 import org.gradle.work.DisableCachingByDefault
 
@@ -34,13 +31,7 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class PlaywrightTestTask : PnpmTestTask() {
 
-  /**
-   * The Playwright configuration, which decides what the suite is. Defaults to the
-   * `playwright.config.*` files of the project.
-   */
-  @get:InputFiles
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  public abstract val configFiles: ConfigurableFileCollection
+  override val configFileNames: List<String> = ToolConfigFiles.PLAYWRIGHT
 
   /** Directory of the artifacts of a failing test, passed as `--output`. */
   @get:OutputDirectory public abstract val outputDirectory: DirectoryProperty

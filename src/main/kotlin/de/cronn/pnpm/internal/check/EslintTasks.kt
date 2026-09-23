@@ -8,7 +8,12 @@ import org.gradle.api.tasks.TaskProvider
 
 /** The ESLint tasks of a pnpm package. */
 internal class EslintTasks(target: Project, extension: EslintExtension) :
-  CheckTasks<EslintTask>(target, extension, EslintTask::class.java, INCLUDES) {
+  CheckTasks<EslintTask>(
+    target,
+    extension,
+    EslintTask::class.java,
+    INCLUDES,
+  ) {
 
   /**
    * ESLint reports the type errors `tsc` would report as well, so type checking runs first to get

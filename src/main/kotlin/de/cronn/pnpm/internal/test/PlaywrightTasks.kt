@@ -1,7 +1,6 @@
 package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.PlaywrightExtension
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PlaywrightInstallTask
 import de.cronn.pnpm.task.PlaywrightTestTask
 import java.io.File
@@ -54,13 +53,8 @@ internal class PlaywrightTasks(
   }
 
   override fun configureTask(task: PlaywrightTestTask) {
-    val projectDirectory = target.layout.projectDirectory
     val buildDirectory = target.layout.buildDirectory
 
-    task.configFiles.convention(
-      ToolConfigFiles.PLAYWRIGHT.map { name -> projectDirectory.file(name) }
-        .filter { it.asFile.isFile }
-    )
     task.outputDirectory.convention(
       playwright.outputDirectory.orElse(buildDirectory.dir("playwright/test-results"))
     )

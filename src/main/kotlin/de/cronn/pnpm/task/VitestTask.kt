@@ -1,15 +1,12 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmTestTask
-import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.options.Option
 import org.gradle.work.DisableCachingByDefault
 
@@ -31,14 +28,7 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class VitestTask : PnpmTestTask() {
 
-  /**
-   * The Vitest configuration, which decides what the suite is. Defaults to the `vitest.config.*`
-   * and `vite.config.*` files of the project -- Vitest falls back to the latter when there is no
-   * dedicated config.
-   */
-  @get:InputFiles
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  public abstract val configFiles: ConfigurableFileCollection
+  override val configFileNames: List<String> = ToolConfigFiles.VITEST
 
   /** Directory the coverage report goes to, passed as `--coverage.reportsDirectory`. */
   @get:OutputDirectory public abstract val reportDirectory: DirectoryProperty

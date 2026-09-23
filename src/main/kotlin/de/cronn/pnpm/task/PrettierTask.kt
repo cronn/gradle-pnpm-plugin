@@ -1,5 +1,6 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmCheckTask
 import org.gradle.work.DisableCachingByDefault
 
@@ -15,6 +16,8 @@ import org.gradle.work.DisableCachingByDefault
   because = "Runs Prettier; its effects are not fully described by declared outputs."
 )
 public abstract class PrettierTask : PnpmCheckTask() {
+
+  override val configFileNames: List<String> = ToolConfigFiles.PRETTIER
 
   init {
     command.convention("prettier")

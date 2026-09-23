@@ -99,6 +99,27 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
+  fun `reruns eslintCheck, prettierCheck and compileTypescript when their config file changes`() {
+    val fixture = workspaceWithFrontend()
+
+    fixture.runner(":frontend:check").build()
+    val second = fixture.runner(":frontend:check").build()
+    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:compileTypescript")?.outcome)
+      .isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("frontend/eslint.config.ts", "export default [{ rules: {} }]")
+    fixture.write("frontend/prettier.config.ts", "export default { semi: false }")
+    fixture.write("frontend/tsconfig.json", "{ \"compilerOptions\": { \"strict\": true } }")
+    val third = fixture.runner(":frontend:check").build()
+
+    assertThat(third.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(third.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(third.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
   fun `the default patterns reach neither the node_modules nor the build directory`() {
     val fixture = workspaceWithFrontend()
     fixture.write("frontend/node_modules/dependency/index.ts", "export const dependency = 1")

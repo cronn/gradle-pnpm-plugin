@@ -193,6 +193,25 @@ class PnpmPlaywrightFunctionalTest {
   }
 
   @Test
+  fun `reruns when alwaysRerun is switched off and the playwright config changes`() {
+    val fixture =
+      workspaceWithE2e(
+        packageBuildScript =
+          """
+          playwright { alwaysRerun = false }
+          """
+      )
+
+    fixture.runner(":e2e:playwrightTest").build()
+    val second = fixture.runner(":e2e:playwrightTest").build()
+    assertThat(second.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("e2e/playwright.config.ts", "export default { testDir: \"tests\", retries: 1 }")
+    val third = fixture.runner(":e2e:playwrightTest").build()
+    assertThat(third.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
   fun `installs the configured browsers with their system dependencies`() {
     val fixture =
       workspaceWithE2e(

@@ -1,5 +1,6 @@
 package de.cronn.pnpm.task
 
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmSourceTask
 import org.gradle.work.DisableCachingByDefault
 
@@ -16,6 +17,8 @@ import org.gradle.work.DisableCachingByDefault
   because = "Runs tsc; its effects are not fully described by declared outputs."
 )
 public abstract class TypescriptTask : PnpmSourceTask() {
+
+  override val configFileNames: List<String> = ToolConfigFiles.TYPESCRIPT
 
   init {
     command.convention("tsc")
