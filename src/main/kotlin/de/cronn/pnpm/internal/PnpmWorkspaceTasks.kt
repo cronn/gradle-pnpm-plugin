@@ -60,14 +60,14 @@ internal class PnpmWorkspaceTasks(
       task.group = taskGroup
       task.description = "Install all pnpm dependencies"
       task.arguments.set(listOf("install"))
-      // The lockfile is the single source of truth for what gets installed: it changes whenever a
-      // dependency of any workspace package changes. It is deliberately not declared as an output
-      // as well -- pnpm may rewrite it, but a task must not declare the same file both ways.
-      // pnpm-workspace.yaml is absent for a standalone package, which inputs.files tolerates.
+      // pnpm-workspace.yaml is absent for a standalone package, which inputs.files tolerates. The
+      // lockfile is also the single source of truth for what gets installed and is deliberately not
+      // declared as an output as well -- pnpm may rewrite it, but a task must not declare the same
+      // file both ways -- however it is not repeated here: PnpmPlugin already declares it as a
+      // "lockfile" input of every PnpmTask, this one included.
       task.inputs
         .files(
           projectDirectory.file(PnpmWorkspaceLayout.WORKSPACE_FILE),
-          projectDirectory.file("pnpm-lock.yaml"),
           projectDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON),
         )
         .withPropertyName("workspaceFiles")

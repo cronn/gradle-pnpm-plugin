@@ -5,11 +5,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.work.DisableCachingByDefault
 
 /**
@@ -17,8 +13,9 @@ import org.gradle.work.DisableCachingByDefault
  *
  * The browsers land in a cache outside the project -- `~/.cache/ms-playwright` and its equivalents
  * -- which is nothing Gradle can compare, so the task declares what decides the download instead:
- * the [lockfile] that pins the Playwright version and the [browsers] asked for. A [stampFile] gives
- * it the output that makes it skippable, the way `pnpmInstall` does it.
+ * the workspace lockfile that pins the Playwright version, wired onto every pnpm task by the
+ * plugin, and the [browsers] asked for. A [stampFile] gives it the output that makes it skippable,
+ * the way `pnpmInstall` does it.
  */
 @DisableCachingByDefault(
   because =
@@ -32,15 +29,6 @@ public abstract class PlaywrightInstallTask : PnpmExecTask() {
 
   /** Whether the system libraries the browsers need are installed as well, as `--with-deps`. */
   @get:Input public abstract val withDependencies: Property<Boolean>
-
-  /**
-   * The lockfile of the workspace, which pins the Playwright version and so decides which browsers
-   * are downloaded. Absent for a project that is no part of a pnpm workspace.
-   */
-  @get:InputFile
-  @get:Optional
-  @get:PathSensitive(PathSensitivity.NONE)
-  public abstract val lockfile: RegularFileProperty
 
   /**
    * Records that the browsers were installed, so the task has an output to be up to date about. The

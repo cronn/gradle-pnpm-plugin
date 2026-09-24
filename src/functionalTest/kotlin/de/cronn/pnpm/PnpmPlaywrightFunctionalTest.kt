@@ -212,6 +212,38 @@ class PnpmPlaywrightFunctionalTest {
   }
 
   @Test
+  fun `reruns when alwaysRerun is switched off and the lockfile changes`() {
+    val fixture =
+      workspaceWithE2e(
+        packageBuildScript =
+          """
+          playwright { alwaysRerun = false }
+          """
+      )
+
+    fixture.runner(":e2e:playwrightTest").build()
+    val second = fixture.runner(":e2e:playwrightTest").build()
+    assertThat(second.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
+    val third = fixture.runner(":e2e:playwrightTest").build()
+    assertThat(third.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
+  fun `reruns playwrightInstall when the lockfile changes`() {
+    val fixture = workspaceWithE2e()
+
+    fixture.runner(":e2e:playwrightInstall").build()
+    val second = fixture.runner(":e2e:playwrightInstall").build()
+    assertThat(second.task(":e2e:playwrightInstall")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
+    val third = fixture.runner(":e2e:playwrightInstall").build()
+    assertThat(third.task(":e2e:playwrightInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
   fun `installs the configured browsers with their system dependencies`() {
     val fixture =
       workspaceWithE2e(

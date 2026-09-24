@@ -120,6 +120,25 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
+  fun `reruns eslintCheck, prettierCheck and compileTypescript when the lockfile changes`() {
+    val fixture = workspaceWithFrontend()
+
+    fixture.runner(":frontend:check").build()
+    val second = fixture.runner(":frontend:check").build()
+    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:compileTypescript")?.outcome)
+      .isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
+    val third = fixture.runner(":frontend:check").build()
+
+    assertThat(third.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(third.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(third.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
   fun `the default patterns reach neither the node_modules nor the build directory`() {
     val fixture = workspaceWithFrontend()
     fixture.write("frontend/node_modules/dependency/index.ts", "export const dependency = 1")

@@ -126,6 +126,20 @@ class PnpmVitestFunctionalTest {
   }
 
   @Test
+  fun `reruns when the lockfile changes`() {
+    val fixture = workspaceWithFrontend()
+
+    fixture.runner(":frontend:vitestTest").build()
+    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
+      .isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
+
+    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
+      .isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
   fun `runs the suite on every invocation when alwaysRerun is switched on`() {
     val fixture = workspaceWithFrontend(packageBuildScript = """vitest { alwaysRerun = true }""")
 
