@@ -20,6 +20,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.util.GradleVersion
 
 /**
@@ -65,10 +66,22 @@ public class PnpmPlugin : Plugin<Project> {
 
     target.extensions.add(PnpmResolution::class.java, RESOLUTION_NAME, resolution)
 
+    val lockfile = workspaceLockfile(target, layout)
     target.tasks.withType(PnpmTask::class.java).configureEach { task ->
       task.executable.convention(resolution.executable)
       task.pnpmVersion.convention(workspace.version)
       task.dependsOn(lifecycleTaskPath(target, workspace, PnpmWorkspaceTasks.SETUP_TASK_NAME))
+      // The lockfile pins the exact version of every tool pnpm resolves, so any task a build script
+      // registers reruns when it changes too. Declared as a plain input rather than a property on
+      // PnpmTask: it is an implementation detail of the plugin, not something a task exposes as
+      // configurable.
+      if (lockfile != null) {
+        task.inputs
+          .file(lockfile)
+          .withPropertyName("lockfile")
+          .optional(true)
+          .withPathSensitivity(PathSensitivity.NONE)
+      }
     }
 
     // pnpm exec and pnpm run both need the workspace dependencies to be present.
@@ -87,7 +100,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
     }
 
-    registerCheckTasks(target, layout)
+    registerCheckTasks(target)
   }
 
   /**
@@ -245,7 +258,7 @@ public class PnpmPlugin : Plugin<Project> {
    * surface a convention plugin derives its accessors from, and those come from a synthetic project
    * over an empty directory.
    */
-  private fun registerCheckTasks(target: Project, layout: PnpmWorkspaceLayout) {
+  private fun registerCheckTasks(target: Project) {
     target.pluginManager.apply(BasePlugin::class.java)
 
     val typescript =
@@ -272,7 +285,7 @@ public class PnpmPlugin : Plugin<Project> {
         prettier = configured(target, PRETTIER_EXTENSION_NAME, ToolConfigFiles.PRETTIER),
         eslint = configured(target, ESLINT_EXTENSION_NAME, ToolConfigFiles.ESLINT),
       )
-    PnpmTestTasks(target, playwright, vitest, workspaceLockfile(target, layout))
+    PnpmTestTasks(target, playwright, vitest)
       .register(
         playwright = configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT),
         vitest = configured(target, VITEST_EXTENSION_NAME, ToolConfigFiles.VITEST),

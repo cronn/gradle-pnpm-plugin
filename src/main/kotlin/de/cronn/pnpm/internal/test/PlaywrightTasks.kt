@@ -3,21 +3,11 @@ package de.cronn.pnpm.internal.test
 import de.cronn.pnpm.PlaywrightExtension
 import de.cronn.pnpm.internal.task.PlaywrightInstallTask
 import de.cronn.pnpm.task.PlaywrightTestTask
-import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
-/**
- * The Playwright tasks of a pnpm package: the suite itself and the browser download it needs.
- *
- * [lockfile] is passed in rather than derived here, so that no provider created by this class
- * captures the project it belongs to.
- */
-internal class PlaywrightTasks(
-  target: Project,
-  private val playwright: PlaywrightExtension,
-  private val lockfile: File?,
-) :
+/** The Playwright tasks of a pnpm package: the suite itself and the browser download it needs. */
+internal class PlaywrightTasks(target: Project, private val playwright: PlaywrightExtension) :
   TestTasks<PlaywrightTestTask>(
     target,
     playwright,
@@ -79,16 +69,12 @@ internal class PlaywrightTasks(
     val browsers = playwright.browsers
     val withDependencies = playwright.installSystemDependencies
     val stamp = target.layout.buildDirectory.file("playwright/install.stamp")
-    val lockfile = this.lockfile?.let { target.objects.fileProperty().fileValue(it) }
 
     target.tasks.withType(PlaywrightInstallTask::class.java).configureEach { task ->
       task.group = TASK_GROUP
       task.browsers.convention(browsers)
       task.withDependencies.convention(withDependencies)
       task.stampFile.convention(stamp)
-      if (lockfile != null) {
-        task.lockfile.convention(lockfile)
-      }
       // The stamp is what gives the task an output to be up to date about; the browsers themselves
       // land in a cache outside the project. Written in an action rather than in the task class, so
       // that a task a build script registers gets it too.

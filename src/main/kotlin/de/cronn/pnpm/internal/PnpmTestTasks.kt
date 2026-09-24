@@ -5,7 +5,6 @@ import de.cronn.pnpm.VitestExtension
 import de.cronn.pnpm.internal.test.PlaywrightTasks
 import de.cronn.pnpm.internal.test.RegisteredTestTasks
 import de.cronn.pnpm.internal.test.VitestTasks
-import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
@@ -25,10 +24,9 @@ internal class PnpmTestTasks(
   private val target: Project,
   playwright: PlaywrightExtension,
   vitest: VitestExtension,
-  lockfile: File?,
 ) {
 
-  private val playwrightTasks = PlaywrightTasks(target, playwright, lockfile)
+  private val playwrightTasks = PlaywrightTasks(target, playwright)
   private val vitestTasks = VitestTasks(target, vitest)
 
   /**
