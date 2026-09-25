@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 2f45260: `prettierCheck`, `prettierFix`, `eslintCheck`, `eslintFix` and `compileTypescript` now
+  take the tool's configuration file as a task input, so editing it reruns the task
+  instead of it being reported up to date.
+
+  Closes #53.
+
+- b615d49: Every pnpm task now takes the workspace's `pnpm-lock.yaml` as a task input, so upgrading a tool's pinned version reruns the
+  tasks that depend on it instead of reporting them up to date.
+
+- 9dbe0e1: **Breaking:** `check` now always depends on `test`, so that a suite a build script adds to `test` also runs as part of `check`.
+
+  `playwrightTest` no longer takes part in `test`. Run `playwrightTest` directly, or add the dependency to `test` in the build script.
+
+  Closes #52.
+
+### Patch Changes
+
+- e2c76d1: Bump default pnpm version to 11.27.1
+
 ## 0.7.0
 
 ### Minor Changes
