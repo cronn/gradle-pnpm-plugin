@@ -357,7 +357,7 @@ public class PnpmPlugin : Plugin<Project> {
     const val VITEST_EXTENSION_NAME: String = "vitest"
     const val TASK_GROUP: String = "pnpm"
     const val RESOLUTION_NAME: String = "pnpmResolution"
-    const val DEFAULT_PNPM_VERSION: String = "11.25.0"
+    const val DEFAULT_PNPM_VERSION: String = "11.27.1"
     private const val PATH_VARIABLE = "PATH"
     private const val LOCKFILE = "pnpm-lock.yaml"
     private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")

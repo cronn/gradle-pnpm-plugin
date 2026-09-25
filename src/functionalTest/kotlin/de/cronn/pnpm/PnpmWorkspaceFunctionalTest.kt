@@ -33,7 +33,7 @@ class PnpmWorkspaceFunctionalTest {
     // Kept in sync manually with PnpmPlugin.DEFAULT_PNPM_VERSION, which functionalTest cannot
     // reference: it only depends on the plugin as a published artifact, not as a compile
     // dependency.
-    assertThat(result.output).contains("pinned=11.25.0")
+    assertThat(result.output).contains("pinned=11.27.1")
   }
 
   @Test
