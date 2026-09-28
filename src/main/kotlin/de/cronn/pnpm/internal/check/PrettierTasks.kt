@@ -26,7 +26,6 @@ internal class PrettierTasks(target: Project, extension: PrettierExtension) :
       name = "prettierFix",
       description = "Reformats the sources with Prettier",
       arguments = listOf("--write", "--list-different"),
-      mutatesSources = true,
     )
 
   companion object {

@@ -36,7 +36,6 @@ internal class EslintTasks(target: Project, extension: EslintExtension) :
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
       arguments = listOf("--max-warnings=0", "--fix"),
-      mutatesSources = true,
     )
 
   companion object {

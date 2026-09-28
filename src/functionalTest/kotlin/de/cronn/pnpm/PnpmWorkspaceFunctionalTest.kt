@@ -172,10 +172,9 @@ class PnpmWorkspaceFunctionalTest {
     assertThat(result.task(":prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(result.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
 
-    // A task that rewrites its own sources is never up to date.
     val second = fixture.runner(":prettierFix", ":frontend:prettierFix").build()
-    assertThat(second.task(":prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(second.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(second.task(":prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   @Test

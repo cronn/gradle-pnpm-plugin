@@ -70,6 +70,27 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
+  fun `fix tasks are up to date when the sources are unchanged and rerun when they change`() {
+    val fixture = workspaceWithFrontend()
+
+    fixture.runner(":frontend:fix").build()
+    val second = fixture.runner(":frontend:fix").build()
+    assertThat(second.task(":frontend:eslintFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(second.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("frontend/main.ts", "export const changed = true")
+    val third = fixture.runner(":frontend:fix").build()
+    assertThat(third.task(":frontend:eslintFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(third.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+
+    fixture.write("frontend/eslint.config.ts", "export default [{ rules: {} }]")
+    fixture.write("frontend/prettier.config.ts", "export default { semi: false }")
+    val fourth = fixture.runner(":frontend:fix").build()
+    assertThat(fourth.task(":frontend:eslintFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fourth.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
   fun `appends the configured extra arguments`() {
     val fixture =
       workspaceWithFrontend(
