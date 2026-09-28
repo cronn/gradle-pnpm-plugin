@@ -40,4 +40,4 @@ git tag "$tag"
 
 echo
 echo "Prepared $tag. Push it to publish the release:"
-echo "  git push origin $(git rev-parse --abbrev-ref HEAD) v$tag"
+echo "  git push origin $(git rev-parse --abbrev-ref HEAD) $tag"
