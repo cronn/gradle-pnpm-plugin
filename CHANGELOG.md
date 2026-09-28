@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0
+
+### Minor Changes
+
+- a747d3d: Add `projects` property and `--project` command line option to `PlaywrightTestTask` to run only selected Playwright projects
+
+  Closes #56.
+
+- 0a614e1: Make `eslintFix` and `prettierFix` up to date when the sources did not change since their last run
+
+  Closes #63.
+
 ## 0.8.0
 
 ### Minor Changes
