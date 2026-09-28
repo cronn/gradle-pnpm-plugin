@@ -105,6 +105,34 @@ class PnpmPlaywrightFunctionalTest {
   }
 
   @Test
+  fun `passes the projects on to playwright`() {
+    val fixture = workspaceWithE2e()
+
+    fixture.runner(":e2e:playwrightTest", "--project=chromium", "--project=firefox").build()
+
+    assertThat(playwrightTest(fixture).arguments)
+      .containsSubsequence("--project=chromium", "--project=firefox")
+  }
+
+  @Test
+  fun `passes the projects of a custom task on to playwright`() {
+    val fixture =
+      workspaceWithE2e(
+        packageBuildScript =
+          """
+          tasks.register<de.cronn.pnpm.task.PlaywrightTestTask>("playwrightIntegrationTest") {
+            projects = listOf("integration-chromium", "integration-firefox")
+          }
+          """
+      )
+
+    fixture.runner(":e2e:playwrightIntegrationTest").build()
+
+    assertThat(playwrightTest(fixture).arguments)
+      .containsSubsequence("--project=integration-chromium", "--project=integration-firefox")
+  }
+
+  @Test
   fun `stops at the first failure when the tests are repeated`() {
     val fixture = workspaceWithE2e()
 

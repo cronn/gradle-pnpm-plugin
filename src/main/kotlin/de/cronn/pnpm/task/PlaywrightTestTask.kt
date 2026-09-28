@@ -21,6 +21,7 @@ import org.gradle.work.DisableCachingByDefault
  * ./gradlew :e2e:playwrightTest --grep=login --update-snapshots
  * ./gradlew :e2e:playwrightTest --filter=tests/login.spec.ts:42 --trace=on
  * ./gradlew :e2e:playwrightTest --ui
+ * ./gradlew :e2e:playwrightTest --project=chromium
  * ```
  *
  * `./gradlew help --task playwrightTest` lists them all. Anything else Playwright takes goes into
@@ -94,6 +95,18 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
   public abstract val filters: ListProperty<String>
 
   /**
+   * The projects of the Playwright configuration to run, each passed as `--project`. Empty runs
+   * every project the configuration declares.
+   */
+  @get:Input
+  @get:Optional
+  @get:Option(
+    option = "project",
+    description = "Runs only the tests of this Playwright project; repeat for more than one",
+  )
+  public abstract val projects: ListProperty<String>
+
+  /**
    * When Playwright records a trace of a test, passed as `--trace`. One of the modes Playwright
    * takes: `on`, `off`, `on-first-retry`, `on-all-retries`, `retain-on-failure` or
    * `retain-on-first-failure`. Unset by default, which leaves the decision to the Playwright
@@ -136,6 +149,7 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
     // Repeating a test is how a flaky one is hunted down, and the run is over as soon as it fails
     // once -- so asking for the repetitions asks for stopping at the first failure as well.
     if (failFast.getOrElse(false) || repeatEach.isPresent) add("-x")
+    projects.getOrElse(emptyList()).forEach { add("--project=$it") }
     grep.orNull?.let { add("--grep=$it") }
     repeatEach.orNull?.let { add("--repeat-each=$it") }
     trace.orNull?.let { add("--trace=${TraceMode.require(it, path)}") }

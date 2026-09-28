@@ -47,6 +47,7 @@ The tasks are registered only when the project contains a
 | `--update-snapshots` | `--update-snapshots`                                                                                                      |
 | `--fail-fast`        | `-x`                                                                                                                      |
 | `--last-failed`      | `--last-failed`                                                                                                           |
+| `--project=<name>`   | `--project`; repeat for more than one                                                                                     |
 | `--grep=<regex>`     | `--grep`                                                                                                                  |
 | `--filter=<filter>`  | an operand: a regex matched against the path of a test file, optionally suffixed with `:<line>`; repeat for more than one |
 | `--repeat-each=<n>`  | `--repeat-each`, and `-x` with it                                                                                         |
@@ -56,6 +57,7 @@ The tasks are registered only when the project contains a
 ./gradlew playwrightTest --grep=login --update-snapshots
 ./gradlew playwrightTest --filter=tests/login.spec.ts:42
 ./gradlew playwrightTest --ui
+./gradlew playwrightTest --project=chromium
 ./gradlew playwrightTest --trace=off
 ```
 
@@ -69,5 +71,9 @@ import de.cronn.pnpm.task.PlaywrightTestTask
 tasks.register<PlaywrightTestTask>("playwrightSmokeTest") {
   includes = listOf("tests/smoke/**/*.ts")
   arguments = listOf("tests/smoke")
+}
+
+tasks.register<PlaywrightTestTask>("playwrightIntegrationTest") {
+  projects = listOf("integration-chromium", "integration-firefox")
 }
 ```
