@@ -11,7 +11,11 @@ version resolution, lockfile checks and checksum verification take it from there
 the workspace dependencies and exposes pre-defined tasks for common tools like TypeScript, Prettier
 and ESLint.
 
-Requirements: **Gradle 9.0+** and **Java 21+**. Linux, macOS and Windows on x64 and arm64.
+Requirements: **Gradle 9.0+**, **Java 21+** and **pnpm 11+**. Linux, macOS and Windows on x64 and
+arm64.
+
+Earlier pnpm versions are not supported and can lead to errors, e.g. when one is found on the
+`PATH`.
 
 ## Setup
 
