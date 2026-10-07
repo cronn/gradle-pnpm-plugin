@@ -85,6 +85,31 @@ class PnpmWorkspaceFunctionalTest {
   }
 
   @Test
+  fun `pnpmInstall runs again after a package json in a gradle project is changed`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(packages = listOf("frontend"))
+
+    fixture.runner("pnpmInstall").build()
+    fixture.write("frontend/package.json", "{}\n")
+    val second = fixture.runner("pnpmInstall").build()
+
+    assertThat(second.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+  }
+
+  @Test
+  fun `pnpmInstall ignores the packages of a nested workspace`() {
+    val fixture = GradleProjectFixture(projectDirectory)
+    fixture.writeWorkspace(packages = listOf("frontend", "tools"))
+    fixture.write("tools/pnpm-workspace.yaml", "packages: []\n")
+
+    fixture.runner(":pnpmInstall").build()
+    fixture.write("tools/package.json", "{}\n")
+    val second = fixture.runner(":pnpmInstall").build()
+
+    assertThat(second.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
+  @Test
   fun `pnpmDedupe and pnpmClean always run`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace()

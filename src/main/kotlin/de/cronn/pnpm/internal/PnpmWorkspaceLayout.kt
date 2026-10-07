@@ -47,7 +47,8 @@ internal class PnpmWorkspaceLayout(
     const val PACKAGE_JSON: String = "package.json"
 
     fun discover(target: Project): PnpmWorkspaceLayout {
-      if (containsWorkspaceFile(target)) {
+      val ancestor = nearestWorkspaceRoot(target)
+      if (ancestor == target) {
         target.logger.debug(
           "pnpm: {} contains {}, treating it as the pnpm workspace root",
           target.path,
@@ -56,7 +57,6 @@ internal class PnpmWorkspaceLayout(
         return PnpmWorkspaceLayout(PnpmRole.WORKSPACE_ROOT, target)
       }
 
-      val ancestor = ancestors(target).firstOrNull(::containsWorkspaceFile)
       if (ancestor != null) {
         target.logger.debug(
           "pnpm: {} has no {}, treating it as a package of the workspace root {}",
@@ -98,6 +98,23 @@ internal class PnpmWorkspaceLayout(
         "directory ($projectDirectory) contains neither a $WORKSPACE_FILE nor a $PACKAGE_JSON, " +
         "and none of its ancestor projects contains a $WORKSPACE_FILE. Add a $WORKSPACE_FILE to " +
         "the workspace root, or a $PACKAGE_JSON to $projectPath."
+
+    /**
+     * The `package.json` of every Gradle project that is a package of the workspace [root], whether
+     * it exists or not. A project below [root] belongs to a workspace of its own when it, or a
+     * project between the two, contains a [WORKSPACE_FILE].
+     */
+    fun packageFilesOfMembers(root: Project): List<File> =
+      root.subprojects
+        .filter { project -> nearestWorkspaceRoot(project) == root }
+        .map { project -> File(project.projectDir, PACKAGE_JSON) }
+
+    /**
+     * The workspace [project] belongs to: the nearest of itself and its ancestors that contains a
+     * [WORKSPACE_FILE], or `null` when there is none.
+     */
+    private fun nearestWorkspaceRoot(project: Project): Project? =
+      (sequenceOf(project) + ancestors(project)).firstOrNull(::containsWorkspaceFile)
 
     /** The ancestors of [target], nearest first, up to and including the root project. */
     private fun ancestors(target: Project): Sequence<Project> =
