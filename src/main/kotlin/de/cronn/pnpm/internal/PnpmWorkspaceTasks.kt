@@ -71,6 +71,17 @@ internal class PnpmWorkspaceTasks(
           projectDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON),
         )
         .withPropertyName("workspaceFiles")
+      // Changes to packages.json files without running pnpm install leaves the lockfile as
+      // it was. The additional task inputs mark the install task as not up-to-date. With
+      // --frozen-lockfile, as in CI the task will fail, without the flag, pnpm installs the
+      // change. Only package.json files in gradle projects are found.
+      val packageFiles = PnpmWorkspaceLayout.packageFilesOfMembers(target)
+      target.logger.debug(
+        "pnpm: {} runs again when one of {} changes",
+        target.path,
+        packageFiles,
+      )
+      task.inputs.files(packageFiles).withPropertyName("packageFiles")
       // node_modules is a symlink farm pointing into a content-addressed store; snapshotting it is
       // slow and tells Gradle nothing useful. A stamp file gives the task a real output instead.
       task.outputs.file(stampFile).withPropertyName("stampFile")
