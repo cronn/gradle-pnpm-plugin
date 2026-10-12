@@ -31,10 +31,11 @@ internal object PnpmDistribution {
    * provisioned. That gate has to sit in the value of the file collection rather than in the
    * `onlyIf` of the task: the configuration cache resolves every file collection reachable from the
    * task graph while it stores the entry, which happens before any `onlyIf` is consulted. A build
-   * that reuses a pnpm from the `PATH` therefore resolves nothing, and needs no repository.
+   * that points at an existing pnpm through `pnpm.executable` therefore resolves nothing, and needs
+   * no repository.
    *
    * The dependency itself is declared unconditionally, so that lock state and verification metadata
-   * do not depend on what happens to be installed on the machine writing them.
+   * do not depend on whether the build writing them configures an executable.
    */
   fun register(
     target: Project,

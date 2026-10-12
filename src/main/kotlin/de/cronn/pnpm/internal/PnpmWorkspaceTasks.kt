@@ -38,15 +38,13 @@ internal class PnpmWorkspaceTasks(
   private fun registerSetupTask() {
     target.tasks.register(SETUP_TASK_NAME, PnpmSetupTask::class.java) { task ->
       task.group = taskGroup
-      task.description = "Install pnpm unless a matching pnpm is already available"
+      task.description = "Install pnpm unless a pnpm executable is configured"
       task.distributionArchive.from(distributionArchive)
       task.executableName.set(resolution.executableName)
       task.installDirectory.set(extension.installDirectory)
       task.required.set(resolution.usesManagedPnpm)
-      // The spec must not capture anything: the configuration cache serializes it. Reading the
-      // decision from the task also keeps the PATH probe out of every build that does not run
-      // pnpmSetup.
-      task.onlyIf("no matching pnpm is already available") { candidate ->
+      // The spec must not capture anything: the configuration cache serializes it.
+      task.onlyIf("no pnpm executable is configured") { candidate ->
         (candidate as PnpmSetupTask).required.get()
       }
     }

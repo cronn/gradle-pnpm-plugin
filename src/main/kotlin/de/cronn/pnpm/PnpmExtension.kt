@@ -24,8 +24,8 @@ import org.gradle.api.provider.Property
 public abstract class PnpmExtension {
 
   /**
-   * The pnpm version to download when neither [executable] is set nor a pnpm is found on the
-   * `PATH`. Defaults to the version pinned by the plugin.
+   * The pnpm version to download unless [executable] is set. Defaults to the version pinned by the
+   * plugin.
    */
   public abstract val version: Property<String>
 
@@ -35,9 +35,7 @@ public abstract class PnpmExtension {
    */
   public abstract val installDirectory: DirectoryProperty
 
-  /**
-   * The pnpm executable to use. When set, no pnpm is downloaded and the `PATH` is not consulted.
-   */
+  /** The pnpm executable to use. When set, no pnpm is downloaded. */
   public abstract val executable: Property<String>
 
   /**

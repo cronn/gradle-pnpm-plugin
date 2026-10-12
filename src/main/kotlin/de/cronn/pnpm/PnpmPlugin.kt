@@ -2,7 +2,6 @@ package de.cronn.pnpm
 
 import de.cronn.pnpm.internal.PnpmCheckTasks
 import de.cronn.pnpm.internal.PnpmDistribution
-import de.cronn.pnpm.internal.PnpmOnPathSource
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository
 import de.cronn.pnpm.internal.PnpmResolution
@@ -233,14 +232,24 @@ public class PnpmPlugin : Plugin<Project> {
     extension: PnpmExtension,
     platform: PnpmPlatform,
   ): PnpmResolution {
-    val pnpmOnPath = pnpmOnPath(target, platform)
+    // Locals, so that the providers capture neither the project nor this plugin.
+    val logger = target.logger
+    val projectPath = target.path
+    val configured =
+      extension.executable.map { path ->
+        logger.debug("pnpm: {} uses the configured pnpm executable {}", projectPath, path)
+        path
+      }
     val managed =
-      extension.installDirectory.file(platform.executableName).map { it.asFile.absolutePath }
-    val executable = extension.executable.orElse(pnpmOnPath).orElse(managed)
+      extension.installDirectory.file(platform.executableName).map { file ->
+        val path = file.asFile.absolutePath
+        logger.debug("pnpm: {} uses the pnpm provisioned by the plugin at {}", projectPath, path)
+        path
+      }
 
     return PnpmResolution(
-      executable = executable,
-      usesManagedPnpm = executable.zip(managed) { resolved, path -> resolved == path },
+      executable = configured.orElse(managed),
+      usesManagedPnpm = extension.executable.map { false }.orElse(true),
       executableName = platform.executableName,
     )
   }
@@ -327,17 +336,6 @@ public class PnpmPlugin : Plugin<Project> {
     return present
   }
 
-  /**
-   * The pnpm on the `PATH`, whatever version it is. Its version is deliberately not checked: the
-   * pinned [PnpmExtension.version] only decides which pnpm is downloaded when there is none.
-   */
-  private fun pnpmOnPath(target: Project, platform: PnpmPlatform): Provider<String> =
-    target.providers.of(PnpmOnPathSource::class.java) { spec ->
-      spec.parameters.searchPath.set(target.providers.environmentVariable(PATH_VARIABLE))
-      spec.parameters.osName.set(platform.osName)
-      spec.parameters.osArch.set(platform.osArch)
-    }
-
   private fun requireSupportedGradleVersion() {
     if (GradleVersion.current() < MINIMUM_GRADLE_VERSION) {
       throw GradleException(
@@ -358,7 +356,6 @@ public class PnpmPlugin : Plugin<Project> {
     const val TASK_GROUP: String = "pnpm"
     const val RESOLUTION_NAME: String = "pnpmResolution"
     const val DEFAULT_PNPM_VERSION: String = "11.28.5"
-    private const val PATH_VARIABLE = "PATH"
     private const val LOCKFILE = "pnpm-lock.yaml"
     private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")
   }
