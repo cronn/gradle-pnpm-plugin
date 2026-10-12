@@ -5,17 +5,16 @@ Gradle build.
 
 The pnpm version is pinned once, in the `devEngines` field of `package.json`, and pnpm itself
 enforces that pin. The plugin's job is just to make sure *some* pnpm is available to run in the
-first place — on a fresh checkout or CI runner, nothing is installed yet. It bootstraps a pnpm from
-`PATH` or from a pnpm distribution it resolves like any other dependency, then lets pnpm's own
-version resolution, lockfile checks and checksum verification take it from there. It also installs
-the workspace dependencies and exposes pre-defined tasks for common tools like TypeScript, Prettier
-and ESLint.
+first place — on a fresh checkout or CI runner, nothing is installed yet. It bootstraps pnpm from a
+pnpm distribution it resolves like any other dependency, then lets pnpm's own version resolution,
+lockfile checks and checksum verification take it from there. It also installs the workspace
+dependencies and exposes pre-defined tasks for common tools like TypeScript, Prettier and ESLint.
 
 Requirements: **Gradle 9.0+**, **Java 21+** and **pnpm 11+**. Linux, macOS and Windows on x64 and
 arm64.
 
-Earlier pnpm versions are not supported and can lead to errors, e.g. when one is found on the
-`PATH`.
+Earlier pnpm versions are not supported and can lead to errors, e.g. when one is configured as
+`executable`.
 
 ## Setup
 
@@ -106,11 +105,11 @@ commit `gradle/verification-metadata.xml`. Dependency locking applies to the
 
 ```kotlin
 pnpm {
-  // The version downloaded when no pnpm is on the PATH
+  // The version downloaded unless an executable is set
   version = "11.28.5"
   // Defaults to <workspaceRootDir>/.gradle/pnpm/<version>
   installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.28.5")
-  // Skips provisioning entirely; the PATH is not consulted
+  // Skips provisioning entirely
   executable = "/usr/local/bin/pnpm"
   // Where the pnpm distribution is downloaded from
   repositoryUrl = "https://github.com/pnpm/pnpm/releases/download/"

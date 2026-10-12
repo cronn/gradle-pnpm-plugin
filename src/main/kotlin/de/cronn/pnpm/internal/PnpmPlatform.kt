@@ -1,6 +1,5 @@
 package de.cronn.pnpm.internal
 
-import java.io.File
 import java.util.Locale
 import org.gradle.api.GradleException
 
@@ -34,26 +33,6 @@ internal class PnpmPlatform(val osName: String, val osArch: String) {
 
   /** Name of the pnpm executable inside an extracted pnpm release archive. */
   val executableName: String = if (isWindows) "pnpm.exe" else "pnpm"
-
-  /** All file names a pnpm installation may use on this platform when looked up on the `PATH`. */
-  val executableNamesOnPath: List<String> =
-    if (isWindows) listOf("pnpm.exe", "pnpm.cmd", "pnpm.bat") else listOf("pnpm")
-
-  /**
-   * Looks up a pnpm executable on the given `PATH`. Scanning the `PATH` instead of simply executing
-   * `pnpm` avoids an unrecoverable process start failure when pnpm is not installed at all.
-   *
-   * On Windows the executable bit is meaningless -- almost every readable file reports
-   * `canExecute() == true` -- so only the well-known file names are used to identify a candidate.
-   */
-  fun findPnpmOnPath(path: String?): File? =
-    path
-      .orEmpty()
-      .split(File.pathSeparator)
-      .filter { it.isNotBlank() }
-      .asSequence()
-      .flatMap { directory -> executableNamesOnPath.asSequence().map { File(directory, it) } }
-      .firstOrNull { it.isFile && (isWindows || it.canExecute()) }
 
   private enum class Family(val identifier: String) {
     LINUX("linux"),

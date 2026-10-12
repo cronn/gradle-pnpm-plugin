@@ -32,7 +32,8 @@ public abstract class PnpmTask : DefaultTask() {
   @get:Inject protected abstract val projectLayout: ProjectLayout
 
   /**
-   * The pnpm executable to invoke. Defaults to the `pnpm` found on the `PATH`.
+   * The pnpm executable to invoke. Defaults to [de.cronn.pnpm.PnpmExtension.executable], or to the
+   * pnpm the plugin provisions when that is not set.
    *
    * This is deliberately not an input: it is an absolute, machine-specific path, which would make
    * task outputs unshareable between machines. [pnpmVersion] captures the part of the pnpm identity

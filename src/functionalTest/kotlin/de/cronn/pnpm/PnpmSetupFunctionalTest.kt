@@ -63,23 +63,19 @@ class PnpmSetupFunctionalTest {
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
   }
 
-  /**
-   * A pnpm on the `PATH` is reused whatever version it is: the pinned version only decides which
-   * pnpm is downloaded when there is none.
-   */
+  /** A pnpm on the `PATH` is never used: the build always runs the pnpm it provisions. */
   @Test
-  fun `is skipped when a pnpm of another version is on the path`() {
+  fun `ignores a pnpm on the path`() {
     val onPath = PnpmStub(File(projectDirectory, "pnpm-on-path"))
     val executable = onPath.install()
     val fixture = workspaceWithLocalRelease()
 
-    val result = fixture.runner("pnpmInstall", pnpmOnPath = executable).build()
+    val runner = fixture.runner("pnpmInstall", pnpmOnPath = executable)
+    // On Windows the extracted `pnpm.exe` is no real executable, so pnpmInstall fails to start it.
+    val result = if (PnpmStub.isWindows) runner.buildAndFail() else runner.build()
 
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
-    assertThat(onPath.invocations())
-      .singleElement()
-      .extracting { it.arguments }
-      .isEqualTo(listOf("install"))
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(onPath.invocations()).isEmpty()
   }
 
   /**
