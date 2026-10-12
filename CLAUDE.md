@@ -20,5 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## GitHub Pull Requests
 
 - Self-assign the PR
-- Provide a short summary of the introduced changes. Focus on essential changes.
+- Provide a short paragraph summarizing the introduced changes
+- For features, include only changes affecting consumers of the plugin
+- Provide a simple example demonstrating the changes
 - Reference related GitHub issues closed by the changes
