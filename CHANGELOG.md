@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.0
+
+### Minor Changes
+
+- 9ce9e4f: **Breaking Change**: pnpm is no longer resolved from `PATH`. The plugin always provisions the pinned pnpm version unless
+  `pnpm.executable` is set.
+
+### Patch Changes
+
+- a7e9fd2: `pnpmInstall` now also runs again when the `package.json` of a package changes.
+- cedcb8e: Bump default pnpm version to v11.28.5
+
 ## 0.9.0
 
 ### Minor Changes
