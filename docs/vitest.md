@@ -56,6 +56,6 @@ import de.cronn.pnpm.task.VitestTask
 
 tasks.register<VitestTask>("vitestUnitTest") {
   includes = listOf("src/**/*.ts")
-  arguments = listOf("run", "src")
+  arguments = listOf("src")
 }
 ```

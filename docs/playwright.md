@@ -76,7 +76,7 @@ import de.cronn.pnpm.task.PlaywrightTestTask
 
 tasks.register<PlaywrightTestTask>("playwrightSmokeTest") {
   includes = listOf("tests/smoke/**/*.ts")
-  arguments = listOf("test", "tests/smoke")
+  arguments = listOf("tests/smoke")
 }
 
 tasks.register<PlaywrightTestTask>("playwrightIntegrationTest") {

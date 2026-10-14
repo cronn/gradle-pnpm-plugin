@@ -680,7 +680,7 @@ class PnpmPluginTest {
 
     val test = project.tasks.getByName("playwrightTest") as PlaywrightTestTask
     assertThat(test.command.get()).isEqualTo("playwright")
-    assertThat(test.arguments.get()).containsExactly("test")
+    assertThat(test.arguments.get()).isEmpty()
 
     val install = project.tasks.getByName("playwrightInstall") as PlaywrightInstallTask
     assertThat(install.command.get()).isEqualTo("playwright")
@@ -727,7 +727,7 @@ class PnpmPluginTest {
     val test = project.tasks.getByName("playwrightTest") as PlaywrightTestTask
     assertThat(test.includes.get()).containsExactlyElementsOf(PlaywrightTasks.INCLUDES)
     // No pattern reaches Playwright: it picks the tests itself.
-    assertThat(test.arguments.get()).containsExactly("test")
+    assertThat(test.arguments.get()).isEmpty()
   }
 
   @Test
@@ -755,8 +755,8 @@ class PnpmPluginTest {
 
     val test = project.tasks.getByName("vitestTest") as VitestTask
     assertThat(test.command.get()).isEqualTo("vitest")
-    // `run`, because a bare `vitest` would start the watch mode.
-    assertThat(test.arguments.get()).containsExactly("run")
+    // The `run` subcommand is part of the task type, so no argument is needed for it.
+    assertThat(test.arguments.get()).isEmpty()
   }
 
   @Test
@@ -805,7 +805,7 @@ class PnpmPluginTest {
     assertThat(test.includes.get()).containsExactlyElementsOf(VitestTasks.INCLUDES)
     assertThat(test.excludes.get()).containsExactlyElementsOf(VitestTasks.EXCLUDES)
     // No pattern reaches Vitest: it picks the tests itself.
-    assertThat(test.arguments.get()).containsExactly("run")
+    assertThat(test.arguments.get()).isEmpty()
   }
 
   // Auto-discovery of the tools
