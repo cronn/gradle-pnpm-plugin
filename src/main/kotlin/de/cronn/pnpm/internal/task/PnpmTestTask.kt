@@ -47,6 +47,11 @@ public abstract class PnpmTestTask : PnpmSourceTask() {
   /** The arguments of the test command, which subclasses assemble from their own configuration. */
   protected abstract fun testArguments(): List<String>
 
+  /**
+   * Unlike for a [PnpmCheckTask], the [configFile] follows the [arguments]: those start with the
+   * subcommand of the test tool -- `vitest run`, `playwright test` -- and the config option is one
+   * of that subcommand rather than of the tool itself.
+   */
   final override fun commandArguments(): List<String> =
-    arguments.get() + testArguments() + extraArguments.get()
+    arguments.get() + configArguments() + testArguments() + extraArguments.get()
 }

@@ -21,11 +21,17 @@ vitest {
 ## Pre-defined tasks
 
 The tasks are registered only when the project contains a `vitest.config.*` or a `vite.config.*`
-file.
+file, which is passed to Vitest as `--config`.
 
 |     Task     | Default arguments | Contributes to  |
 |--------------|-------------------|-----------------|
 | `vitestTest` | none              | `check`, `test` |
+
+Set `configFile` on a task to pass another configuration file:
+
+```kotlin
+tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
+```
 
 ## Command line options
 

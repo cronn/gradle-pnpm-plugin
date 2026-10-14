@@ -20,7 +20,13 @@ class PnpmPackageFunctionalTest {
     assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     val prettier = fixture.stub.invocations().single { it.arguments.contains("prettier") }
     assertThat(prettier.arguments)
-      .containsExactly("exec", "prettier", *PRETTIER_PATTERNS, "--check")
+      .containsExactly(
+        "exec",
+        "prettier",
+        *fixture.configArguments("frontend/prettier.config.ts"),
+        *PRETTIER_PATTERNS,
+        "--check",
+      )
     assertThat(File(prettier.workingDirectory).canonicalFile)
       .isEqualTo(fixture.directory("frontend").canonicalFile)
   }
@@ -45,9 +51,21 @@ class PnpmPackageFunctionalTest {
     assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(fixture.stub.invocations().map { it.arguments })
       .contains(
-        listOf("exec", "tsc"),
-        listOf("exec", "prettier", *PRETTIER_PATTERNS, "--check"),
-        listOf("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0"),
+        listOf("exec", "tsc", *fixture.configArguments("frontend/tsconfig.json", "--project")),
+        listOf(
+          "exec",
+          "prettier",
+          *fixture.configArguments("frontend/prettier.config.ts"),
+          *PRETTIER_PATTERNS,
+          "--check",
+        ),
+        listOf(
+          "exec",
+          "eslint",
+          *fixture.configArguments("frontend/eslint.config.ts"),
+          *ESLINT_PATTERNS,
+          "--max-warnings=0",
+        ),
       )
   }
 
@@ -64,8 +82,22 @@ class PnpmPackageFunctionalTest {
         .filter { it.contains("--fix") || it.contains("--write") }
     assertThat(fixes)
       .containsExactly(
-        listOf("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0", "--fix"),
-        listOf("exec", "prettier", *PRETTIER_PATTERNS, "--write", "--list-different"),
+        listOf(
+          "exec",
+          "eslint",
+          *fixture.configArguments("frontend/eslint.config.ts"),
+          *ESLINT_PATTERNS,
+          "--max-warnings=0",
+          "--fix",
+        ),
+        listOf(
+          "exec",
+          "prettier",
+          *fixture.configArguments("frontend/prettier.config.ts"),
+          *PRETTIER_PATTERNS,
+          "--write",
+          "--list-different",
+        ),
       )
   }
 
@@ -103,7 +135,16 @@ class PnpmPackageFunctionalTest {
     fixture.runner(":frontend:prettierCheck").build()
 
     assertThat(fixture.stub.invocations().map { it.arguments })
-      .contains(listOf("exec", "prettier", *PRETTIER_PATTERNS, "--check", "--cache"))
+      .contains(
+        listOf(
+          "exec",
+          "prettier",
+          *fixture.configArguments("frontend/prettier.config.ts"),
+          *PRETTIER_PATTERNS,
+          "--check",
+          "--cache",
+        )
+      )
   }
 
   @Test
@@ -223,6 +264,7 @@ class PnpmPackageFunctionalTest {
         listOf(
           "exec",
           "eslint",
+          *fixture.configArguments("frontend/eslint.config.ts"),
           "--no-error-on-unmatched-pattern",
           "sources/**/*.ts",
           "--max-warnings=0",
@@ -245,7 +287,13 @@ class PnpmPackageFunctionalTest {
     // Passing every source file would overrun the command line length limit of Windows.
     val eslint = fixture.stub.invocations().single { it.arguments.contains("eslint") }
     assertThat(eslint.arguments)
-      .containsExactly("exec", "eslint", *ESLINT_PATTERNS, "--max-warnings=0")
+      .containsExactly(
+        "exec",
+        "eslint",
+        *fixture.configArguments("frontend/eslint.config.ts"),
+        *ESLINT_PATTERNS,
+        "--max-warnings=0",
+      )
   }
 
   @Test
@@ -360,6 +408,7 @@ class PnpmPackageFunctionalTest {
         listOf(
           "exec",
           "prettier",
+          *fixture.configArguments("frontend/prettier.config.ts"),
           "--no-error-on-unmatched-pattern",
           "docs/**/*.md",
           "--check",
@@ -387,9 +436,42 @@ class PnpmPackageFunctionalTest {
     // task of its type, so a task a build script registers still runs with them.
     assertThat(result.task(":frontend:eslintCheck")).isNull()
     assertThat(result.task(":frontend:eslintSources")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    // Without a config file of its own, the tool is left to search for one itself.
     assertThat(fixture.stub.invocations().map { it.arguments }).anySatisfy { arguments ->
-      assertThat(arguments).contains("eslint")
+      assertThat(arguments).contains("eslint").doesNotContain("--config")
     }
+  }
+
+  @Test
+  fun `hands the tool the config file configured on the task`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          tasks.compileTypescript { configFile = file("tsconfig.build.json") }
+          """
+      )
+    fixture.write("frontend/tsconfig.build.json", "{}")
+
+    fixture.runner(":frontend:compileTypescript").build()
+
+    val tsc = fixture.stub.invocations().single { it.arguments.contains("tsc") }
+    assertThat(tsc.arguments)
+      .containsExactly(
+        "exec",
+        "tsc",
+        *fixture.configArguments("frontend/tsconfig.build.json", "--project"),
+      )
+
+    // The configured file replaces the detected one as an input as well.
+    fixture.write("frontend/tsconfig.json", """{ "compilerOptions": {} }""")
+    val second = fixture.runner(":frontend:compileTypescript").build()
+    assertThat(second.task(":frontend:compileTypescript")?.outcome)
+      .isEqualTo(TaskOutcome.UP_TO_DATE)
+
+    fixture.write("frontend/tsconfig.build.json", """{ "compilerOptions": {} }""")
+    val third = fixture.runner(":frontend:compileTypescript").build()
+    assertThat(third.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -527,7 +609,12 @@ class PnpmPackageFunctionalTest {
     assertThat(result.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     // tsc reads its file set from the tsconfig.json, so the patterns stay Gradle inputs only.
     val tsc = fixture.stub.invocations().single { it.arguments.contains("tsc") }
-    assertThat(tsc.arguments).containsExactly("exec", "tsc")
+    assertThat(tsc.arguments)
+      .containsExactly(
+        "exec",
+        "tsc",
+        *fixture.configArguments("frontend/tsconfig.json", "--project"),
+      )
 
     // The excluded directory is no input, so changing a file in it leaves the task up to date.
     fixture.write("frontend/src/generated/api.ts", "export const api = 2")

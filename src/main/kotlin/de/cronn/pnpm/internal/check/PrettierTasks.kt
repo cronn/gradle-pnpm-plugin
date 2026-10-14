@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal.check
 
 import de.cronn.pnpm.PrettierExtension
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.PrettierTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -11,6 +12,7 @@ internal class PrettierTasks(target: Project, extension: PrettierExtension) :
     target,
     extension,
     PrettierTask::class.java,
+    ToolConfigFiles.PRETTIER,
     INCLUDES,
   ) {
 

@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal.check
 
 import de.cronn.pnpm.EslintExtension
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.EslintTask
 import de.cronn.pnpm.task.TypescriptTask
 import org.gradle.api.Project
@@ -12,6 +13,7 @@ internal class EslintTasks(target: Project, extension: EslintExtension) :
     target,
     extension,
     EslintTask::class.java,
+    ToolConfigFiles.ESLINT,
     INCLUDES,
   ) {
 

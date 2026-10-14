@@ -16,7 +16,8 @@ prettier {
 ## Pre-defined tasks
 
 The tasks are registered only when the project contains a
-`prettier.config.*` or `.prettierrc*` file.
+`prettier.config.*` or `.prettierrc*` file, which is passed to Prettier as `--config`. Configuration
+files in subdirectories are therefore not applied.
 
 |      Task       | Default arguments  | Contributes to |
 |-----------------|--------------------|----------------|
