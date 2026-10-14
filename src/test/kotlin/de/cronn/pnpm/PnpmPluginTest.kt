@@ -18,7 +18,7 @@ import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmTask
 import de.cronn.pnpm.task.PrettierTask
 import de.cronn.pnpm.task.TypescriptTask
-import de.cronn.pnpm.task.VitestTask
+import de.cronn.pnpm.task.VitestRunTask
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -746,14 +746,14 @@ class PnpmPluginTest {
   fun `registers the vitest task as the type of its tool`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
-    assertThat(project.tasks.getByName("vitestTest")).isInstanceOf(VitestTask::class.java)
+    assertThat(project.tasks.getByName("vitestTest")).isInstanceOf(VitestRunTask::class.java)
   }
 
   @Test
   fun `runs the suite through the vitest binary, in the run mode`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.command.get()).isEqualTo("vitest")
     // The `run` subcommand is part of the task type, so no argument is needed for it.
     assertThat(test.arguments.get()).isEmpty()
@@ -772,7 +772,7 @@ class PnpmPluginTest {
   fun `skips the unit suite when its sources are unchanged`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.alwaysRerun.get()).isFalse()
     assertThat(test.rerunRequested()).isFalse()
   }
@@ -781,7 +781,7 @@ class PnpmPluginTest {
   fun `writes the coverage report below the build directory`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.reportDirectory.get().asFile)
       .isEqualTo(File(project.layout.buildDirectory.get().asFile, "reports/vitest"))
   }
@@ -793,7 +793,7 @@ class PnpmPluginTest {
 
     vitest(project).reportDirectory.set(report)
 
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.reportDirectory.get().asFile).isEqualTo(report)
   }
 
@@ -801,7 +801,7 @@ class PnpmPluginTest {
   fun `takes the vitest patterns as the inputs of the suite only`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.includes.get()).containsExactlyElementsOf(VitestTasks.INCLUDES)
     assertThat(test.excludes.get()).containsExactlyElementsOf(VitestTasks.EXCLUDES)
     // No pattern reaches Vitest: it picks the tests itself.
@@ -857,7 +857,7 @@ class PnpmPluginTest {
     val project = childProject("frontend", root, packageDirectory)
 
     assertThat(project.tasks.names).contains("vitestTest")
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.configFile.get().asFile).isEqualTo(config)
   }
 
@@ -871,7 +871,7 @@ class PnpmPluginTest {
     config.writeText("export default {}\n")
     val project = childProject("frontend", root, packageDirectory)
 
-    val test = project.tasks.getByName("vitestTest") as VitestTask
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.configFile.get().asFile).isEqualTo(config)
   }
 
@@ -892,7 +892,7 @@ class PnpmPluginTest {
   @Test
   fun `leaves the config file of a tool without one unset`(@TempDir directory: File) {
     val project = packageProject(directory)
-    val task = project.tasks.register("vitestCustom", VitestTask::class.java).get()
+    val task = project.tasks.register("vitestCustom", VitestRunTask::class.java).get()
 
     assertThat(task.configFile.isPresent).isFalse()
   }

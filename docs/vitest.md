@@ -35,7 +35,7 @@ tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
 
 ## Command line options
 
-`VitestTask` accepts the following command line options:
+`VitestRunTask` accepts the following command line options:
 
 |    Option    | Passed to Vitest as |
 |--------------|---------------------|
@@ -49,12 +49,12 @@ tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
 
 ## Custom tasks
 
-Use `de.cronn.pnpm.task.VitestTask` to register custom Vitest tasks:
+Use `de.cronn.pnpm.task.VitestRunTask` to register custom Vitest tasks:
 
 ```kotlin
-import de.cronn.pnpm.task.VitestTask
+import de.cronn.pnpm.task.VitestRunTask
 
-tasks.register<VitestTask>("vitestUnitTest") {
+tasks.register<VitestRunTask>("vitestUnitTest") {
   includes = listOf("src/**/*.ts")
   arguments = listOf("src")
 }
