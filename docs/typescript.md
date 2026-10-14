@@ -15,11 +15,18 @@ typescript {
 
 ## Pre-defined tasks
 
-The tasks are registered only when the project contains a `tsconfig.json` file.
+The tasks are registered only when the project contains a `tsconfig.json` file, which is passed to
+`tsc` as `--project`.
 
 |        Task         | Default arguments | Contributes to |
 |---------------------|-------------------|----------------|
 | `compileTypescript` | none              | `check`        |
+
+Set `configFile` on a task to pass another configuration file:
+
+```kotlin
+tasks.compileTypescript { configFile = file("tsconfig.build.json") }
+```
 
 ## Custom tasks
 

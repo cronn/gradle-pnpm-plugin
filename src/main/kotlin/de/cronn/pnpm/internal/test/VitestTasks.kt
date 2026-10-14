@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.VitestExtension
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.VitestTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -17,6 +18,7 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
     target,
     vitest,
     VitestTask::class.java,
+    ToolConfigFiles.VITEST,
     INCLUDES,
     EXCLUDES,
     contributesToTest = true,

@@ -16,12 +16,18 @@ eslint {
 ## Pre-defined tasks
 
 The tasks are registered only when the project contains an `eslint.config.*`
-file.
+file, which is passed to ESLint as `--config`.
 
 |     Task      | Default arguments  | Contributes to |
 |---------------|--------------------|----------------|
 | `eslintCheck` | `--max-warnings=0` | `check`        |
 | `eslintFix`   | `--max-warnings=0` | `fix`          |
+
+Set `configFile` on a task to pass another configuration file:
+
+```kotlin
+tasks.eslintCheck { configFile = file("eslint.strict.config.ts") }
+```
 
 ## Custom tasks
 

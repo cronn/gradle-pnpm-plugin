@@ -34,7 +34,8 @@ class PnpmVitestFunctionalTest {
     assertThat(fixture.stub.invocations().map { it.arguments })
       .containsSequence(
         listOf("install"),
-        listOf("exec", "vitest", "run") + coverageArgument(fixture),
+        listOf("exec", "vitest", "run", *fixture.configArguments("frontend/vitest.config.ts")) +
+          coverageArgument(fixture),
       )
   }
 
@@ -160,7 +161,8 @@ class PnpmVitestFunctionalTest {
     val result = fixture.runner(":frontend:vitestTest").build()
 
     assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(vitestTest(fixture).arguments).startsWith("exec", "vitest", "run")
+    assertThat(vitestTest(fixture).arguments)
+      .startsWith("exec", "vitest", "run", *fixture.configArguments("frontend/vite.config.ts"))
   }
 
   @Test

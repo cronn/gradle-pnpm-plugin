@@ -1,16 +1,17 @@
 package de.cronn.pnpm.internal.task
 
 import de.cronn.pnpm.internal.SourcePatterns
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.PnpmExecTask
 import javax.inject.Inject
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
@@ -48,24 +49,21 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:Input public abstract val excludes: ListProperty<String>
 
   /**
-   * The candidate config file names of the tool, owned by the concrete task type -- the same way it
-   * owns the [command][de.cronn.pnpm.task.PnpmExecTask.command] it runs. Not a Gradle input itself;
-   * only [configFiles], the subset of these that exist in the project, is.
+   * The configuration file the tool is handed, through the [configFileOption] of the tool. Defaults
+   * to the configuration file the plugin detected in the project, so that the file deciding whether
+   * the tasks of a tool are registered is the one the tool runs with. Unset, the tool searches for
+   * its configuration on its own.
    */
-  @get:Internal protected abstract val configFileNames: List<String>
+  @get:InputFile
+  @get:Optional
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  public abstract val configFile: RegularFileProperty
 
   /**
-   * The configuration file(s) of the tool, if present, which decide what it does even though they
-   * are not always passed as one of its [sourceFiles]. Whichever of [configFileNames] exist in the
-   * project -- an implementation detail of the tool, not something a build script configures.
+   * The command line option the tool takes its configuration file with, owned by the concrete task
+   * type -- the same way it owns the [command][de.cronn.pnpm.task.PnpmExecTask.command] it runs.
    */
-  @get:InputFiles
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  public val configFiles: FileCollection
-    get() =
-      objects
-        .fileCollection()
-        .from(ToolConfigFiles.existingFiles(projectLayout.projectDirectory, configFileNames))
+  @get:Internal protected abstract val configFileOption: String
 
   /**
    * The files [includes] and [excludes] resolve to, which are the inputs deciding when this task is
@@ -107,5 +105,10 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
     SourcePatterns.requireResolvable(excludes.get(), "excludes", path)
   }
 
-  override fun commandArguments(): List<String> = arguments.get() + extraArguments.get()
+  /** The [configFile] as command line arguments of the tool, or none when it is unset. */
+  protected fun configArguments(): List<String> =
+    configFile.orNull?.let { listOf(configFileOption, it.asFile.absolutePath) }.orEmpty()
+
+  override fun commandArguments(): List<String> =
+    configArguments() + arguments.get() + extraArguments.get()
 }

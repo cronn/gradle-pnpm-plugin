@@ -1,5 +1,6 @@
 package de.cronn.pnpm.internal.test
 
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.extension.PnpmTestExtension
 import de.cronn.pnpm.internal.task.PnpmTestTask
 import org.gradle.api.Project
@@ -18,6 +19,7 @@ internal abstract class TestTasks<T : PnpmTestTask>(
   protected val target: Project,
   val extension: PnpmTestExtension,
   private val taskType: Class<T>,
+  private val configFileNames: List<String>,
   private val defaultIncludes: List<String>,
   private val defaultExcludes: List<String>,
   private val contributesToTest: Boolean = false,
@@ -41,6 +43,14 @@ internal abstract class TestTasks<T : PnpmTestTask>(
       defaultExcludes,
     )
 
+    val configFile = ToolConfigFiles.firstExisting(target.layout.projectDirectory, configFileNames)
+    target.logger.debug(
+      "Configuration file of {} in {}: {}",
+      taskType.simpleName,
+      target.path,
+      configFile?.asFile ?: "none of ${configFileNames.joinToString(", ")}",
+    )
+
     // Locals, so that the task configuration captures the extension properties instead of this
     // registrar, which holds the Project and would fail to serialize into the configuration cache.
     val includes = extension.includes
@@ -52,6 +62,7 @@ internal abstract class TestTasks<T : PnpmTestTask>(
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.includes.convention(includes)
       task.excludes.convention(excludes)
+      configFile?.let { task.configFile.convention(it) }
       task.extraArguments.convention(extraArguments)
       task.alwaysRerun.convention(alwaysRerun)
       // The spec must not capture anything: the configuration cache serializes it, so the decision

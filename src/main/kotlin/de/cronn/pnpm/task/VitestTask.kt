@@ -1,6 +1,5 @@
 package de.cronn.pnpm.task
 
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmTestTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -28,7 +27,7 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class VitestTask : PnpmTestTask() {
 
-  override val configFileNames: List<String> = ToolConfigFiles.VITEST
+  override val configFileOption: String = "--config"
 
   /** Directory the coverage report goes to, passed as `--coverage.reportsDirectory`. */
   @get:OutputDirectory public abstract val reportDirectory: DirectoryProperty

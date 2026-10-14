@@ -36,6 +36,12 @@ The tasks are registered only when the project contains a
 |------------------|-------------------|----------------|
 | `playwrightTest` | none              | none           |
 
+Set `configFile` on a task to pass another configuration file:
+
+```kotlin
+tasks.playwrightTest { configFile = file("playwright.ci.config.ts") }
+```
+
 ## Command line options
 
 `PlaywrightTestTask` accepts the following command line options:
@@ -70,7 +76,7 @@ import de.cronn.pnpm.task.PlaywrightTestTask
 
 tasks.register<PlaywrightTestTask>("playwrightSmokeTest") {
   includes = listOf("tests/smoke/**/*.ts")
-  arguments = listOf("tests/smoke")
+  arguments = listOf("test", "tests/smoke")
 }
 
 tasks.register<PlaywrightTestTask>("playwrightIntegrationTest") {

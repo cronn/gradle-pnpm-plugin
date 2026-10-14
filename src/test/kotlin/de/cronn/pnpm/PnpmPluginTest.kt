@@ -858,7 +858,43 @@ class PnpmPluginTest {
 
     assertThat(project.tasks.names).contains("vitestTest")
     val test = project.tasks.getByName("vitestTest") as VitestTask
-    assertThat(test.configFiles.files).containsExactly(config)
+    assertThat(test.configFile.get().asFile).isEqualTo(config)
+  }
+
+  @Test
+  fun `prefers the vitest config over the vite config`(@TempDir directory: File) {
+    val root = workspaceProject(directory)
+    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
+    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
+    File(packageDirectory, "vite.config.ts").writeText("export default {}\n")
+    val config = File(packageDirectory, "vitest.config.mts")
+    config.writeText("export default {}\n")
+    val project = childProject("frontend", root, packageDirectory)
+
+    val test = project.tasks.getByName("vitestTest") as VitestTask
+    assertThat(test.configFile.get().asFile).isEqualTo(config)
+  }
+
+  @Test
+  fun `picks the prettier config prettier itself would pick`(@TempDir directory: File) {
+    val root = workspaceProject(directory)
+    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
+    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
+    writeCheckConfigs(packageDirectory)
+    val config = File(packageDirectory, ".prettierrc.json")
+    config.writeText("{}")
+    val project = childProject("frontend", root, packageDirectory)
+
+    val check = project.tasks.getByName("prettierCheck") as PrettierTask
+    assertThat(check.configFile.get().asFile).isEqualTo(config)
+  }
+
+  @Test
+  fun `leaves the config file of a tool without one unset`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    val task = project.tasks.register("vitestCustom", VitestTask::class.java).get()
+
+    assertThat(task.configFile.isPresent).isFalse()
   }
 
   @Test
