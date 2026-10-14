@@ -44,10 +44,13 @@ public abstract class VitestTask : PnpmTestTask() {
   @get:Option(option = "update", description = "Rewrites the expected snapshots")
   public abstract val update: Property<Boolean>
 
+  /**
+   * `run`, because a bare `vitest` starts the watch mode, which would never hand the build back.
+   */
+  override val subcommand: String = "run"
+
   init {
     command.convention("vitest")
-    // `run`, because a bare `vitest` starts the watch mode, which would never hand the build back.
-    arguments.convention(listOf("run"))
   }
 
   override fun testArguments(): List<String> = buildList {

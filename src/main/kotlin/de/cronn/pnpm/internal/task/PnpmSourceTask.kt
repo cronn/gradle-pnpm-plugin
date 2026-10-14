@@ -66,6 +66,12 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:Internal protected abstract val configFileOption: String
 
   /**
+   * The subcommand of the tool this task runs, such as the `run` of `vitest run`, owned by the
+   * concrete task type. `null` for a tool that is invoked without one.
+   */
+  @get:Internal protected open val subcommand: String? = null
+
+  /**
    * The files [includes] and [excludes] resolve to, which are the inputs deciding when this task is
    * up to date. Derived from the patterns; configure those instead.
    *
@@ -105,10 +111,14 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
     SourcePatterns.requireResolvable(excludes.get(), "excludes", path)
   }
 
-  /** The [configFile] as command line arguments of the tool, or none when it is unset. */
-  protected fun configArguments(): List<String> =
-    configFile.orNull?.let { listOf(configFileOption, it.asFile.absolutePath) }.orEmpty()
+  /**
+   * The [subcommand] followed by the [configFile], which lead the command line of every tool: where
+   * a tool has a subcommand, the config option is one of that subcommand.
+   */
+  protected fun leadingArguments(): List<String> =
+    listOfNotNull(subcommand) +
+      configFile.orNull?.let { listOf(configFileOption, it.asFile.absolutePath) }.orEmpty()
 
   override fun commandArguments(): List<String> =
-    configArguments() + arguments.get() + extraArguments.get()
+    leadingArguments() + arguments.get() + extraArguments.get()
 }

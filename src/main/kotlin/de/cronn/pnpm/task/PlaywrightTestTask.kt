@@ -122,9 +122,10 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
   @get:Option(option = "repeat-each", description = "Runs each test this many times")
   public abstract val repeatEach: Property<String>
 
+  override val subcommand: String = "test"
+
   init {
     command.convention("playwright")
-    arguments.convention(listOf("test"))
     // An interactive run is driven by a person, so it is handed the standard input of the build.
     forwardStandardInput.convention(
       ui.orElse(false).zip(headed.orElse(false)) { ui, headed -> ui || headed }
