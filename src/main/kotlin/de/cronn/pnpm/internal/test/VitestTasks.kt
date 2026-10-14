@@ -1,7 +1,8 @@
 package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.VitestExtension
-import de.cronn.pnpm.task.VitestTask
+import de.cronn.pnpm.internal.ToolConfigFiles
+import de.cronn.pnpm.task.VitestRunTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
@@ -13,16 +14,17 @@ import org.gradle.api.tasks.TaskProvider
  * no reason to keep it out of `build`.
  */
 internal class VitestTasks(target: Project, private val vitest: VitestExtension) :
-  TestTasks<VitestTask>(
+  TestTasks<VitestRunTask>(
     target,
     vitest,
-    VitestTask::class.java,
+    VitestRunTask::class.java,
+    ToolConfigFiles.VITEST,
     INCLUDES,
     EXCLUDES,
     contributesToTest = true,
   ) {
 
-  override fun configureTask(task: VitestTask) {
+  override fun configureTask(task: VitestRunTask) {
     val buildDirectory = target.layout.buildDirectory
 
     task.reportDirectory.convention(
@@ -30,7 +32,7 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
     )
   }
 
-  override fun registerTestTask(): TaskProvider<VitestTask> =
+  override fun registerTestTask(): TaskProvider<VitestRunTask> =
     registerTestTask(name = TEST_TASK_NAME, description = "Runs the Vitest test suite")
 
   companion object {

@@ -1,6 +1,5 @@
 package de.cronn.pnpm.task
 
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmTestTask
 import de.cronn.pnpm.internal.test.TraceMode
 import org.gradle.api.file.DirectoryProperty
@@ -32,7 +31,7 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class PlaywrightTestTask : PnpmTestTask() {
 
-  override val configFileNames: List<String> = ToolConfigFiles.PLAYWRIGHT
+  override val configFileOption: String = "--config"
 
   /** Directory of the artifacts of a failing test, passed as `--output`. */
   @get:OutputDirectory public abstract val outputDirectory: DirectoryProperty
@@ -123,9 +122,10 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
   @get:Option(option = "repeat-each", description = "Runs each test this many times")
   public abstract val repeatEach: Property<String>
 
+  override val subcommand: String = "test"
+
   init {
     command.convention("playwright")
-    arguments.convention(listOf("test"))
     // An interactive run is driven by a person, so it is handed the standard input of the build.
     forwardStandardInput.convention(
       ui.orElse(false).zip(headed.orElse(false)) { ui, headed -> ui || headed }

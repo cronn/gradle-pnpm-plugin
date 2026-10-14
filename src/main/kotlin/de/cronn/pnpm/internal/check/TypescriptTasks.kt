@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal.check
 
 import de.cronn.pnpm.TypescriptExtension
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.TypescriptTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -11,6 +12,7 @@ internal class TypescriptTasks(target: Project, extension: TypescriptExtension) 
     target,
     extension,
     TypescriptTask::class.java,
+    ToolConfigFiles.TYPESCRIPT,
     INCLUDES,
   ) {
 

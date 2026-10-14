@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.PlaywrightExtension
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PlaywrightInstallTask
 import de.cronn.pnpm.task.PlaywrightTestTask
 import org.gradle.api.Project
@@ -12,6 +13,7 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
     target,
     playwright,
     PlaywrightTestTask::class.java,
+    ToolConfigFiles.PLAYWRIGHT,
     INCLUDES,
     EXCLUDES,
   ) {

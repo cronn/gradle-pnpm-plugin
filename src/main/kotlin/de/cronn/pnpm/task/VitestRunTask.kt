@@ -1,6 +1,5 @@
 package de.cronn.pnpm.task
 
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PnpmTestTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -26,9 +25,9 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs a Vitest suite; its effects are not fully described by declared outputs."
 )
-public abstract class VitestTask : PnpmTestTask() {
+public abstract class VitestRunTask : PnpmTestTask() {
 
-  override val configFileNames: List<String> = ToolConfigFiles.VITEST
+  override val configFileOption: String = "--config"
 
   /** Directory the coverage report goes to, passed as `--coverage.reportsDirectory`. */
   @get:OutputDirectory public abstract val reportDirectory: DirectoryProperty
@@ -45,10 +44,13 @@ public abstract class VitestTask : PnpmTestTask() {
   @get:Option(option = "update", description = "Rewrites the expected snapshots")
   public abstract val update: Property<Boolean>
 
+  /**
+   * `run`, because a bare `vitest` starts the watch mode, which would never hand the build back.
+   */
+  override val subcommand: String = "run"
+
   init {
     command.convention("vitest")
-    // `run`, because a bare `vitest` starts the watch mode, which would never hand the build back.
-    arguments.convention(listOf("run"))
   }
 
   override fun testArguments(): List<String> = buildList {

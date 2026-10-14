@@ -99,9 +99,14 @@ class PnpmPlaywrightFunctionalTest {
       .runner(":e2e:playwrightTest", "--filter=tests/login.spec.ts:42", "--filter=tests/other")
       .build()
 
-    // Playwright takes its filters as operands, so they follow the test command directly.
+    // Playwright takes its filters as operands, so they follow the test command and its config.
     assertThat(playwrightTest(fixture).arguments)
-      .containsSequence("test", "tests/login.spec.ts:42", "tests/other")
+      .containsSequence(
+        "test",
+        *fixture.configArguments("e2e/playwright.config.ts"),
+        "tests/login.spec.ts:42",
+        "tests/other",
+      )
   }
 
   @Test

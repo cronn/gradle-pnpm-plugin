@@ -12,44 +12,53 @@ import org.gradle.api.file.RegularFile
  * the plugin to a project -- a workspace root in particular -- does not add tasks for tools that
  * project does not use. Only the existence of the files is checked, which Gradle tracks as a
  * configuration cache input, so creating or deleting one invalidates the cached configuration.
+ *
+ * Each list is in the order the tool itself searches for its configuration, so that the file the
+ * plugin hands the tool is the one the tool would have picked on its own.
  */
 internal object ToolConfigFiles {
-
-  /** Extensions a JavaScript tool accepts for its flat config file. */
-  private val CONFIG_EXTENSIONS = listOf("js", "mjs", "cjs", "ts", "mts", "cts")
 
   val TYPESCRIPT: List<String> = listOf("tsconfig.json")
 
   /** Only the flat config; the legacy `.eslintrc.*` format is deliberately not detected. */
-  val ESLINT: List<String> = variants("eslint.config")
+  val ESLINT: List<String> = variants("eslint.config", "js", "mjs", "cjs", "ts", "mts", "cts")
 
-  val PLAYWRIGHT: List<String> = variants("playwright.config")
+  val PLAYWRIGHT: List<String> =
+    variants("playwright.config", "ts", "js", "mts", "mjs", "cts", "cjs")
 
   /**
    * A dedicated Vitest configuration, or the Vite one it falls back to: Vitest reads
    * `vite.config.*` when no `vitest.config.*` is there, so a Vite project carrying only the former
    * still runs its suite.
    */
-  val VITEST: List<String> = variants("vitest.config") + variants("vite.config")
+  val VITEST: List<String> =
+    listOf("vitest.config", "vite.config").flatMap { baseName ->
+      variants(baseName, "ts", "mts", "cts", "js", "mjs", "cjs")
+    }
 
+  /**
+   * The JavaScript configurations interleave: Prettier looks for `.prettierrc.js` before
+   * `prettier.config.js`, but for both of those before `.prettierrc.ts`.
+   */
   val PRETTIER: List<String> =
-    variants("prettier.config") +
-      listOf(".prettierrc") +
-      listOf(".prettierrc.json", ".prettierrc.yaml", ".prettierrc.yml") +
-      variants(".prettierrc")
+    listOf(".prettierrc", ".prettierrc.json", ".prettierrc.yml", ".prettierrc.yaml") +
+      listOf("js", "ts", "mjs", "mts", "cjs", "cts").flatMap { extension ->
+        listOf(".prettierrc.$extension", "prettier.config.$extension")
+      }
 
   fun anyPresent(project: Project, fileNames: List<String>): Boolean = fileNames.any {
     File(project.projectDir, it).isFile
   }
 
   /**
-   * The [fileNames] that exist in [projectDirectory], as the task inputs of an autoconfigured tool.
-   * Resolved eagerly, the same as [anyPresent], for the same reason.
+   * The first of [fileNames] that exists in [projectDirectory], which is the one the tool is
+   * handed. Resolved eagerly, the same as [anyPresent], for the same reason.
    */
-  fun existingFiles(projectDirectory: Directory, fileNames: List<String>): List<RegularFile> =
-    fileNames.map { projectDirectory.file(it) }.filter { it.asFile.isFile }
+  fun firstExisting(projectDirectory: Directory, fileNames: List<String>): RegularFile? =
+    fileNames.map { projectDirectory.file(it) }.firstOrNull { it.asFile.isFile }
 
-  private fun variants(baseName: String): List<String> = CONFIG_EXTENSIONS.map { extension ->
-    "$baseName.$extension"
-  }
+  private fun variants(baseName: String, vararg extensions: String): List<String> =
+    extensions.map { extension ->
+      "$baseName.$extension"
+    }
 }

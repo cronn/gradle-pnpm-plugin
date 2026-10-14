@@ -1,5 +1,6 @@
 package de.cronn.pnpm.internal.check
 
+import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.extension.PnpmSourceExtension
 import de.cronn.pnpm.internal.task.PnpmSourceTask
 import org.gradle.api.Project
@@ -17,6 +18,7 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
   protected val target: Project,
   val extension: PnpmSourceExtension,
   private val taskType: Class<T>,
+  private val configFileNames: List<String>,
   private val defaultIncludes: List<String>,
 ) {
 
@@ -39,6 +41,14 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
       defaultIncludes,
     )
 
+    val configFile = ToolConfigFiles.firstExisting(target.layout.projectDirectory, configFileNames)
+    target.logger.debug(
+      "Configuration file of {} in {}: {}",
+      taskType.simpleName,
+      target.path,
+      configFile?.asFile ?: "none of ${configFileNames.joinToString(", ")}",
+    )
+
     // Locals, so that the task configuration captures the extension properties instead of this
     // registrar, which holds the Project and would fail to serialize into the configuration cache.
     val includes = extension.includes
@@ -48,6 +58,7 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.includes.convention(includes)
       task.excludes.convention(excludes)
+      configFile?.let { task.configFile.convention(it) }
       task.extraArguments.convention(extension.extraArguments)
       configureTask(task)
     }

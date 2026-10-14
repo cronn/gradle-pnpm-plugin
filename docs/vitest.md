@@ -21,15 +21,21 @@ vitest {
 ## Pre-defined tasks
 
 The tasks are registered only when the project contains a `vitest.config.*` or a `vite.config.*`
-file.
+file, which is passed to Vitest as `--config`.
 
 |     Task     | Default arguments | Contributes to  |
 |--------------|-------------------|-----------------|
 | `vitestTest` | none              | `check`, `test` |
 
+Set `configFile` on a task to pass another configuration file:
+
+```kotlin
+tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
+```
+
 ## Command line options
 
-`VitestTask` accepts the following command line options:
+`VitestRunTask` accepts the following command line options:
 
 |    Option    | Passed to Vitest as |
 |--------------|---------------------|
@@ -43,13 +49,13 @@ file.
 
 ## Custom tasks
 
-Use `de.cronn.pnpm.task.VitestTask` to register custom Vitest tasks:
+Use `de.cronn.pnpm.task.VitestRunTask` to register custom Vitest tasks:
 
 ```kotlin
-import de.cronn.pnpm.task.VitestTask
+import de.cronn.pnpm.task.VitestRunTask
 
-tasks.register<VitestTask>("vitestUnitTest") {
+tasks.register<VitestRunTask>("vitestUnitTest") {
   includes = listOf("src/**/*.ts")
-  arguments = listOf("run", "src")
+  arguments = listOf("src")
 }
 ```

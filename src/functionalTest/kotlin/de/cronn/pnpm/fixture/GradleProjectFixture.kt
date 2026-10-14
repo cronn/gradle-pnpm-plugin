@@ -313,6 +313,10 @@ class GradleProjectFixture(val rootDirectory: File) {
 
   fun directory(path: String): File = File(rootDirectory, path)
 
+  /** The arguments a tool task hands its tool the config file at [path] with. */
+  fun configArguments(path: String, option: String = "--config"): Array<String> =
+    arrayOf(option, directory(path).canonicalPath)
+
   /**
    * The environment of the test JVM, with every `PATH` entry that holds a pnpm removed and the
    * directory of [pnpmOnPath] put in front, so that a pnpm installed on the machine running the

@@ -44,7 +44,8 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
   ): List<String>
 
   final override fun commandArguments(): List<String> =
-    patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
+    leadingArguments() +
+      patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
       arguments.get() +
       extraArguments.get()
 

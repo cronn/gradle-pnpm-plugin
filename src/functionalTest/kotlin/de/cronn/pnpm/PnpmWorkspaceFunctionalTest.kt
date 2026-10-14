@@ -172,6 +172,7 @@ class PnpmWorkspaceFunctionalTest {
       .containsExactly(
         "exec",
         "prettier",
+        *fixture.configArguments("frontend/app/prettier.config.ts"),
         "--no-error-on-unmatched-pattern",
         "*.ts",
         "src/**/*.ts",

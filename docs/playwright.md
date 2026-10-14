@@ -36,6 +36,12 @@ The tasks are registered only when the project contains a
 |------------------|-------------------|----------------|
 | `playwrightTest` | none              | none           |
 
+Set `configFile` on a task to pass another configuration file:
+
+```kotlin
+tasks.playwrightTest { configFile = file("playwright.ci.config.ts") }
+```
+
 ## Command line options
 
 `PlaywrightTestTask` accepts the following command line options:
