@@ -25,7 +25,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because = "Runs a Vitest suite; its effects are not fully described by declared outputs."
 )
-public abstract class VitestTask : PnpmTestTask() {
+public abstract class VitestRunTask : PnpmTestTask() {
 
   override val configFileOption: String = "--config"
 
