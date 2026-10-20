@@ -28,6 +28,24 @@ Set `configFile` on a task to pass another configuration file:
 tasks.compileTypescript { configFile = file("tsconfig.build.json") }
 ```
 
+## Command line options
+
+`TypescriptTask` accepts the following command line options:
+
+|       Option       | Task property | Passed to `tsc` as |
+|--------------------|---------------|--------------------|
+| `--project=<file>` | `configFile`  | `--project`        |
+| `--build`          | `build`       | `--build`          |
+| `--clean`          | `clean`       | `--clean`          |
+| `--noEmit`         | `noEmit`      | `--noEmit`         |
+| `--outDir=<dir>`   | `outDir`      | `--outDir`         |
+
+```bash
+./gradlew compileTypescript --noEmit
+./gradlew compileTypescript --project=tsconfig.build.json --outDir=dist
+./gradlew compileTypescript --build --clean
+```
+
 ## Custom tasks
 
 Use `de.cronn.pnpm.task.TypescriptTask` to register custom TypeScript tasks:
@@ -36,6 +54,12 @@ Use `de.cronn.pnpm.task.TypescriptTask` to register custom TypeScript tasks:
 import de.cronn.pnpm.task.TypescriptTask
 
 tasks.register<TypescriptTask>("compileTypescriptStrict") {
-  arguments = listOf("--noEmit", "--strict")
+  noEmit = true
+  arguments = listOf("--strict")
+}
+
+tasks.register<TypescriptTask>("buildTypescript") {
+  configFile = file("tsconfig.build.json")
+  outDir = layout.buildDirectory.dir("dist")
 }
 ```
