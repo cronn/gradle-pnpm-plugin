@@ -207,6 +207,6 @@ class PnpmVitestFunctionalTest {
   private fun coverageArgument(fixture: GradleProjectFixture) =
     listOf(
       "--coverage.reportsDirectory=" +
-        fixture.directory("frontend/build/reports/vitest").canonicalFile.absolutePath
+        fixture.directory("frontend/build/reports/vitest").canonicalFile.absolutePath,
     )
 }

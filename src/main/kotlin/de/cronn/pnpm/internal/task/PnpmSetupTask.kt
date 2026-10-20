@@ -22,7 +22,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because =
     "Extracting a pnpm distribution that already sits in the dependency cache is not worth " +
-      "transporting through a build cache."
+      "transporting through a build cache.",
 )
 public abstract class PnpmSetupTask : DefaultTask() {
 
@@ -78,12 +78,12 @@ public abstract class PnpmSetupTask : DefaultTask() {
         throw GradleException(
           "No pnpm distribution archive was resolved. Declare the repository that serves it in " +
             "`settings.gradle.kts`, or point the build at an existing pnpm with " +
-            "`pnpm { executable = ... }`."
+            "`pnpm { executable = ... }`.",
         )
       else ->
         throw GradleException(
           "Expected a single pnpm distribution archive, but resolved " +
-            archives.joinToString(", ") { it.name }
+            archives.joinToString(", ") { it.name },
         )
     }
   }
@@ -130,7 +130,7 @@ public abstract class PnpmSetupTask : DefaultTask() {
         .ifEmpty { "<nothing>" }
     throw GradleException(
       "Expected a pnpm executable named '$name' after extracting ${archive.name}, " +
-        "but the archive contained: $extracted"
+        "but the archive contained: $extracted",
     )
   }
 }

@@ -129,7 +129,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           prettier { extraArguments("--cache") }
-          """
+          """,
       )
 
     fixture.runner(":frontend:prettierCheck").build()
@@ -143,7 +143,7 @@ class PnpmPackageFunctionalTest {
           *PRETTIER_PATTERNS,
           "--check",
           "--cache",
-        )
+        ),
       )
   }
 
@@ -226,7 +226,7 @@ class PnpmPackageFunctionalTest {
             includes("sources/**/*.ts")
             excludes("sources/generated/**")
           }
-          """
+          """,
       )
     fixture.write("frontend/sources/app.ts", "export const app = 1")
     fixture.write("frontend/sources/generated/api.ts", "export const api = 1")
@@ -253,7 +253,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint { includes = listOf("sources/**/*.ts") }
-          """
+          """,
       )
     fixture.write("frontend/sources/app.ts", "export const app = 1")
 
@@ -268,7 +268,7 @@ class PnpmPackageFunctionalTest {
           "--no-error-on-unmatched-pattern",
           "sources/**/*.ts",
           "--max-warnings=0",
-        )
+        ),
       )
 
     // main.ts matches a default pattern, which the configured includes replaced.
@@ -303,7 +303,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint { excludes("src/generated/**") }
-          """
+          """,
       )
     fixture.write("frontend/src/generated/api.ts", "export const api = 1")
 
@@ -322,7 +322,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           prettier { excludes("src/generated/**") }
-          """
+          """,
       )
     fixture.write("frontend/src/generated/api.ts", "export const api = 1")
 
@@ -339,7 +339,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint { includes = listOf("z/**/*.ts", "a/**/*.ts") }
-          """
+          """,
       )
     fixture.write("frontend/z/late.ts", "export const late = 1")
 
@@ -369,7 +369,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint { includes = listOf("sources/**/*.ts") }
-          """
+          """,
       )
 
     val result = fixture.runner(":frontend:eslintCheck").build()
@@ -395,7 +395,7 @@ class PnpmPackageFunctionalTest {
             includes = listOf("docs/**/*.md")
             arguments = listOf("--check")
           }
-          """
+          """,
       )
     fixture.write("frontend/docs/guide.md", "# Guide")
 
@@ -413,7 +413,7 @@ class PnpmPackageFunctionalTest {
           "docs/**/*.md",
           "--check",
           "--cache",
-        )
+        ),
       )
   }
 
@@ -426,7 +426,7 @@ class PnpmPackageFunctionalTest {
           import de.cronn.pnpm.task.EslintTask
 
           tasks.register<EslintTask>("eslintSources")
-          """
+          """,
       )
     fixture.directory("frontend/eslint.config.ts").delete()
 
@@ -449,7 +449,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           tasks.compileTypescript { configFile = file("tsconfig.build.json") }
-          """
+          """,
       )
     fixture.write("frontend/tsconfig.build.json", "{}")
 
@@ -489,7 +489,7 @@ class PnpmPackageFunctionalTest {
           }
 
           tasks.register<PnpmRunTask>("buildFrontend") { script = "build" }
-          """
+          """,
       )
 
     fixture.runner(":frontend:generateApiClients", ":frontend:buildFrontend").build()
@@ -511,7 +511,7 @@ class PnpmPackageFunctionalTest {
             environment.put("PNPM_TEST_TOKEN", "secret")
             environment("PNPM_TEST_MODE", "production")
           }
-          """
+          """,
       )
 
     fixture.runner(":frontend:buildFrontend").build()
@@ -578,7 +578,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           eslint { includes = listOf("src/**/*.{ts,tsx}") }
-          """
+          """,
       )
     fixture.write("frontend/src/main.ts", "export const main = 1")
 
@@ -599,7 +599,7 @@ class PnpmPackageFunctionalTest {
         packageBuildScript =
           """
           typescript { excludes("src/generated/") }
-          """
+          """,
       )
     fixture.write("frontend/src/app.ts", "export const app = 1")
     fixture.write("frontend/src/generated/api.ts", "export const api = 1")

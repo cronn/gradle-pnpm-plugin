@@ -91,7 +91,7 @@ internal object SourcePatterns {
       throw GradleException(
         "The $property pattern \"$pattern\" of $owner is not supported: $unsupported. The patterns " +
           "are the Gradle inputs of the task, and of a tool that is handed them also the command " +
-          "line, so every one of them has to be understood by the Ant matcher of Gradle."
+          "line, so every one of them has to be understood by the Ant matcher of Gradle.",
       )
     }
   }

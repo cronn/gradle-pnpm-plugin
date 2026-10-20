@@ -153,7 +153,7 @@ class GradleProjectFixture(val rootDirectory: File) {
 
           tasks.named<PnpmTask>("pnpmInstall") { ignoreExitValue = false }
           """,
-      )
+      ),
     )
 
     writeSettings(rootProjectName = "workspace", projects = packages)
@@ -307,7 +307,7 @@ class GradleProjectFixture(val rootDirectory: File) {
             // Turn every configuration cache problem into a build failure instead of a warning.
             "-Dorg.gradle.configuration-cache.problems=fail",
             "--stacktrace",
-          )
+          ),
       )
       .forwardOutput()
 
@@ -335,7 +335,7 @@ class GradleProjectFixture(val rootDirectory: File) {
             PNPM_EXECUTABLE_NAMES.any { File(directory, it).isFile }
           }
         (listOfNotNull(pnpmOnPath?.parentFile?.absolutePath) + directories).joinToString(
-          File.pathSeparator
+          File.pathSeparator,
         )
       }
     }

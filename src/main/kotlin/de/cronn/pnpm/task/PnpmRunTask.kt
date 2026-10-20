@@ -7,7 +7,7 @@ import org.gradle.work.DisableCachingByDefault
 /** Runs `pnpm run <script>`, which executes a script declared in a `package.json`. */
 @DisableCachingByDefault(
   because =
-    "Runs an arbitrary package.json script; its effects are not fully described by declared outputs."
+    "Runs an arbitrary package.json script; its effects are not fully described by declared outputs.",
 )
 public abstract class PnpmRunTask : PnpmTask() {
 

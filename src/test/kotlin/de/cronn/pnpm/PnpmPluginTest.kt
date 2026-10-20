@@ -60,7 +60,7 @@ class PnpmPluginTest {
 
     assertThat(task.environment.get())
       .containsExactlyInAnyOrderEntriesOf(
-        mapOf("NODE_OPTIONS" to "--max-old-space-size=4096", "CI" to "true")
+        mapOf("NODE_OPTIONS" to "--max-old-space-size=4096", "CI" to "true"),
       )
   }
 
@@ -158,7 +158,7 @@ class PnpmPluginTest {
 
   @Test
   fun `derives the install directory and the distribution from the default version`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = workspaceProject(directory)
 
@@ -169,7 +169,7 @@ class PnpmPluginTest {
 
   @Test
   fun `derives the install directory and the distribution from a configured version`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = workspaceProject(directory)
     extension(project).version.set(PNPM_VERSION)
@@ -192,7 +192,7 @@ class PnpmPluginTest {
 
   @Test
   fun `declares the distribution configurations only on the workspace root`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = packageProject(directory)
 
@@ -224,7 +224,7 @@ class PnpmPluginTest {
 
   @Test
   fun `uses an explicitly configured executable without downloading pnpm`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = workspaceProject(directory)
     extension(project).executable.set("/opt/pnpm/pnpm")
@@ -264,7 +264,7 @@ class PnpmPluginTest {
 
   @Test
   fun `treats a project without a workspace file as its own workspace root`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     writePackageJson(directory)
     val project = ProjectBuilder.builder().withProjectDir(directory).build()
@@ -315,7 +315,7 @@ class PnpmPluginTest {
 
   @Test
   fun `reports the missing workspace root when a pnpm task of such a project runs`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = ProjectBuilder.builder().withProjectDir(directory).build()
     project.pluginManager.apply(PLUGIN_ID)
@@ -349,7 +349,7 @@ class PnpmPluginTest {
 
   @Test
   fun `a node task is provisioned and installed like any other pnpm task`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = packageProject(directory)
     val entryPoint = File(project.projectDir, "generate.mjs")
@@ -368,7 +368,7 @@ class PnpmPluginTest {
 
   @Test
   fun `does not report a missing workspace root for a real workspace root`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = workspaceProject(directory)
 
@@ -459,7 +459,7 @@ class PnpmPluginTest {
 
   @Test
   fun `overrides the patterns of a single task without affecting its siblings`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = packageProject(directory)
     checkTask(project, "eslintCheck").includes.set(listOf("app/**/*.ts"))
@@ -502,7 +502,7 @@ class PnpmPluginTest {
 
   @Test
   fun `adds a list of patterns when includes and excludes are called with one`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = packageProject(directory)
     File(project.projectDir, "types").mkdirs()
@@ -527,7 +527,7 @@ class PnpmPluginTest {
 
   @Test
   fun `configures a tool task registered by the build script like a predefined one`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = packageProject(directory)
     prettier(project).extraArguments("--cache")
@@ -605,7 +605,7 @@ class PnpmPluginTest {
 
   @Test
   fun `fails over a pattern Gradle cannot resolve wherever it is declared`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     // Configured for Playwright too, because this asserts over a task of each kind.
     val project = playwrightProject(directory, name = "frontend")
@@ -617,7 +617,7 @@ class PnpmPluginTest {
     assertThatThrownBy { sourceNames(sourceTask(project, "compileTypescript")) }
       .isInstanceOf(GradleException::class.java)
       .hasMessageContaining(
-        "The includes pattern \"src/**/*.{ts,tsx}\" of :frontend:compileTypescript"
+        "The includes pattern \"src/**/*.{ts,tsx}\" of :frontend:compileTypescript",
       )
       .hasMessageContaining("brace expansion")
     assertThatThrownBy { sourceNames(sourceTask(project, "playwrightTest")) }
@@ -707,7 +707,7 @@ class PnpmPluginTest {
 
   @Test
   fun `runs the browser install before the suite unless it is switched off`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = playwrightProject(directory)
 
@@ -986,7 +986,7 @@ class PnpmPluginTest {
             "private": true
           }
           """
-            .trimIndent()
+            .trimIndent(),
         )
     }
 

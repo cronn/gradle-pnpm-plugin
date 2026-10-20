@@ -23,7 +23,7 @@ import org.gradle.work.DisableCachingByDefault
  */
 @DisableCachingByDefault(
   because =
-    "Runs an arbitrary pnpm command; its effects are not fully described by declared outputs."
+    "Runs an arbitrary pnpm command; its effects are not fully described by declared outputs.",
 )
 public abstract class PnpmTask : DefaultTask() {
 

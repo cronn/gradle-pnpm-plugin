@@ -27,7 +27,7 @@ internal object TraceMode {
     if (mode in NAMES) return mode
     throw GradleException(
       "The trace mode \"$mode\" of $owner is not one Playwright knows. " +
-        "Use one of: ${NAMES.joinToString()}."
+        "Use one of: ${NAMES.joinToString()}.",
     )
   }
 }

@@ -27,7 +27,7 @@ import org.gradle.work.DisableCachingByDefault
  * the [arguments] of the task, or into the `extraArguments` of the `playwright` extension.
  */
 @DisableCachingByDefault(
-  because = "Runs a Playwright suite; its effects are not fully described by declared outputs."
+  because = "Runs a Playwright suite; its effects are not fully described by declared outputs.",
 )
 public abstract class PlaywrightTestTask : PnpmTestTask() {
 
@@ -128,7 +128,7 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
     command.convention("playwright")
     // An interactive run is driven by a person, so it is handed the standard input of the build.
     forwardStandardInput.convention(
-      ui.orElse(false).zip(headed.orElse(false)) { ui, headed -> ui || headed }
+      ui.orElse(false).zip(headed.orElse(false)) { ui, headed -> ui || headed },
     )
   }
 

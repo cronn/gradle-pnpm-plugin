@@ -32,7 +32,7 @@ class PnpmNodeFunctionalTest {
           """
           nodeOptions = listOf("--enable-source-maps")
           arguments = listOf("--out", "build/generated")
-          """
+          """,
       )
 
     fixture.runner(":frontend:generate").build()

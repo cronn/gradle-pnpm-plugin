@@ -151,7 +151,7 @@ class PnpmSetupFunctionalTest {
 
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(
-        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName")
+        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName"),
       )
       .content()
       .doesNotContain("decoy")

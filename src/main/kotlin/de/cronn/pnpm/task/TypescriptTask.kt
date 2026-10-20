@@ -13,7 +13,7 @@ import org.gradle.work.DisableCachingByDefault
  * and why this is a plain [PnpmSourceTask].
  */
 @DisableCachingByDefault(
-  because = "Runs tsc; its effects are not fully described by declared outputs."
+  because = "Runs tsc; its effects are not fully described by declared outputs.",
 )
 public abstract class TypescriptTask : PnpmSourceTask() {
 

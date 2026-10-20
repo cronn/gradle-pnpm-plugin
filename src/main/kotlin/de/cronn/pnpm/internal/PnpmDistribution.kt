@@ -60,7 +60,7 @@ internal object PnpmDistribution {
               platform.archiveExtension,
             )
             listOf(dependency(dependencyFactory, pinned, platform))
-          }
+          },
         )
       }
 
