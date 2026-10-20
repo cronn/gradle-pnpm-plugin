@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.11.0
+
+### Minor Changes
+
+- 24bd53a: The configuration file detected for a tool is now passed to its CLI (`--config`, `--project` for `tsc`), so the tool
+  always runs with the file that registered its tasks. Set `configFile` on a task to pass another one.
+
+  **Breaking Change**: The `configFiles` property of the tool tasks is replaced by `configFile`. Prettier no longer applies
+  configuration files from subdirectories.
+
+- ee25775: **Breaking Change**: `VitestTask` is renamed to `VitestRunTask` to make the `vitest run` subcommand explicit. Update
+  custom tasks:
+
+  ```kotlin
+  import de.cronn.pnpm.task.VitestRunTask
+
+  tasks.register<VitestRunTask>("vitestUnitTest")
+  ```
+- 934cc70: **Breaking Change**: The `arguments` of `VitestRunTask` and `PlaywrightTestTask` no longer include the `run` and `test`
+  subcommands, which are now always passed by the tasks themselves. Remove them from custom `arguments`:
+
+  ```kotlin
+  tasks.register<VitestRunTask>("vitestUnitTest") {
+    arguments = listOf("src")
+  }
+  ```
+
 ## 0.10.0
 
 ### Minor Changes
