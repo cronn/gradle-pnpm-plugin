@@ -26,7 +26,7 @@ import org.gradle.work.DisableCachingByDefault
  * [patternArguments], because the command line syntax for exclusions differs between the tools.
  */
 @DisableCachingByDefault(
-  because = "Runs an arbitrary Node tool; its effects are not fully described by declared outputs."
+  because = "Runs an arbitrary Node tool; its effects are not fully described by declared outputs.",
 )
 public abstract class PnpmCheckTask : PnpmSourceTask() {
 

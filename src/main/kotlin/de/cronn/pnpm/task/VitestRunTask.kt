@@ -23,7 +23,7 @@ import org.gradle.work.DisableCachingByDefault
  * [arguments] of the task, or into the `extraArguments` of the `vitest` extension.
  */
 @DisableCachingByDefault(
-  because = "Runs a Vitest suite; its effects are not fully described by declared outputs."
+  because = "Runs a Vitest suite; its effects are not fully described by declared outputs.",
 )
 public abstract class VitestRunTask : PnpmTestTask() {
 

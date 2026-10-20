@@ -20,7 +20,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because =
     "Downloads browsers into a cache outside the project; nothing worth transporting through a " +
-      "build cache."
+      "build cache.",
 )
 public abstract class PlaywrightInstallTask : PnpmExecTask() {
 

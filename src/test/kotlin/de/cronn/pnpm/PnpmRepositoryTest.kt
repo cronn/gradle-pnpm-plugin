@@ -23,7 +23,7 @@ class PnpmRepositoryTest {
 
   @Test
   fun `registers an ivy repository for the pnpm releases on the workspace root`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = evaluated(workspaceProject(directory))
 
@@ -53,7 +53,7 @@ class PnpmRepositoryTest {
   /** A build that declares the repository itself keeps the one it declared. */
   @Test
   fun `registers no repository when the build already declares one under that name`(
-    @TempDir directory: File
+    @TempDir directory: File,
   ) {
     val project = workspaceProject(directory)
     project.repositories.ivy { it.name = PnpmRepository.PNPM_REPOSITORY_NAME }

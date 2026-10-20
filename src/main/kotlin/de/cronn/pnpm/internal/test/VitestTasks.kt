@@ -28,7 +28,7 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
     val buildDirectory = target.layout.buildDirectory
 
     task.reportDirectory.convention(
-      vitest.reportDirectory.orElse(buildDirectory.dir("reports/vitest"))
+      vitest.reportDirectory.orElse(buildDirectory.dir("reports/vitest")),
     )
   }
 

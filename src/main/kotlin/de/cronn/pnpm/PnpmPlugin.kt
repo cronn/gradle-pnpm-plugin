@@ -141,7 +141,7 @@ public class PnpmPlugin : Plugin<Project> {
     extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
 
     extension.installDirectory.convention(
-      extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") }
+      extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") },
     )
   }
 
@@ -165,7 +165,7 @@ public class PnpmPlugin : Plugin<Project> {
         ?: throw GradleException(
           "The directory of ${root.path} contains a ${PnpmWorkspaceLayout.WORKSPACE_FILE}, so it " +
             "is the pnpm workspace root of ${target.path}, but it does not apply the $PLUGIN_ID " +
-            "plugin. Apply id(\"$PLUGIN_ID\") in the build script of ${root.path}."
+            "plugin. Apply id(\"$PLUGIN_ID\") in the build script of ${root.path}.",
         )
 
     target.logger.debug(
@@ -194,7 +194,7 @@ public class PnpmPlugin : Plugin<Project> {
     extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
 
     extension.installDirectory.convention(
-      extension.version.map { version -> projectDirectory.dir(".gradle/pnpm/$version") }
+      extension.version.map { version -> projectDirectory.dir(".gradle/pnpm/$version") },
     )
   }
 
@@ -218,7 +218,7 @@ public class PnpmPlugin : Plugin<Project> {
     val missingWorkspaceRoot =
       target.providers.provider<String> {
         throw GradleException(
-          PnpmWorkspaceLayout.noWorkspaceRootMessage(projectPath, projectDirectory)
+          PnpmWorkspaceLayout.noWorkspaceRootMessage(projectPath, projectDirectory),
         )
       }
 
@@ -340,7 +340,7 @@ public class PnpmPlugin : Plugin<Project> {
     if (GradleVersion.current() < MINIMUM_GRADLE_VERSION) {
       throw GradleException(
         "The $PLUGIN_ID plugin requires Gradle $MINIMUM_GRADLE_VERSION or later, " +
-          "but this build uses ${GradleVersion.current().version}"
+          "but this build uses ${GradleVersion.current().version}",
       )
     }
   }

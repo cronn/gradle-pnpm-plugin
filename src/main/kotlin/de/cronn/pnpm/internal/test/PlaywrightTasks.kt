@@ -48,10 +48,10 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
     val buildDirectory = target.layout.buildDirectory
 
     task.outputDirectory.convention(
-      playwright.outputDirectory.orElse(buildDirectory.dir("playwright/test-results"))
+      playwright.outputDirectory.orElse(buildDirectory.dir("playwright/test-results")),
     )
     task.reportDirectory.convention(
-      playwright.reportDirectory.orElse(buildDirectory.dir("reports/playwright"))
+      playwright.reportDirectory.orElse(buildDirectory.dir("reports/playwright")),
     )
     // The report location becomes something the task declares rather than something the Playwright
     // configuration happens to choose. PLAYWRIGHT_HTML_REPORT is the name Playwright below 1.45

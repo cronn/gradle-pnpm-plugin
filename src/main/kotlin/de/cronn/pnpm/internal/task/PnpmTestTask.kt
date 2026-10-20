@@ -26,7 +26,7 @@ import org.gradle.work.DisableCachingByDefault
  * way they keep `node_modules` out.
  */
 @DisableCachingByDefault(
-  because = "Runs a test suite; its effects are not fully described by declared outputs."
+  because = "Runs a test suite; its effects are not fully described by declared outputs.",
 )
 public abstract class PnpmTestTask : PnpmSourceTask() {
 

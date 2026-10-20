@@ -33,7 +33,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault(
   because =
     "Runs a Node tool over a source set; its effects are not fully described by declared " +
-      "outputs."
+      "outputs.",
 )
 public abstract class PnpmSourceTask : PnpmExecTask() {
 

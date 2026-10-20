@@ -12,7 +12,7 @@ import org.gradle.work.DisableCachingByDefault
  * trailing globstar an Ant pattern can leave out.
  */
 @DisableCachingByDefault(
-  because = "Runs Prettier; its effects are not fully described by declared outputs."
+  because = "Runs Prettier; its effects are not fully described by declared outputs.",
 )
 public abstract class PrettierTask : PnpmCheckTask() {
 

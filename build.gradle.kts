@@ -75,11 +75,11 @@ dependencies {
 val functionalTest: SourceSet = sourceSets.create("functionalTest")
 
 configurations[functionalTest.implementationConfigurationName].extendsFrom(
-  configurations.testImplementation.get()
+  configurations.testImplementation.get(),
 )
 
 configurations[functionalTest.runtimeOnlyConfigurationName].extendsFrom(
-  configurations.testRuntimeOnly.get()
+  configurations.testRuntimeOnly.get(),
 )
 
 dependencies {

@@ -7,7 +7,7 @@ import org.gradle.work.DisableCachingByDefault
 /** Runs `pnpm exec <command>`, which executes a binary provided by a workspace dependency. */
 @DisableCachingByDefault(
   because =
-    "Runs an arbitrary workspace binary; its effects are not fully described by declared outputs."
+    "Runs an arbitrary workspace binary; its effects are not fully described by declared outputs.",
 )
 public abstract class PnpmExecTask : PnpmTask() {
 

@@ -128,7 +128,7 @@ class PnpmPlaywrightFunctionalTest {
           tasks.register<de.cronn.pnpm.task.PlaywrightTestTask>("playwrightIntegrationTest") {
             projects = listOf("integration-chromium", "integration-firefox")
           }
-          """
+          """,
       )
 
     fixture.runner(":e2e:playwrightIntegrationTest").build()
@@ -173,7 +173,7 @@ class PnpmPlaywrightFunctionalTest {
         packageBuildScript =
           """
           playwright { extraArguments("--reporter=json") }
-          """
+          """,
       )
 
     fixture.runner(":e2e:playwrightTest", "--grep=login").build()
@@ -213,7 +213,7 @@ class PnpmPlaywrightFunctionalTest {
         packageBuildScript =
           """
           playwright { alwaysRerun = false }
-          """
+          """,
       )
 
     fixture.runner(":e2e:playwrightTest").build()
@@ -232,7 +232,7 @@ class PnpmPlaywrightFunctionalTest {
         packageBuildScript =
           """
           playwright { alwaysRerun = false }
-          """
+          """,
       )
 
     fixture.runner(":e2e:playwrightTest").build()
@@ -251,7 +251,7 @@ class PnpmPlaywrightFunctionalTest {
         packageBuildScript =
           """
           playwright { alwaysRerun = false }
-          """
+          """,
       )
 
     fixture.runner(":e2e:playwrightTest").build()
@@ -286,7 +286,7 @@ class PnpmPlaywrightFunctionalTest {
             browsers = listOf("chromium")
             installSystemDependencies = true
           }
-          """
+          """,
       )
 
     fixture.runner(":e2e:playwrightInstall").build()
@@ -302,7 +302,7 @@ class PnpmPlaywrightFunctionalTest {
         packageBuildScript =
           """
           playwright { installBrowsers = false }
-          """
+          """,
       )
 
     val result = fixture.runner(":e2e:playwrightTest").build()

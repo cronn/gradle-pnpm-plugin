@@ -57,8 +57,8 @@ class PnpmGradleVersionFunctionalTest {
     assertThat(
         fixture.directory(
           ".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/" +
-            if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
-        )
+            if (PnpmStub.isWindows) "pnpm.exe" else "pnpm",
+        ),
       )
       .isFile()
   }

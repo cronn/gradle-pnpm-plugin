@@ -38,7 +38,7 @@ class SourcePatternsTest {
         "a..b/**/*.ts",
         // The Ant matcher reads this as the directory and everything in it, which is the point.
         "src/generated/",
-      ]
+      ],
   )
   fun `accepts a pattern the Ant matcher of Gradle resolves`(pattern: String) {
     assertThat(SourcePatterns.reasonUnresolvable(pattern)).isNull()

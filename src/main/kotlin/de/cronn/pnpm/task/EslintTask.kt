@@ -12,7 +12,7 @@ import org.gradle.work.DisableCachingByDefault
  * unlike the Ant patterns of Gradle, which anchor it to the project directory.
  */
 @DisableCachingByDefault(
-  because = "Runs ESLint; its effects are not fully described by declared outputs."
+  because = "Runs ESLint; its effects are not fully described by declared outputs.",
 )
 public abstract class EslintTask : PnpmCheckTask() {
 

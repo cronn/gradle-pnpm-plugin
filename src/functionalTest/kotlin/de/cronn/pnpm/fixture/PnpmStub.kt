@@ -126,7 +126,7 @@ class PnpmStub(private val directory: File) {
       echo "failed to record an invocation next to ${recordFile.absolutePath}" 1>&2
       exit 1
       """
-        .trimIndent() + "\n"
+        .trimIndent() + "\n",
     )
     script.setExecutable(true)
     return script
@@ -173,7 +173,7 @@ class PnpmStub(private val directory: File) {
         .trimIndent()
         .lines()
         // cmd.exe needs CRLF to reliably jump between labels in a batch file.
-        .joinToString(separator = "\r\n", postfix = "\r\n")
+        .joinToString(separator = "\r\n", postfix = "\r\n"),
     )
     return script
   }

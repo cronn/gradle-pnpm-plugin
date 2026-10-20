@@ -17,7 +17,7 @@ import org.gradle.work.DisableCachingByDefault
  */
 @DisableCachingByDefault(
   because =
-    "Runs an arbitrary Node program; its effects are not fully described by declared outputs."
+    "Runs an arbitrary Node program; its effects are not fully described by declared outputs.",
 )
 public abstract class NodeTask : PnpmExecTask() {
 
