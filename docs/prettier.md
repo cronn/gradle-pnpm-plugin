@@ -10,6 +10,8 @@ prettier {
   excludes = emptyList()
   // Appended to every Prettier invocation
   extraArguments = emptyList()
+  // Passed to Prettier as `--config` by every task; defaults to the detected configuration file
+  configFile = file("prettier.config.ts")
 }
 ```
 

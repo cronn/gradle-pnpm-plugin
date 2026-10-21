@@ -34,6 +34,20 @@ class TypescriptFunctionalTest {
   }
 
   @Test
+  fun `passes the config file of the extension on to tsc`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript = """typescript { configFile = file("tsconfig.build.json") }""",
+      )
+    fixture.write("frontend/tsconfig.build.json", "{}")
+
+    fixture.runner(":frontend:compileTypescript").build()
+
+    assertThat(tsc(fixture).arguments)
+      .containsExactly("exec", "tsc", *projectArguments(fixture, "frontend/tsconfig.build.json"))
+  }
+
+  @Test
   fun `passes noEmit and outDir on to tsc`() {
     val fixture = workspaceWithFrontend()
 
