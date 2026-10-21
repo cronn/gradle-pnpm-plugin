@@ -10,6 +10,8 @@ playwright {
   excludes = emptyList()
   // Appended to every Playwright invocation
   extraArguments = emptyList()
+  // Passed to Playwright as `--config` by every task; defaults to the detected configuration file
+  configFile = file("playwright.config.ts")
   // Runs the suite on every invocation; set it to false for a suite that really is a function of
   // the files it runs over
   alwaysRerun = true
@@ -36,7 +38,7 @@ The tasks are registered only when the project contains a
 |------------------|-------------------|----------------|
 | `playwrightTest` | none              | none           |
 
-Set `configFile` on a task to pass another configuration file:
+Set `configFile` on a task to pass another configuration file to that task only:
 
 ```kotlin
 tasks.playwrightTest { configFile = file("playwright.ci.config.ts") }

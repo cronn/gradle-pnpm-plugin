@@ -10,6 +10,8 @@ vitest {
   excludes = emptyList()
   // Appended to every Vitest invocation
   extraArguments = emptyList()
+  // Passed to Vitest as `--config` by every task; defaults to the detected configuration file
+  configFile = file("vitest.config.ts")
   // Runs the suite on every invocation; a unit suite is a function of the files it runs over, so
   // this defaults to false
   alwaysRerun = false
@@ -27,7 +29,7 @@ file, which is passed to Vitest as `--config`.
 |--------------|-------------------|-----------------|
 | `vitestTest` | none              | `check`, `test` |
 
-Set `configFile` on a task to pass another configuration file:
+Set `configFile` on a task to pass another configuration file to that task only:
 
 ```kotlin
 tasks.vitestTest { configFile = file("vitest.ci.config.ts") }

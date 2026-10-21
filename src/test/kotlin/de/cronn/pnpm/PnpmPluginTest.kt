@@ -890,6 +890,44 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `defaults the config file of a tool extension to the detected one`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    assertThat(typescript(project).configFile.get().asFile).isEqualTo(project.file("tsconfig.json"))
+    assertThat(eslint(project).configFile.get().asFile).isEqualTo(project.file("eslint.config.ts"))
+    assertThat(vitest(project).configFile.isPresent).isFalse()
+  }
+
+  @Test
+  fun `takes the config file of a tool extension over to every task of the tool`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    val config = project.file("tsconfig.build.json")
+    val own = project.file("tsconfig.strict.json")
+    typescript(project).configFile.set(config)
+    vitest(project).configFile.set(project.file("vitest.ci.config.ts"))
+    val custom = project.tasks.register("compileTypescriptCustom", TypescriptTask::class.java).get()
+    val strict = project.tasks.register("compileTypescriptStrict", TypescriptTask::class.java).get()
+    strict.configFile.set(own)
+    val vitestCustom = project.tasks.register("vitestCustom", VitestRunTask::class.java).get()
+
+    assertThat(sourceTask(project, "compileTypescript").configFile.get().asFile).isEqualTo(config)
+    assertThat(custom.configFile.get().asFile).isEqualTo(config)
+    assertThat(strict.configFile.get().asFile).isEqualTo(own)
+    assertThat(vitestCustom.configFile.get().asFile).isEqualTo(project.file("vitest.ci.config.ts"))
+  }
+
+  @Test
+  fun `registers no tasks for a config file set on the extension alone`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    vitest(project).configFile.set(project.file("vitest.ci.config.ts"))
+
+    assertThat(project.tasks.names).doesNotContain("vitestTest")
+  }
+
+  @Test
   fun `leaves the config file of a tool without one unset`(@TempDir directory: File) {
     val project = packageProject(directory)
     val task = project.tasks.register("vitestCustom", VitestRunTask::class.java).get()

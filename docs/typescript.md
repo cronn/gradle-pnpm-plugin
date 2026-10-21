@@ -10,6 +10,8 @@ typescript {
   excludes = emptyList()
   // Appended to every `tsc` invocation
   extraArguments = emptyList()
+  // Passed to `tsc` as `--project` by every task; defaults to the detected configuration file
+  configFile = file("tsconfig.json")
   // Defaults of every `TypescriptTask`, unset by default
   build = true
   noEmit = true
@@ -32,7 +34,7 @@ The tasks are registered only when the project contains a `tsconfig.json` file, 
 |---------------------|-------------------|----------------|
 | `compileTypescript` | none              | `check`        |
 
-Set `configFile` on a task to pass another configuration file:
+Set `configFile` on a task to pass another configuration file to that task only:
 
 ```kotlin
 tasks.compileTypescript { configFile = file("tsconfig.build.json") }
