@@ -81,6 +81,37 @@ class PrettierFunctionalTest {
   }
 
   @Test
+  fun `passes the options of the extension on to prettier unless the task overrides them`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          prettier {
+            ignoreUnknown = true
+            noErrorOnUnmatchedPattern = false
+            cache = true
+            cacheLocation = layout.buildDirectory.file("prettier-cache")
+          }
+          tasks.prettierCheck { cache = false }
+          """,
+      )
+
+    fixture.runner(":frontend:prettierCheck").build()
+
+    assertThat(prettier(fixture).arguments)
+      .containsExactly(
+        "exec",
+        "prettier",
+        *fixture.configArguments("frontend/prettier.config.ts"),
+        "--check",
+        "--ignore-unknown",
+        "--cache-location",
+        fixture.directory("frontend/build/prettier-cache").canonicalPath,
+        *SOURCE_PATTERNS,
+      )
+  }
+
+  @Test
   fun `reuses the configuration cache on a second run with options`() {
     val fixture = workspaceWithFrontend()
 

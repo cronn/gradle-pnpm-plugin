@@ -968,6 +968,42 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `takes the prettier options of the extension over to every prettier task`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    prettier(project).ignoreUnknown.set(true)
+    prettier(project).noErrorOnUnmatchedPattern.set(false)
+    prettier(project).cache.set(true)
+    prettier(project).cacheLocation.set(project.layout.buildDirectory.file("prettier-cache"))
+    val custom = project.tasks.register("prettierCustom", PrettierTask::class.java).get()
+    custom.cache.set(false)
+
+    val predefined = prettierTask(project, "prettierCheck")
+    assertThat(predefined.ignoreUnknown.get()).isTrue()
+    assertThat(predefined.noErrorOnUnmatchedPattern.get()).isFalse()
+    assertThat(predefined.cache.get()).isTrue()
+    assertThat(predefined.cacheLocation.get().asFile)
+      .isEqualTo(project.layout.buildDirectory.file("prettier-cache").get().asFile)
+    assertThat(custom.ignoreUnknown.get()).isTrue()
+    assertThat(custom.cache.get()).isFalse()
+  }
+
+  @Test
+  fun `passes no-error-on-unmatched-pattern and leaves the other prettier options unset by default`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+
+    val task = prettierTask(project, "prettierFix")
+    assertThat(task.noErrorOnUnmatchedPattern.get()).isTrue()
+    assertThat(task.check.isPresent).isFalse()
+    assertThat(task.ignoreUnknown.isPresent).isFalse()
+    assertThat(task.cache.isPresent).isFalse()
+    assertThat(task.cacheLocation.isPresent).isFalse()
+  }
+
+  @Test
   fun `does not enable eslint for a legacy eslintrc config`(@TempDir directory: File) {
     val root = workspaceProject(directory)
     val packageDirectory = File(directory, "frontend").apply { mkdirs() }

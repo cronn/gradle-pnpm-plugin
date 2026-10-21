@@ -287,6 +287,9 @@ public class PnpmPlugin : Plugin<Project> {
     // A unit suite, by contrast, really is a function of the files it runs over -- and it takes
     // part in `check`, so skipping it on an unchanged source tree is worth having.
     vitest.alwaysRerun.convention(false)
+    // A pattern of the plugin rather than of the project easily matches nothing, which must not
+    // fail the task.
+    prettier.noErrorOnUnmatchedPattern.convention(true)
 
     PnpmCheckTasks(target, typescript, prettier, eslint)
       .register(

@@ -12,7 +12,18 @@ prettier {
   extraArguments = emptyList()
   // Passed to Prettier as `--config` by every task; defaults to the detected configuration file
   configFile = file("prettier.config.ts")
+  // Defaults of every `PrettierTask`; `noErrorOnUnmatchedPattern` is `true`, the others are unset
+  ignoreUnknown = true
+  noErrorOnUnmatchedPattern = true
+  cache = true
+  cacheLocation = layout.buildDirectory.file("prettier-cache")
 }
+```
+
+A task overrides these defaults with its own value:
+
+```kotlin
+tasks.prettierFix { cache = false }
 ```
 
 ## Pre-defined tasks
@@ -25,9 +36,6 @@ files in subdirectories are therefore not applied.
 |-----------------|-------------------------------|----------------|
 | `prettierCheck` | `--check`                     | `check`        |
 | `prettierFix`   | `--write`, `--list-different` | `fix`          |
-
-Every `PrettierTask` passes `--no-error-on-unmatched-pattern` unless `noErrorOnUnmatchedPattern` is
-set to `false`.
 
 ## Command line options
 
