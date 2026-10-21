@@ -7,21 +7,20 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /** The Prettier tasks of a pnpm package. */
-internal class PrettierTasks(target: Project, extension: PrettierExtension) :
+internal class PrettierTasks(target: Project, private val prettier: PrettierExtension) :
   CheckTasks<PrettierTask>(
     target,
-    extension,
+    prettier,
     PrettierTask::class.java,
     ToolConfigFiles.PRETTIER,
     INCLUDES,
   ) {
 
-  /**
-   * A pattern of the plugin rather than of the project easily matches nothing, which must not fail
-   * the task.
-   */
   override fun configureTask(task: PrettierTask) {
-    task.noErrorOnUnmatchedPattern.convention(true)
+    task.ignoreUnknown.convention(prettier.ignoreUnknown)
+    task.noErrorOnUnmatchedPattern.convention(prettier.noErrorOnUnmatchedPattern)
+    task.cache.convention(prettier.cache)
+    task.cacheLocation.convention(prettier.cacheLocation)
   }
 
   override fun registerCheckTask(): TaskProvider<PrettierTask> =
