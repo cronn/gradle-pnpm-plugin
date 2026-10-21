@@ -10,7 +10,17 @@ typescript {
   excludes = emptyList()
   // Appended to every `tsc` invocation
   extraArguments = emptyList()
+  // Defaults of every `TypescriptTask`, unset by default
+  build = true
+  noEmit = true
+  outDir = layout.buildDirectory.dir("typescript")
 }
+```
+
+A task overrides these defaults with its own value:
+
+```kotlin
+tasks.compileTypescript { noEmit = false }
 ```
 
 ## Pre-defined tasks
