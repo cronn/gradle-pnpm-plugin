@@ -88,6 +88,32 @@ class TypescriptFunctionalTest {
   }
 
   @Test
+  fun `passes the options of the extension on to tsc unless the task overrides them`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          typescript {
+            noEmit = true
+            outDir = layout.buildDirectory.dir("tsc")
+          }
+          tasks.compileTypescript { noEmit = false }
+          """,
+      )
+
+    fixture.runner(":frontend:compileTypescript").build()
+
+    assertThat(tsc(fixture).arguments)
+      .containsExactly(
+        "exec",
+        "tsc",
+        *projectArguments(fixture, "frontend/tsconfig.json"),
+        "--outDir",
+        fixture.directory("frontend/build/tsc").canonicalPath,
+      )
+  }
+
+  @Test
   fun `reuses the configuration cache on a second run with options`() {
     val fixture = workspaceWithFrontend()
 

@@ -951,6 +951,36 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `takes the typescript options of the extension over to every typescript task`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    typescript(project).build.set(true)
+    typescript(project).noEmit.set(true)
+    typescript(project).outDir.set(project.layout.buildDirectory.dir("tsc"))
+    val custom = project.tasks.register("compileTypescriptCustom", TypescriptTask::class.java).get()
+    custom.noEmit.set(false)
+
+    val predefined = project.tasks.getByName("compileTypescript") as TypescriptTask
+    assertThat(predefined.build.get()).isTrue()
+    assertThat(predefined.noEmit.get()).isTrue()
+    assertThat(predefined.outDir.get().asFile)
+      .isEqualTo(project.layout.buildDirectory.dir("tsc").get().asFile)
+    assertThat(custom.build.get()).isTrue()
+    assertThat(custom.noEmit.get()).isFalse()
+  }
+
+  @Test
+  fun `leaves the typescript options unset by default`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    val task = project.tasks.getByName("compileTypescript") as TypescriptTask
+    assertThat(task.build.isPresent).isFalse()
+    assertThat(task.noEmit.isPresent).isFalse()
+    assertThat(task.outDir.isPresent).isFalse()
+  }
+
+  @Test
   fun `does not enable eslint for a legacy eslintrc config`(@TempDir directory: File) {
     val root = workspaceProject(directory)
     val packageDirectory = File(directory, "frontend").apply { mkdirs() }

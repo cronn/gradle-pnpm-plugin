@@ -7,14 +7,20 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /** The TypeScript tasks of a pnpm package. */
-internal class TypescriptTasks(target: Project, extension: TypescriptExtension) :
+internal class TypescriptTasks(target: Project, private val typescript: TypescriptExtension) :
   CheckTasks<TypescriptTask>(
     target,
-    extension,
+    typescript,
     TypescriptTask::class.java,
     ToolConfigFiles.TYPESCRIPT,
     INCLUDES,
   ) {
+
+  override fun configureTask(task: TypescriptTask) {
+    task.build.convention(typescript.build)
+    task.noEmit.convention(typescript.noEmit)
+    task.outDir.convention(typescript.outDir)
+  }
 
   override fun registerCheckTask(): TaskProvider<TypescriptTask> =
     registerTask(
