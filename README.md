@@ -147,9 +147,10 @@ A workspace root also is a workspace package.
 
 Workspace packages use the tasks provided by
 Gradle's [Base Plugin](https://docs.gradle.org/current/userguide/base_plugin.html). The tasks of a
-supported tool are registered exactly when the project contains a configuration file for it. Tools
-contribute to the aggregate tasks and provide custom tasks with sensible defaults which should
-require little to no configuration for most projects.
+supported tool are registered exactly when the project contains a configuration file for it. Setting
+`configFile` on the extension or a task of a tool only changes the file passed to the tool, not
+whether its tasks are registered. Tools contribute to the aggregate tasks and provide custom tasks
+with sensible defaults which should require little to no configuration for most projects.
 
 ### Aggregate and lifecycle tasks
 

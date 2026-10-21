@@ -1,5 +1,6 @@
 package de.cronn.pnpm.internal.extension
 
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 
 /**
@@ -27,6 +28,15 @@ public abstract class PnpmSourceExtension {
 
   /** Ant-style patterns excluded from this tool's inputs. */
   public abstract val excludes: ListProperty<String>
+
+  /**
+   * The configuration file every task of this tool hands the tool, unless the task sets its own.
+   * Defaults to the configuration file detected in the project.
+   *
+   * Only changes the file the tool runs with: whether the predefined tasks are registered is still
+   * decided by the detected file.
+   */
+  public abstract val configFile: RegularFileProperty
 
   /** Additional command line arguments appended to this tool's invocations. */
   public abstract val extraArguments: ListProperty<String>

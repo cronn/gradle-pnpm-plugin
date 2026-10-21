@@ -49,16 +49,19 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
       configFile?.asFile ?: "none of ${configFileNames.joinToString(", ")}",
     )
 
+    configFile?.let { extension.configFile.convention(it) }
+
     // Locals, so that the task configuration captures the extension properties instead of this
     // registrar, which holds the Project and would fail to serialize into the configuration cache.
     val includes = extension.includes
     val excludes = extension.excludes
+    val extensionConfigFile = extension.configFile
 
     target.tasks.withType(taskType).configureEach { task ->
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
       task.includes.convention(includes)
       task.excludes.convention(excludes)
-      configFile?.let { task.configFile.convention(it) }
+      task.configFile.convention(extensionConfigFile)
       task.extraArguments.convention(extension.extraArguments)
       configureTask(task)
     }
