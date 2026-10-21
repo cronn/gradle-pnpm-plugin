@@ -43,8 +43,15 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
     excludes: List<String>,
   ): List<String>
 
+  /**
+   * The options of the tool this task sets through properties of its own, which come after the
+   * [leadingArguments] and before the patterns. Empty for a tool that has no such properties.
+   */
+  protected open fun optionArguments(): List<String> = emptyList()
+
   final override fun commandArguments(): List<String> =
     leadingArguments() +
+      optionArguments() +
       patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
       arguments.get() +
       extraArguments.get()
