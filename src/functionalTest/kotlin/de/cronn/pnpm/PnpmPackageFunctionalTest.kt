@@ -24,8 +24,8 @@ class PnpmPackageFunctionalTest {
         "exec",
         "prettier",
         *fixture.configArguments("frontend/prettier.config.ts"),
-        *PRETTIER_PATTERNS,
         "--check",
+        *PRETTIER_PATTERNS,
       )
     assertThat(File(prettier.workingDirectory).canonicalFile)
       .isEqualTo(fixture.directory("frontend").canonicalFile)
@@ -56,8 +56,8 @@ class PnpmPackageFunctionalTest {
           "exec",
           "prettier",
           *fixture.configArguments("frontend/prettier.config.ts"),
-          *PRETTIER_PATTERNS,
           "--check",
+          *PRETTIER_PATTERNS,
         ),
         listOf(
           "exec",
@@ -94,9 +94,9 @@ class PnpmPackageFunctionalTest {
           "exec",
           "prettier",
           *fixture.configArguments("frontend/prettier.config.ts"),
-          *PRETTIER_PATTERNS,
           "--write",
           "--list-different",
+          *PRETTIER_PATTERNS,
         ),
       )
   }
@@ -140,8 +140,8 @@ class PnpmPackageFunctionalTest {
           "exec",
           "prettier",
           *fixture.configArguments("frontend/prettier.config.ts"),
-          *PRETTIER_PATTERNS,
           "--check",
+          *PRETTIER_PATTERNS,
           "--cache",
         ),
       )
@@ -393,7 +393,7 @@ class PnpmPackageFunctionalTest {
 
           tasks.register<PrettierTask>("prettierDocs") {
             includes = listOf("docs/**/*.md")
-            arguments = listOf("--check")
+            check = true
           }
           """,
       )
@@ -409,9 +409,9 @@ class PnpmPackageFunctionalTest {
           "exec",
           "prettier",
           *fixture.configArguments("frontend/prettier.config.ts"),
+          "--check",
           "--no-error-on-unmatched-pattern",
           "docs/**/*.md",
-          "--check",
           "--cache",
         ),
       )

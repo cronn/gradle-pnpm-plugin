@@ -471,9 +471,11 @@ class PnpmPluginTest {
     assertThat(execTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
     assertThat(execTask(project, "compileTypescript").arguments.get()).isEmpty()
     assertThat(checkTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
-    assertThat(checkTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
-    assertThat(checkTask(project, "prettierFix").arguments.get())
-      .containsExactly("--write", "--list-different")
+    assertThat(checkTask(project, "prettierCheck").arguments.get()).isEmpty()
+    assertThat(prettierTask(project, "prettierCheck").check.get()).isTrue()
+    assertThat(checkTask(project, "prettierFix").arguments.get()).isEmpty()
+    assertThat(prettierTask(project, "prettierFix").write.get()).isTrue()
+    assertThat(prettierTask(project, "prettierFix").listDifferent.get()).isTrue()
     assertThat(checkTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
     assertThat(checkTask(project, "eslintCheck").arguments.get())
       .containsExactly("--max-warnings=0")
@@ -586,7 +588,7 @@ class PnpmPluginTest {
     prettier(project).extraArguments("--cache")
     val custom =
       project.tasks.register("prettierDocs", PrettierTask::class.java) { task ->
-        task.arguments.set(listOf("--check"))
+        task.check.set(true)
       }
 
     val task = custom.get()
@@ -1061,6 +1063,9 @@ class PnpmPluginTest {
 
   private fun checkTask(project: Project, name: String): PnpmCheckTask =
     project.tasks.getByName(name) as PnpmCheckTask
+
+  private fun prettierTask(project: Project, name: String): PrettierTask =
+    project.tasks.getByName(name) as PrettierTask
 
   private fun sourceTask(project: Project, name: String): PnpmSourceTask =
     project.tasks.getByName(name) as PnpmSourceTask
