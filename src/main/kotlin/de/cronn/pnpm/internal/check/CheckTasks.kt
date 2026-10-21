@@ -86,10 +86,12 @@ internal abstract class CheckTasks<T : PnpmSourceTask>(
     name: String,
     description: String,
     arguments: List<String> = emptyList(),
+    configure: (T) -> Unit = {},
   ): TaskProvider<T> =
     target.tasks.register(name, taskType) { task ->
       task.description = description
       task.arguments.set(arguments)
+      configure(task)
       // The task declares no output location, which would otherwise keep it from ever being up to
       // date. This holds for a fix task as well: its inputs are fingerprinted before it rewrites
       // them, so it is only skipped when the sources are exactly what it saw on its last run, and
