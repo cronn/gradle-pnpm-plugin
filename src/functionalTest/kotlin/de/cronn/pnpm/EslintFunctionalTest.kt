@@ -96,6 +96,37 @@ class EslintFunctionalTest {
   }
 
   @Test
+  fun `passes the options of the extension on to eslint unless the task overrides them`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          eslint {
+            maxWarnings = 10
+            noErrorOnUnmatchedPattern = false
+            cache = true
+            cacheLocation = layout.buildDirectory.file("eslint-cache")
+          }
+          tasks.eslintCheck { cache = false }
+          """,
+      )
+
+    fixture.runner(":frontend:eslintCheck").build()
+
+    assertThat(eslint(fixture).arguments)
+      .containsExactly(
+        "exec",
+        "eslint",
+        *fixture.configArguments("frontend/eslint.config.ts"),
+        "--max-warnings",
+        "10",
+        "--cache-location",
+        fixture.directory("frontend/build/eslint-cache").canonicalPath,
+        *SOURCE_PATTERNS,
+      )
+  }
+
+  @Test
   fun `reuses the configuration cache on a second run with options`() {
     val fixture = workspaceWithFrontend()
 
