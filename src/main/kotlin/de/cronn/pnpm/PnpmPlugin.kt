@@ -290,6 +290,9 @@ public class PnpmPlugin : Plugin<Project> {
     // A pattern of the plugin rather than of the project easily matches nothing, which must not
     // fail the task.
     prettier.noErrorOnUnmatchedPattern.convention(true)
+    eslint.noErrorOnUnmatchedPattern.convention(true)
+    // A lint warning is worth fixing as much as an error, so it fails the task.
+    eslint.maxWarnings.convention(0)
 
     PnpmCheckTasks(target, typescript, prettier, eslint)
       .register(

@@ -12,7 +12,21 @@ eslint {
   extraArguments = emptyList()
   // Passed to ESLint as `--config` by every task; defaults to the detected configuration file
   configFile = file("eslint.config.ts")
+  // Defaults of every `EslintTask`; `maxWarnings` is `0`, `noErrorOnUnmatchedPattern` is `true`,
+  // the others are unset
+  maxWarnings = 0
+  noErrorOnUnmatchedPattern = true
+  cache = true
+  cacheLocation = layout.buildDirectory.file("eslint-cache")
+  suppressionsLocation = file("eslint-suppressions.json")
+  passOnNoPatterns = true
 }
+```
+
+A task overrides these defaults with its own value:
+
+```kotlin
+tasks.eslintFix { maxWarnings = 10 }
 ```
 
 ## Pre-defined tasks
@@ -24,9 +38,6 @@ file, which is passed to ESLint as `--config`.
 |---------------|-----------------------------|----------------|
 | `eslintCheck` | `--max-warnings=0`          | `check`        |
 | `eslintFix`   | `--max-warnings=0`, `--fix` | `fix`          |
-
-Every `EslintTask` passes `--max-warnings=0` and `--no-error-on-unmatched-pattern` unless
-`maxWarnings` or `noErrorOnUnmatchedPattern` is set otherwise.
 
 Set `configFile` on a task to pass another configuration file to that task only:
 
