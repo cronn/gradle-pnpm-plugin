@@ -99,7 +99,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
     }
 
-    registerCheckTasks(target)
+    registerPackageTasks(target)
   }
 
   /**
@@ -267,7 +267,7 @@ public class PnpmPlugin : Plugin<Project> {
    * surface a convention plugin derives its accessors from, and those come from a synthetic project
    * over an empty directory.
    */
-  private fun registerCheckTasks(target: Project) {
+  private fun registerPackageTasks(target: Project) {
     target.pluginManager.apply(BasePlugin::class.java)
 
     val typescript =
