@@ -418,9 +418,11 @@ class PnpmPluginTest {
     assertThat(execTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
     assertThat(execTask(project, "compileTypescript").arguments.get()).isEmpty()
     assertThat(checkTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
-    assertThat(checkTask(project, "prettierCheck").arguments.get()).containsExactly("--check")
-    assertThat(checkTask(project, "prettierFix").arguments.get())
-      .containsExactly("--write", "--list-different")
+    assertThat(checkTask(project, "prettierCheck").arguments.get()).isEmpty()
+    assertThat(prettierTask(project, "prettierCheck").check.get()).isTrue()
+    assertThat(checkTask(project, "prettierFix").arguments.get()).isEmpty()
+    assertThat(prettierTask(project, "prettierFix").write.get()).isTrue()
+    assertThat(prettierTask(project, "prettierFix").listDifferent.get()).isTrue()
     assertThat(checkTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
     assertThat(checkTask(project, "eslintCheck").arguments.get())
       .containsExactly("--max-warnings=0")
@@ -533,7 +535,7 @@ class PnpmPluginTest {
     prettier(project).extraArguments("--cache")
     val custom =
       project.tasks.register("prettierDocs", PrettierTask::class.java) { task ->
-        task.arguments.set(listOf("--check"))
+        task.check.set(true)
       }
 
     val task = custom.get()
@@ -890,11 +892,115 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `defaults the config file of a tool extension to the detected one`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    assertThat(typescript(project).configFile.get().asFile).isEqualTo(project.file("tsconfig.json"))
+    assertThat(eslint(project).configFile.get().asFile).isEqualTo(project.file("eslint.config.ts"))
+    assertThat(vitest(project).configFile.isPresent).isFalse()
+  }
+
+  @Test
+  fun `takes the config file of a tool extension over to every task of the tool`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    val config = project.file("tsconfig.build.json")
+    val own = project.file("tsconfig.strict.json")
+    typescript(project).configFile.set(config)
+    vitest(project).configFile.set(project.file("vitest.ci.config.ts"))
+    val custom = project.tasks.register("compileTypescriptCustom", TypescriptTask::class.java).get()
+    val strict = project.tasks.register("compileTypescriptStrict", TypescriptTask::class.java).get()
+    strict.configFile.set(own)
+    val vitestCustom = project.tasks.register("vitestCustom", VitestRunTask::class.java).get()
+
+    assertThat(sourceTask(project, "compileTypescript").configFile.get().asFile).isEqualTo(config)
+    assertThat(custom.configFile.get().asFile).isEqualTo(config)
+    assertThat(strict.configFile.get().asFile).isEqualTo(own)
+    assertThat(vitestCustom.configFile.get().asFile).isEqualTo(project.file("vitest.ci.config.ts"))
+  }
+
+  @Test
+  fun `registers no tasks for a config file set on the extension alone`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    vitest(project).configFile.set(project.file("vitest.ci.config.ts"))
+
+    assertThat(project.tasks.names).doesNotContain("vitestTest")
+  }
+
+  @Test
   fun `leaves the config file of a tool without one unset`(@TempDir directory: File) {
     val project = packageProject(directory)
     val task = project.tasks.register("vitestCustom", VitestRunTask::class.java).get()
 
     assertThat(task.configFile.isPresent).isFalse()
+  }
+
+  @Test
+  fun `takes the typescript options of the extension over to every typescript task`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    typescript(project).build.set(true)
+    typescript(project).noEmit.set(true)
+    typescript(project).outDir.set(project.layout.buildDirectory.dir("tsc"))
+    val custom = project.tasks.register("compileTypescriptCustom", TypescriptTask::class.java).get()
+    custom.noEmit.set(false)
+
+    val predefined = project.tasks.getByName("compileTypescript") as TypescriptTask
+    assertThat(predefined.build.get()).isTrue()
+    assertThat(predefined.noEmit.get()).isTrue()
+    assertThat(predefined.outDir.get().asFile)
+      .isEqualTo(project.layout.buildDirectory.dir("tsc").get().asFile)
+    assertThat(custom.build.get()).isTrue()
+    assertThat(custom.noEmit.get()).isFalse()
+  }
+
+  @Test
+  fun `leaves the typescript options unset by default`(@TempDir directory: File) {
+    val project = packageProject(directory)
+
+    val task = project.tasks.getByName("compileTypescript") as TypescriptTask
+    assertThat(task.build.isPresent).isFalse()
+    assertThat(task.noEmit.isPresent).isFalse()
+    assertThat(task.outDir.isPresent).isFalse()
+  }
+
+  @Test
+  fun `takes the prettier options of the extension over to every prettier task`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    prettier(project).ignoreUnknown.set(true)
+    prettier(project).noErrorOnUnmatchedPattern.set(false)
+    prettier(project).cache.set(true)
+    prettier(project).cacheLocation.set(project.layout.buildDirectory.file("prettier-cache"))
+    val custom = project.tasks.register("prettierCustom", PrettierTask::class.java).get()
+    custom.cache.set(false)
+
+    val predefined = prettierTask(project, "prettierCheck")
+    assertThat(predefined.ignoreUnknown.get()).isTrue()
+    assertThat(predefined.noErrorOnUnmatchedPattern.get()).isFalse()
+    assertThat(predefined.cache.get()).isTrue()
+    assertThat(predefined.cacheLocation.get().asFile)
+      .isEqualTo(project.layout.buildDirectory.file("prettier-cache").get().asFile)
+    assertThat(custom.ignoreUnknown.get()).isTrue()
+    assertThat(custom.cache.get()).isFalse()
+  }
+
+  @Test
+  fun `passes no-error-on-unmatched-pattern and leaves the other prettier options unset by default`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+
+    val task = prettierTask(project, "prettierFix")
+    assertThat(task.noErrorOnUnmatchedPattern.get()).isTrue()
+    assertThat(task.check.isPresent).isFalse()
+    assertThat(task.ignoreUnknown.isPresent).isFalse()
+    assertThat(task.cache.isPresent).isFalse()
+    assertThat(task.cacheLocation.isPresent).isFalse()
   }
 
   @Test
@@ -940,6 +1046,9 @@ class PnpmPluginTest {
 
   private fun checkTask(project: Project, name: String): PnpmCheckTask =
     project.tasks.getByName(name) as PnpmCheckTask
+
+  private fun prettierTask(project: Project, name: String): PrettierTask =
+    project.tasks.getByName(name) as PrettierTask
 
   private fun sourceTask(project: Project, name: String): PnpmSourceTask =
     project.tasks.getByName(name) as PnpmSourceTask

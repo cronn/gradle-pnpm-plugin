@@ -10,6 +10,8 @@ eslint {
   excludes = emptyList()
   // Appended to every ESLint invocation
   extraArguments = emptyList()
+  // Passed to ESLint as `--config` by every task; defaults to the detected configuration file
+  configFile = file("eslint.config.ts")
 }
 ```
 
@@ -23,7 +25,7 @@ file, which is passed to ESLint as `--config`.
 | `eslintCheck` | `--max-warnings=0` | `check`        |
 | `eslintFix`   | `--max-warnings=0` | `fix`          |
 
-Set `configFile` on a task to pass another configuration file:
+Set `configFile` on a task to pass another configuration file to that task only:
 
 ```kotlin
 tasks.eslintCheck { configFile = file("eslint.strict.config.ts") }

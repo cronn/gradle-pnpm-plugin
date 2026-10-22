@@ -173,13 +173,13 @@ class PnpmWorkspaceFunctionalTest {
         "exec",
         "prettier",
         *fixture.configArguments("frontend/app/prettier.config.ts"),
+        "--check",
         "--no-error-on-unmatched-pattern",
         "*.ts",
         "src/**/*.ts",
         "src/**/*.tsx",
         "*.json",
         "*.md",
-        "--check",
       )
     assertThat(invocations.last().workingDirectory)
       .isEqualTo(fixture.directory("frontend/app").canonicalPath)
