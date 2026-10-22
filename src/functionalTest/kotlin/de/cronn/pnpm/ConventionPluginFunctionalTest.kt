@@ -16,7 +16,7 @@ import org.junit.jupiter.api.io.TempDir
  * and whatever the plugin registers on that synthetic project is the surface the convention plugin
  * can use -- for every project it is later applied to, whatever role that project plays.
  */
-class PnpmConventionPluginFunctionalTest {
+class ConventionPluginFunctionalTest {
 
   @TempDir lateinit var projectDirectory: File
 

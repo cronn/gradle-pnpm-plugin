@@ -7,7 +7,7 @@ import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-class PnpmVitestFunctionalTest {
+class VitestFunctionalTest {
 
   @TempDir lateinit var projectDirectory: File
 
