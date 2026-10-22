@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource
  * `-PpnpmTestGradleVersions=9.0,9.7.1`. Without it there are no test cases and the class is
  * skipped.
  */
-class PnpmGradleVersionFunctionalTest {
+class GradleVersionFunctionalTest {
 
   @TempDir lateinit var projectDirectory: File
 
