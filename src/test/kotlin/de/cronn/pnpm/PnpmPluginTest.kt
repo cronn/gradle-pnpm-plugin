@@ -424,10 +424,12 @@ class PnpmPluginTest {
     assertThat(prettierTask(project, "prettierFix").write.get()).isTrue()
     assertThat(prettierTask(project, "prettierFix").listDifferent.get()).isTrue()
     assertThat(checkTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
-    assertThat(checkTask(project, "eslintCheck").arguments.get())
-      .containsExactly("--max-warnings=0")
-    assertThat(checkTask(project, "eslintFix").arguments.get())
-      .containsExactly("--max-warnings=0", "--fix")
+    assertThat(checkTask(project, "eslintCheck").arguments.get()).isEmpty()
+    assertThat(eslintTask(project, "eslintCheck").maxWarnings.get()).isEqualTo(0)
+    assertThat(eslintTask(project, "eslintCheck").fix.isPresent).isFalse()
+    assertThat(checkTask(project, "eslintFix").arguments.get()).isEmpty()
+    assertThat(eslintTask(project, "eslintFix").maxWarnings.get()).isEqualTo(0)
+    assertThat(eslintTask(project, "eslintFix").fix.get()).isTrue()
   }
 
   @Test
@@ -1049,6 +1051,9 @@ class PnpmPluginTest {
 
   private fun prettierTask(project: Project, name: String): PrettierTask =
     project.tasks.getByName(name) as PrettierTask
+
+  private fun eslintTask(project: Project, name: String): EslintTask =
+    project.tasks.getByName(name) as EslintTask
 
   private fun sourceTask(project: Project, name: String): PnpmSourceTask =
     project.tasks.getByName(name) as PnpmSourceTask

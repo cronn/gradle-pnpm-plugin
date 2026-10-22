@@ -24,21 +24,23 @@ internal class EslintTasks(target: Project, extension: EslintExtension) :
    */
   override fun configureTask(task: EslintTask) {
     task.dependsOn(target.tasks.withType(TypescriptTask::class.java))
+    task.maxWarnings.convention(0)
+    task.noErrorOnUnmatchedPattern.convention(true)
   }
 
   override fun registerCheckTask(): TaskProvider<EslintTask> =
     registerTask(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
-      arguments = listOf("--max-warnings=0"),
     )
 
   override fun registerFixTask(): TaskProvider<EslintTask> =
     registerTask(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
-      arguments = listOf("--max-warnings=0", "--fix"),
-    )
+    ) { task ->
+      task.fix.set(true)
+    }
 
   companion object {
     val INCLUDES: List<String> = listOf(*BASE_INCLUDES)
