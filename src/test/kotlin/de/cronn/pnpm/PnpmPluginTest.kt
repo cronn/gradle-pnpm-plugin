@@ -424,10 +424,12 @@ class PnpmPluginTest {
     assertThat(prettierTask(project, "prettierFix").write.get()).isTrue()
     assertThat(prettierTask(project, "prettierFix").listDifferent.get()).isTrue()
     assertThat(checkTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
-    assertThat(checkTask(project, "eslintCheck").arguments.get())
-      .containsExactly("--max-warnings=0")
-    assertThat(checkTask(project, "eslintFix").arguments.get())
-      .containsExactly("--max-warnings=0", "--fix")
+    assertThat(checkTask(project, "eslintCheck").arguments.get()).isEmpty()
+    assertThat(eslintTask(project, "eslintCheck").maxWarnings.get()).isEqualTo(0)
+    assertThat(eslintTask(project, "eslintCheck").fix.isPresent).isFalse()
+    assertThat(checkTask(project, "eslintFix").arguments.get()).isEmpty()
+    assertThat(eslintTask(project, "eslintFix").maxWarnings.get()).isEqualTo(0)
+    assertThat(eslintTask(project, "eslintFix").fix.get()).isTrue()
   }
 
   @Test
@@ -1004,6 +1006,52 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `takes the eslint options of the extension over to every eslint task`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    eslint(project).maxWarnings.set(5)
+    eslint(project).noErrorOnUnmatchedPattern.set(false)
+    eslint(project).cache.set(true)
+    eslint(project).cacheLocation.set(project.layout.buildDirectory.file("eslint-cache"))
+    eslint(project)
+      .suppressionsLocation
+      .set(project.layout.projectDirectory.file("suppressions.json"))
+    eslint(project).passOnNoPatterns.set(true)
+    val custom = project.tasks.register("eslintCustom", EslintTask::class.java).get()
+    custom.cache.set(false)
+
+    val predefined = eslintTask(project, "eslintCheck")
+    assertThat(predefined.maxWarnings.get()).isEqualTo(5)
+    assertThat(predefined.noErrorOnUnmatchedPattern.get()).isFalse()
+    assertThat(predefined.cache.get()).isTrue()
+    assertThat(predefined.cacheLocation.get().asFile)
+      .isEqualTo(project.layout.buildDirectory.file("eslint-cache").get().asFile)
+    assertThat(predefined.suppressionsLocation.get().asFile)
+      .isEqualTo(project.file("suppressions.json"))
+    assertThat(predefined.passOnNoPatterns.get()).isTrue()
+    assertThat(custom.maxWarnings.get()).isEqualTo(5)
+    assertThat(custom.cache.get()).isFalse()
+  }
+
+  @Test
+  fun `fails on warnings and passes no-error-on-unmatched-pattern by default`(
+    @TempDir directory: File,
+  ) {
+    val project = packageProject(directory)
+    val custom = project.tasks.register("eslintCustom", EslintTask::class.java).get()
+
+    for (task in listOf(eslintTask(project, "eslintFix"), custom)) {
+      assertThat(task.maxWarnings.get()).isEqualTo(0)
+      assertThat(task.noErrorOnUnmatchedPattern.get()).isTrue()
+      assertThat(task.cache.isPresent).isFalse()
+      assertThat(task.cacheLocation.isPresent).isFalse()
+      assertThat(task.suppressionsLocation.isPresent).isFalse()
+      assertThat(task.passOnNoPatterns.isPresent).isFalse()
+    }
+  }
+
+  @Test
   fun `does not enable eslint for a legacy eslintrc config`(@TempDir directory: File) {
     val root = workspaceProject(directory)
     val packageDirectory = File(directory, "frontend").apply { mkdirs() }
@@ -1049,6 +1097,9 @@ class PnpmPluginTest {
 
   private fun prettierTask(project: Project, name: String): PrettierTask =
     project.tasks.getByName(name) as PrettierTask
+
+  private fun eslintTask(project: Project, name: String): EslintTask =
+    project.tasks.getByName(name) as EslintTask
 
   private fun sourceTask(project: Project, name: String): PnpmSourceTask =
     project.tasks.getByName(name) as PnpmSourceTask

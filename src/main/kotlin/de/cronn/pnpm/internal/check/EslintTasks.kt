@@ -8,10 +8,10 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /** The ESLint tasks of a pnpm package. */
-internal class EslintTasks(target: Project, extension: EslintExtension) :
+internal class EslintTasks(target: Project, private val eslint: EslintExtension) :
   CheckTasks<EslintTask>(
     target,
-    extension,
+    eslint,
     EslintTask::class.java,
     ToolConfigFiles.ESLINT,
     INCLUDES,
@@ -24,21 +24,27 @@ internal class EslintTasks(target: Project, extension: EslintExtension) :
    */
   override fun configureTask(task: EslintTask) {
     task.dependsOn(target.tasks.withType(TypescriptTask::class.java))
+    task.maxWarnings.convention(eslint.maxWarnings)
+    task.noErrorOnUnmatchedPattern.convention(eslint.noErrorOnUnmatchedPattern)
+    task.cache.convention(eslint.cache)
+    task.cacheLocation.convention(eslint.cacheLocation)
+    task.suppressionsLocation.convention(eslint.suppressionsLocation)
+    task.passOnNoPatterns.convention(eslint.passOnNoPatterns)
   }
 
   override fun registerCheckTask(): TaskProvider<EslintTask> =
     registerTask(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
-      arguments = listOf("--max-warnings=0"),
     )
 
   override fun registerFixTask(): TaskProvider<EslintTask> =
     registerTask(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
-      arguments = listOf("--max-warnings=0", "--fix"),
-    )
+    ) { task ->
+      task.fix.set(true)
+    }
 
   companion object {
     val INCLUDES: List<String> = listOf(*BASE_INCLUDES)

@@ -63,8 +63,9 @@ class PnpmPackageFunctionalTest {
           "exec",
           "eslint",
           *fixture.configArguments("frontend/eslint.config.ts"),
+          "--max-warnings",
+          "0",
           *ESLINT_PATTERNS,
-          "--max-warnings=0",
         ),
       )
   }
@@ -86,9 +87,10 @@ class PnpmPackageFunctionalTest {
           "exec",
           "eslint",
           *fixture.configArguments("frontend/eslint.config.ts"),
-          *ESLINT_PATTERNS,
-          "--max-warnings=0",
           "--fix",
+          "--max-warnings",
+          "0",
+          *ESLINT_PATTERNS,
         ),
         listOf(
           "exec",
@@ -265,9 +267,10 @@ class PnpmPackageFunctionalTest {
           "exec",
           "eslint",
           *fixture.configArguments("frontend/eslint.config.ts"),
+          "--max-warnings",
+          "0",
           "--no-error-on-unmatched-pattern",
           "sources/**/*.ts",
-          "--max-warnings=0",
         ),
       )
 
@@ -291,8 +294,9 @@ class PnpmPackageFunctionalTest {
         "exec",
         "eslint",
         *fixture.configArguments("frontend/eslint.config.ts"),
+        "--max-warnings",
+        "0",
         *ESLINT_PATTERNS,
-        "--max-warnings=0",
       )
   }
 
