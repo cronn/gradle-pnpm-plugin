@@ -786,7 +786,7 @@ class PnpmPluginTest {
     val project = vitestProject(directory)
 
     val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.reportDirectory.get().asFile)
+    assertThat(test.coverageReportsDirectory.get().asFile)
       .isEqualTo(File(project.layout.buildDirectory.get().asFile, "reports/vitest"))
   }
 
@@ -795,10 +795,43 @@ class PnpmPluginTest {
     val project = vitestProject(directory)
     val report = File(directory, "coverage")
 
-    vitest(project).reportDirectory.set(report)
+    vitest(project).coverageReportsDirectory.set(report)
 
     val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.reportDirectory.get().asFile).isEqualTo(report)
+    assertThat(test.coverageReportsDirectory.get().asFile).isEqualTo(report)
+  }
+
+  @Test
+  fun `takes the vitest options of the extension over to every vitest task`(
+    @TempDir directory: File,
+  ) {
+    val project = vitestProject(directory)
+    vitest(project).coverage.set(true)
+    vitest(project).passWithNoTests.set(true)
+    vitest(project).dir.set(project.layout.projectDirectory.dir("src"))
+    vitest(project).outputFile.set(project.layout.buildDirectory.file("vitest.xml"))
+    val custom = project.tasks.register("vitestCustom", VitestRunTask::class.java).get()
+    custom.passWithNoTests.set(false)
+
+    val predefined = project.tasks.getByName("vitestTest") as VitestRunTask
+    assertThat(predefined.coverage.get()).isTrue()
+    assertThat(predefined.passWithNoTests.get()).isTrue()
+    assertThat(predefined.dir.get().asFile).isEqualTo(project.file("src"))
+    assertThat(predefined.outputFile.get().asFile)
+      .isEqualTo(project.layout.buildDirectory.file("vitest.xml").get().asFile)
+    assertThat(custom.coverage.get()).isTrue()
+    assertThat(custom.passWithNoTests.get()).isFalse()
+  }
+
+  @Test
+  fun `leaves the vitest options to vitest by default`(@TempDir directory: File) {
+    val project = vitestProject(directory)
+
+    val test = project.tasks.getByName("vitestTest") as VitestRunTask
+    assertThat(test.coverage.isPresent).isFalse()
+    assertThat(test.passWithNoTests.isPresent).isFalse()
+    assertThat(test.dir.isPresent).isFalse()
+    assertThat(test.outputFile.isPresent).isFalse()
   }
 
   @Test
