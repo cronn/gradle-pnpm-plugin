@@ -27,8 +27,8 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
   override fun configureTask(task: VitestRunTask) {
     val buildDirectory = target.layout.buildDirectory
 
-    task.reportDirectory.convention(
-      vitest.reportDirectory.orElse(buildDirectory.dir("reports/vitest")),
+    task.coverageReportsDirectory.convention(
+      vitest.coverageReportsDirectory.orElse(buildDirectory.dir("reports/vitest")),
     )
   }
 

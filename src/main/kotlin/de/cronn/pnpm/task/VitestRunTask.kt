@@ -30,7 +30,12 @@ public abstract class VitestRunTask : PnpmTestTask() {
   override val configFileOption: String = "--config"
 
   /** Directory the coverage report goes to, passed as `--coverage.reportsDirectory`. */
-  @get:OutputDirectory public abstract val reportDirectory: DirectoryProperty
+  @get:OutputDirectory
+  @get:Option(
+    option = "coverageReportsDirectory",
+    description = "Writes the coverage report to this directory",
+  )
+  public abstract val coverageReportsDirectory: DirectoryProperty
 
   /** Collects coverage while the suite runs. */
   @get:Input
@@ -57,8 +62,8 @@ public abstract class VitestRunTask : PnpmTestTask() {
     // Passed whatever the options say, so that a configuration switching coverage on by itself
     // still writes into the directory this task declares as its output. Read at execution time
     // rather than through a provider feeding an input, which would make the task depend on the
-    // task producing reportDirectory -- this very task.
-    add("--coverage.reportsDirectory=${reportDirectory.get().asFile.absolutePath}")
+    // task producing coverageReportsDirectory -- this very task.
+    add("--coverage.reportsDirectory=${coverageReportsDirectory.get().asFile.absolutePath}")
     if (coverage.getOrElse(false)) add("--coverage")
     if (update.getOrElse(false)) add("--update")
   }

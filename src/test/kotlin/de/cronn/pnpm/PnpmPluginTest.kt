@@ -839,7 +839,7 @@ class PnpmPluginTest {
     val project = vitestProject(directory)
 
     val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.reportDirectory.get().asFile)
+    assertThat(test.coverageReportsDirectory.get().asFile)
       .isEqualTo(File(project.layout.buildDirectory.get().asFile, "reports/vitest"))
   }
 
@@ -848,10 +848,10 @@ class PnpmPluginTest {
     val project = vitestProject(directory)
     val report = File(directory, "coverage")
 
-    vitest(project).reportDirectory.set(report)
+    vitest(project).coverageReportsDirectory.set(report)
 
     val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.reportDirectory.get().asFile).isEqualTo(report)
+    assertThat(test.coverageReportsDirectory.get().asFile).isEqualTo(report)
   }
 
   @Test
