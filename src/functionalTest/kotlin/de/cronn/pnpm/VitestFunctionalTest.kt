@@ -145,6 +145,26 @@ class VitestFunctionalTest {
   }
 
   @Test
+  fun `passes the options of the extension on to vitest unless the task overrides them`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          vitest {
+            coverage = true
+            passWithNoTests = true
+          }
+          tasks.vitestTest { coverage = false }
+          """,
+      )
+
+    fixture.runner(":frontend:vitestTest").build()
+
+    assertThat(vitestTest(fixture).arguments).contains("--passWithNoTests")
+    assertThat(vitestTest(fixture).arguments).doesNotContain("--coverage")
+  }
+
+  @Test
   fun `reruns when the test name pattern changes`() {
     val fixture = workspaceWithFrontend()
 

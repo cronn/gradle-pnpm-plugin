@@ -17,7 +17,18 @@ vitest {
   alwaysRerun = false
   // Where the coverage report goes, passed as `--coverage.reportsDirectory`
   coverageReportsDirectory = layout.buildDirectory.dir("reports/vitest")
+  // Defaults of every `VitestRunTask`; unset by default
+  coverage = true
+  passWithNoTests = true
+  dir = file("src")
+  outputFile = layout.buildDirectory.file("test-results/vitest.xml")
 }
+```
+
+A task overrides these defaults with its own value:
+
+```kotlin
+tasks.vitestTest { coverage = false }
 ```
 
 ## Pre-defined tasks
