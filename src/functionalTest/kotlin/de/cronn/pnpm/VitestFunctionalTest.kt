@@ -49,6 +49,17 @@ class VitestFunctionalTest {
   }
 
   @Test
+  fun `writes the coverage report to the directory given on the command line`() {
+    val fixture = workspaceWithFrontend()
+    val report = fixture.directory("frontend/coverage")
+
+    fixture.runner(":frontend:vitestTest", "--coverageReportsDirectory=${report.path}").build()
+
+    assertThat(vitestTest(fixture).arguments)
+      .contains("--coverage.reportsDirectory=${report.canonicalFile.absolutePath}")
+  }
+
+  @Test
   fun `collects coverage only when it is asked for`() {
     val fixture = workspaceWithFrontend()
 

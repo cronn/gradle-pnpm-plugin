@@ -16,7 +16,7 @@ vitest {
   // this defaults to false
   alwaysRerun = false
   // Where the coverage report goes, passed as `--coverage.reportsDirectory`
-  reportDirectory = layout.buildDirectory.dir("reports/vitest")
+  coverageReportsDirectory = layout.buildDirectory.dir("reports/vitest")
 }
 ```
 
@@ -39,10 +39,11 @@ tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
 
 `VitestRunTask` accepts the following command line options:
 
-|    Option    | Passed to Vitest as |
-|--------------|---------------------|
-| `--coverage` | `--coverage`        |
-| `--update`   | `--update`          |
+|               Option               |      Passed to Vitest as      |
+|------------------------------------|-------------------------------|
+| `--coverage`                       | `--coverage`                  |
+| `--coverageReportsDirectory=<dir>` | `--coverage.reportsDirectory` |
+| `--update`                         | `--update`                    |
 
 ```bash
 ./gradlew vitestTest --coverage
