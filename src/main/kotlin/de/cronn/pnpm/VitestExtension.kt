@@ -20,5 +20,5 @@ public abstract class VitestExtension : PnpmTestExtension() {
    * Directory the coverage report is written to. Defaults to `build/reports/vitest`, and is passed
    * as `--coverage.reportsDirectory`.
    */
-  public abstract val reportDirectory: DirectoryProperty
+  public abstract val coverageReportsDirectory: DirectoryProperty
 }
