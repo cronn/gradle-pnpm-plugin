@@ -39,15 +39,21 @@ tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
 
 `VitestRunTask` accepts the following command line options:
 
-|               Option               |      Passed to Vitest as      |
-|------------------------------------|-------------------------------|
-| `--coverage`                       | `--coverage`                  |
-| `--coverageReportsDirectory=<dir>` | `--coverage.reportsDirectory` |
-| `--update`                         | `--update`                    |
+|               Option               |       Task property        |      Passed to Vitest as      |
+|------------------------------------|----------------------------|-------------------------------|
+| `--config=<file>`                  | `configFile`               | `--config`                    |
+| `--coverage`                       | `coverage`                 | `--coverage`                  |
+| `--coverageReportsDirectory=<dir>` | `coverageReportsDirectory` | `--coverage.reportsDirectory` |
+| `--update`                         | `update`                   | `--update`                    |
+| `--testNamePattern=<regex>`        | `testNamePattern`          | `--testNamePattern`           |
+| `--dir=<dir>`                      | `dir`                      | `--dir`                       |
+| `--outputFile=<file>`              | `outputFile`               | `--outputFile`                |
+| `--passWithNoTests`                | `passWithNoTests`          | `--passWithNoTests`           |
+| `--bail=<n>`                       | `bail`                     | `--bail`                      |
 
 ```bash
 ./gradlew vitestTest --coverage
-./gradlew vitestTest --update
+./gradlew vitestTest --testNamePattern=login --bail=1
 ```
 
 ## Custom tasks
@@ -60,5 +66,10 @@ import de.cronn.pnpm.task.VitestRunTask
 tasks.register<VitestRunTask>("vitestUnitTest") {
   includes = listOf("src/**/*.ts")
   arguments = listOf("src")
+}
+
+tasks.register<VitestRunTask>("vitestJunitReport") {
+  outputFile = layout.buildDirectory.file("test-results/vitest.xml")
+  arguments = listOf("--reporter=junit")
 }
 ```
