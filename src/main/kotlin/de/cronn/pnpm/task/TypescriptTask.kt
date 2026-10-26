@@ -17,10 +17,10 @@ import org.gradle.work.DisableCachingByDefault
  * Runs the TypeScript compiler through `pnpm exec tsc`.
  *
  * Unlike a `PnpmCheckTask`, `tsc` is not handed its sources: it takes the files it compiles from
- * the `tsconfig.json` the task hands it as `--project`, and naming them on the command line would
- * make it ignore that file. The [includes] and [excludes] of the task therefore only describe its
- * Gradle inputs, which is what decides when it is up to date -- the same as for a `PnpmTestTask`,
- * and why this is a plain [PnpmSourceTask].
+ * the `tsconfig.json` the task hands it as `--project` -- or as the project to build, in build mode
+ * -- and naming them on the command line would make it ignore that file. The [includes] and
+ * [excludes] of the task therefore only describe its Gradle inputs, which is what decides when it
+ * is up to date -- the same as for a `PnpmTestTask`, and why this is a plain [PnpmSourceTask].
  *
  * The common options of `tsc` are command line options of the task as well, so that an ad-hoc run
  * needs no edit to the build script:
@@ -40,7 +40,7 @@ public abstract class TypescriptTask : PnpmSourceTask() {
 
   override val configFileOption: String = "--project"
 
-  /** The `tsconfig.json` handed to `tsc` as `--project`. */
+  /** The `tsconfig.json` handed to `tsc` as `--project`, or as the project to [build]. */
   @get:InputFile
   @get:Optional
   @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -75,14 +75,18 @@ public abstract class TypescriptTask : PnpmSourceTask() {
     command.convention("tsc")
   }
 
-  /** `--build` leads, because `tsc` only recognizes it as the first argument. */
+  /**
+   * `--build` leads, because `tsc` only recognizes it as the first argument. Build mode takes no
+   * `--project`, but the projects to build as the last arguments, so the [configFile] trails then.
+   */
   override fun commandArguments(): List<String> = buildList {
-    if (build.getOrElse(false)) add("--build")
-    addAll(leadingArguments())
+    val buildMode = build.getOrElse(false)
+    if (buildMode) add("--build") else addAll(leadingArguments())
     if (clean.getOrElse(false)) add("--clean")
     if (noEmit.getOrElse(false)) add("--noEmit")
     outDir.orNull?.let { addAll(listOf("--outDir", it.asFile.absolutePath)) }
     addAll(arguments.get())
     addAll(extraArguments.get())
+    if (buildMode) configFile.orNull?.let { add(it.asFile.absolutePath) }
   }
 }
