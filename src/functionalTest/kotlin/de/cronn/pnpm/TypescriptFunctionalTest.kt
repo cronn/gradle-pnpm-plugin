@@ -27,7 +27,7 @@ class TypescriptFunctionalTest {
     val fixture = workspaceWithFrontend()
     fixture.write("frontend/tsconfig.build.json", "{}")
 
-    fixture.runner(":frontend:compileTypescript", "--project=tsconfig.build.json").build()
+    fixture.runner(":frontend:compileTypescript", "--config=tsconfig.build.json").build()
 
     assertThat(tsc(fixture).arguments)
       .containsExactly("exec", "tsc", *projectArguments(fixture, "frontend/tsconfig.build.json"))

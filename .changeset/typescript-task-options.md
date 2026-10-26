@@ -2,6 +2,6 @@
 "gradle-pnpm-plugin": minor
 ---
 
-Add `build`, `clean`, `noEmit` and `outDir` properties and `--project`, `--build`, `--clean`, `--noEmit` and `--outDir` command line options to `TypescriptTask`
+Add `build`, `clean`, `noEmit` and `outDir` properties and `--config`, `--build`, `--clean`, `--noEmit` and `--outDir` command line options to `TypescriptTask`
 
 Closes #58.
