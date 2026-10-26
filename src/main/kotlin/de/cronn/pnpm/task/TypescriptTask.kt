@@ -26,7 +26,7 @@ import org.gradle.work.DisableCachingByDefault
  * needs no edit to the build script:
  * ```bash
  * ./gradlew :frontend:compileTypescript --noEmit
- * ./gradlew :frontend:compileTypescript --project=tsconfig.build.json --outDir=dist
+ * ./gradlew :frontend:compileTypescript --config=tsconfig.build.json --outDir=dist
  * ```
  *
  * Each of them is handed to `tsc` as it is; which of them combine is up to `tsc`. Anything else
@@ -44,7 +44,7 @@ public abstract class TypescriptTask : PnpmSourceTask() {
   @get:InputFile
   @get:Optional
   @get:PathSensitive(PathSensitivity.RELATIVE)
-  @get:Option(option = "project", description = "Compiles the project of this tsconfig file")
+  @get:Option(option = "config", description = "Compiles the project of this tsconfig file")
   abstract override val configFile: RegularFileProperty
 
   /** Runs `tsc` in build mode, passed as `--build`. */
