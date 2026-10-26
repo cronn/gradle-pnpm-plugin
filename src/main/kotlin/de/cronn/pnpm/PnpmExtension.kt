@@ -24,8 +24,9 @@ import org.gradle.api.provider.Property
 public abstract class PnpmExtension {
 
   /**
-   * The pnpm version to download unless [executable] is set. Defaults to the version pinned by the
-   * plugin.
+   * The pnpm version to download unless [executable] is set. Ignored when
+   * `devEngines.packageManager` in the `package.json` of the workspace root declares a fixed
+   * version, which is downloaded instead. Defaults to the version pinned by the plugin.
    */
   public abstract val version: Property<String>
 

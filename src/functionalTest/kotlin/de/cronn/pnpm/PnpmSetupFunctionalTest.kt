@@ -33,6 +33,56 @@ class PnpmSetupFunctionalTest {
   }
 
   @Test
+  fun `bootstraps the fixed pnpm version declared in the package json`() {
+    val fixture = workspaceWithLocalRelease(version = DECLARED_VERSION, pnpmVersion = null)
+    writeDevEngines(fixture, DECLARED_VERSION)
+
+    val result = fixture.runner("pnpmSetup", "--debug").build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.directory(".gradle/pnpm/$DECLARED_VERSION/$executableName")).isFile()
+    assertThat(result.output)
+      .contains("bootstraps pnpm $DECLARED_VERSION, the fixed version in devEngines.packageManager")
+  }
+
+  @Test
+  fun `bootstraps the configured pnpm version when the package json declares a range`() {
+    val fixture = workspaceWithLocalRelease()
+    writeDevEngines(fixture, "^11.0.0")
+
+    val result = fixture.runner("pnpmSetup", "--debug").build()
+
+    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(
+        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName"),
+      )
+      .isFile()
+    assertThat(result.output)
+      .contains("its devEngines.packageManager declares the range ^11.0.0")
+      .contains("bootstraps pnpm ${GradleProjectFixture.PNPM_VERSION} from pnpm.version")
+  }
+
+  @Test
+  fun `bootstraps the new version after the package json changed`() {
+    val fixture = workspaceWithLocalRelease(version = DECLARED_VERSION, pnpmVersion = null)
+    writeDevEngines(fixture, DECLARED_VERSION)
+    PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+
+    fixture.runner("pnpmSetup").build()
+    val reused = fixture.runner("pnpmSetup").build()
+    writeDevEngines(fixture, GradleProjectFixture.PNPM_VERSION)
+    val changed = fixture.runner("pnpmSetup").build()
+
+    assertThat(reused.output).contains("Reusing configuration cache")
+    assertThat(changed.output).doesNotContain("Reusing configuration cache")
+    assertThat(changed.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(
+        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName"),
+      )
+      .isFile()
+  }
+
+  @Test
   fun `does not extract again on a second run`() {
     val fixture = workspaceWithLocalRelease()
 
@@ -308,10 +358,12 @@ class PnpmSetupFunctionalTest {
     /** Repositories declared before the pnpm repository. */
     firstRepositories: String = "",
     extraBuildScript: String = "",
+    /** The version of the release written to the local repository. */
+    version: String = GradleProjectFixture.PNPM_VERSION,
+    /** The version configured in `pnpm { }`, or `null` to leave it at the default. */
+    pnpmVersion: String? = GradleProjectFixture.PNPM_VERSION,
   ): GradleProjectFixture {
-    val url =
-      repositoryUrl
-        ?: PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val url = repositoryUrl ?: PnpmArchiveFixture.writeRelease(releaseDirectory, version)
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(
       rootBuildScript =
@@ -323,10 +375,27 @@ class PnpmSetupFunctionalTest {
         $extraBuildScript
         """
           .trimIndent(),
+      pnpmVersion = pnpmVersion,
       pnpmConfiguration = "",
       repositoryUrl = url,
     )
     return fixture
+  }
+
+  /** Pins pnpm to [version] in the `package.json` of the workspace root. */
+  private fun writeDevEngines(fixture: GradleProjectFixture, version: String) {
+    fixture.write(
+      "package.json",
+      """
+      {
+        "name": "root",
+        "private": true,
+        "devEngines": {
+          "packageManager": { "name": "pnpm", "version": "$version", "onFail": "download" }
+        }
+      }
+      """,
+    )
   }
 
   /** URL of a repository directory that holds nothing at all. */
@@ -345,6 +414,9 @@ class PnpmSetupFunctionalTest {
       .trimIndent()
 
   companion object {
+
+    /** A pnpm version declared in `package.json`, distinct from the one the fixture configures. */
+    const val DECLARED_VERSION: String = "11.24.0"
 
     /** Prints the repositories of the project once the plugin had its say on them. */
     val PRINT_REPOSITORIES: String =
