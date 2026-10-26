@@ -58,7 +58,7 @@ class TypescriptFunctionalTest {
   }
 
   @Test
-  fun `passes build first and clean as they are`() {
+  fun `passes build first and the project last`() {
     val fixture = workspaceWithFrontend()
 
     fixture.runner(":frontend:compileTypescript", "--build", "--clean").build()
@@ -68,8 +68,33 @@ class TypescriptFunctionalTest {
         "exec",
         "tsc",
         "--build",
-        *projectArguments(fixture, "frontend/tsconfig.json"),
         "--clean",
+        fixture.directory("frontend/tsconfig.json").canonicalPath,
+      )
+  }
+
+  @Test
+  fun `passes the project after the extra arguments in build mode`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          typescript {
+            build = true
+            extraArguments = listOf("--verbose")
+          }
+          """,
+      )
+
+    fixture.runner(":frontend:compileTypescript").build()
+
+    assertThat(tsc(fixture).arguments)
+      .containsExactly(
+        "exec",
+        "tsc",
+        "--build",
+        "--verbose",
+        fixture.directory("frontend/tsconfig.json").canonicalPath,
       )
   }
 
@@ -94,10 +119,10 @@ class TypescriptFunctionalTest {
         "exec",
         "tsc",
         "--build",
-        *projectArguments(fixture, "frontend/tsconfig.json"),
         "--noEmit",
         "--outDir",
         fixture.directory("frontend/build/tsc").canonicalPath,
+        fixture.directory("frontend/tsconfig.json").canonicalPath,
       )
   }
 
