@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.12.0
+
+### Minor Changes
+
+- 4f4d691: Bootstrap the pnpm version declared in `devEngines.packageManager` of `package.json`
+
+  When the `package.json` of the workspace root declares a fixed version, the plugin downloads exactly that version instead of `pnpm.version`, so the version no longer has to be maintained in two places:
+
+  ```json5
+  // package.json
+  {
+    "devEngines": {
+      "packageManager": {
+        "name": "pnpm",
+        "version": "11.28.5",
+        "onFail": "download"
+      }
+    }
+  }
+  ```
+
+  A SemVer range like `^11.0.0` still falls back to `pnpm.version`, or the version pinned by the plugin. Builds that mirror the pnpm distribution, lock dependencies or verify them now need to serve or pin the version declared in `package.json`.
+
+- 45464b0: Add `maxWarnings`, `noErrorOnUnmatchedPattern`, `cache`, `cacheLocation`, `suppressionsLocation` and `passOnNoPatterns` properties to the `eslint` extension to set defaults for every `EslintTask`
+
+- a582231: Add `fix`, `maxWarnings`, `cache`, `cacheLocation`, `suppressAll`, `suppressRules`, `suppressionsLocation`, `pruneSuppressions`, `passOnNoPatterns` and `noErrorOnUnmatchedPattern` properties and `--config`, `--fix`, `--max-warnings`, `--cache`, `--cache-location`, `--suppress-all`, `--suppress-rule`, `--suppressions-location`, `--prune-suppressions`, `--pass-on-no-patterns` and `--no-error-on-unmatched-pattern` command line options to `EslintTask`. Custom `EslintTask`s now pass `--max-warnings=0` by default as well
+
+  Closes #61.
+
+- fccb04a: Add `configFile` property to the extension of every tool to set the configuration file of all its tasks
+
+- d36beb2: Add `ignoreUnknown`, `noErrorOnUnmatchedPattern`, `cache` and `cacheLocation` properties to the `prettier` extension to set defaults for every `PrettierTask`
+
+- 389342d: Add `check`, `write`, `listDifferent`, `ignoreUnknown`, `noErrorOnUnmatchedPattern`, `cache` and `cacheLocation` properties and `--config`, `--check`, `--write`, `--list-different`, `--ignore-unknown`, `--no-error-on-unmatched-pattern`, `--cache` and `--cache-location` command line options to `PrettierTask`
+
+  Closes #60.
+
+- f8aacf2: Add `build`, `noEmit` and `outDir` properties to the `typescript` extension to set defaults for every `TypescriptTask`
+
+- 326199d: Add `build`, `clean`, `noEmit` and `outDir` properties and `--config`, `--build`, `--clean`, `--noEmit` and `--outDir` command line options to `TypescriptTask`
+
+  Closes #58.
+
+- cd20779: **Breaking Change**: `reportDirectory` of the `vitest` extension and `VitestRunTask` is renamed to `coverageReportsDirectory`, matching the `--coverage.reportsDirectory` option of Vitest it is passed as:
+
+  ```kotlin
+  vitest {
+    coverageReportsDirectory = layout.buildDirectory.dir("reports/coverage")
+  }
+  ```
+
+  `VitestRunTask` also accepts it as the `--coverageReportsDirectory` command line option.
+
+- aca20c7: Add `coverage`, `passWithNoTests`, `dir` and `outputFile` properties to the `vitest` extension to set defaults for every `VitestRunTask`
+
+- 94602f9: Add `testNamePattern`, `dir`, `outputFile`, `passWithNoTests` and `bail` properties and `--config`, `--testNamePattern`, `--dir`, `--outputFile`, `--passWithNoTests` and `--bail` command line options to `VitestRunTask`
+
+  Closes #80.
+
+### Patch Changes
+
+- 82fb359: `TypescriptTask` passes its `configFile` as the last argument instead of `--project` when `build` is enabled
+
+  Closes #87.
+
 ## 0.11.0
 
 ### Minor Changes
