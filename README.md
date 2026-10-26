@@ -57,6 +57,10 @@ downloads enabled:
 }
 ```
 
+When `devEngines.packageManager` declares a fixed version, the plugin bootstraps exactly that
+version. For a SemVer range, it bootstraps `pnpm.version` (defaulting to a version pinned by the
+plugin) and pnpm switches to a matching version itself.
+
 ### The pnpm repository
 
 The plugin resolves the pnpm distribution as an ordinary dependency, `pnpm:pnpm:<version>`, so it
@@ -105,7 +109,7 @@ commit `gradle/verification-metadata.xml`. Dependency locking applies to the
 
 ```kotlin
 pnpm {
-  // The version downloaded unless an executable is set
+  // The version downloaded unless an executable is set or package.json declares a fixed version
   version = "11.28.5"
   // Defaults to <workspaceRootDir>/.gradle/pnpm/<version>
   installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.28.5")

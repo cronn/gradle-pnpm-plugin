@@ -1,5 +1,6 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.internal.PackageJsonPnpmVersion
 import de.cronn.pnpm.internal.PnpmCheckTasks
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
@@ -61,6 +62,14 @@ public class PnpmPlugin : Plugin<Project> {
     val layout = PnpmWorkspaceLayout.discover(target)
     val platform = PnpmPlatform.current()
     val workspace = createWorkspaceExtension(target, layout)
+    val version = bootstrapVersion(target, layout, workspace)
+    if (layout.role != PnpmRole.PACKAGE) {
+      // A package inherits the install directory of its workspace root instead.
+      val projectDirectory = target.layout.projectDirectory
+      workspace.installDirectory.convention(
+        version.map { pinned -> projectDirectory.dir(".gradle/pnpm/$pinned") },
+      )
+    }
     val resolution = resolution(target, workspace, platform)
 
     target.extensions.add(PnpmResolution::class.java, RESOLUTION_NAME, resolution)
@@ -68,7 +77,7 @@ public class PnpmPlugin : Plugin<Project> {
     val lockfile = workspaceLockfile(target, layout)
     target.tasks.withType(PnpmTask::class.java).configureEach { task ->
       task.executable.convention(resolution.executable)
-      task.pnpmVersion.convention(workspace.version)
+      task.pnpmVersion.convention(version)
       task.dependsOn(lifecycleTaskPath(target, workspace, PnpmWorkspaceTasks.SETUP_TASK_NAME))
       // The lockfile pins the exact version of every tool pnpm resolves, so any task a build script
       // registers reruns when it changes too. Declared as a plain input rather than a property on
@@ -95,7 +104,7 @@ public class PnpmPlugin : Plugin<Project> {
     if (layout.isWorkspaceRoot) {
       PnpmRepository.register(target, workspace)
       val distributionArchive =
-        PnpmDistribution.register(target, workspace.version, platform, resolution.usesManagedPnpm)
+        PnpmDistribution.register(target, version, platform, resolution.usesManagedPnpm)
       PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
     }
 
@@ -119,13 +128,12 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmRole.WORKSPACE_ROOT -> applyWorkspaceConventions(target, extension)
       PnpmRole.PACKAGE ->
         applyPackageConventions(target, extension, checkNotNull(layout.workspaceRoot))
-      PnpmRole.NONE -> applyInertConventions(target, extension)
+      PnpmRole.NONE -> applyInertConventions(extension)
     }
     return extension
   }
 
   private fun applyWorkspaceConventions(target: Project, extension: PnpmExtension) {
-    val workspaceDirectory = target.layout.projectDirectory
     val workspaceRootPath = target.path
 
     extension.workspaceRootPath.convention(workspaceRootPath)
@@ -139,10 +147,6 @@ public class PnpmPlugin : Plugin<Project> {
 
     extension.version.convention(DEFAULT_PNPM_VERSION)
     extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
-
-    extension.installDirectory.convention(
-      extension.version.map { version -> workspaceDirectory.dir(".gradle/pnpm/$version") },
-    )
   }
 
   /**
@@ -187,15 +191,9 @@ public class PnpmPlugin : Plugin<Project> {
    * [lifecycleTaskPath] report the missing workspace root, and only if a pnpm task of this project
    * is actually requested.
    */
-  private fun applyInertConventions(target: Project, extension: PnpmExtension) {
-    val projectDirectory = target.layout.projectDirectory
-
+  private fun applyInertConventions(extension: PnpmExtension) {
     extension.version.convention(DEFAULT_PNPM_VERSION)
     extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
-
-    extension.installDirectory.convention(
-      extension.version.map { version -> projectDirectory.dir(".gradle/pnpm/$version") },
-    )
   }
 
   /**
@@ -224,6 +222,62 @@ public class PnpmPlugin : Plugin<Project> {
 
     return extension.workspaceRootPath.orElse(missingWorkspaceRoot).map { path ->
       PnpmWorkspaceTasks.taskPath(path, taskName)
+    }
+  }
+
+  /**
+   * The pnpm version [target] bootstraps: the fixed version that the `package.json` of its
+   * workspace root declares in `devEngines.packageManager`, so that the pnpm the plugin provisions
+   * is the one pnpm would switch to anyway. When that declares a range, or no version at all, it is
+   * [PnpmExtension.version].
+   *
+   * The `package.json` is read through a provider, which makes it a configuration cache input.
+   */
+  private fun bootstrapVersion(
+    target: Project,
+    layout: PnpmWorkspaceLayout,
+    extension: PnpmExtension,
+  ): Provider<String> {
+    val root = layout.workspaceRoot ?: return extension.version
+    // Locals, so that the provider captures neither the project nor this plugin.
+    val logger = target.logger
+    val projectPath = target.path
+    val packageJson = root.layout.projectDirectory.file(PnpmWorkspaceLayout.PACKAGE_JSON)
+    val packageJsonPath = packageJson.asFile.path
+    val declared =
+      target.providers
+        .fileContents(packageJson)
+        .asText
+        .map(PackageJsonPnpmVersion::parse)
+        .orElse(PackageJsonPnpmVersion.Absent("it does not exist"))
+
+    return declared.zip(extension.version) { version, configured ->
+      val reason =
+        when (version) {
+          is PackageJsonPnpmVersion.Fixed -> {
+            logger.debug(
+              "pnpm: {} bootstraps pnpm {}, the fixed version in devEngines.packageManager of {}",
+              projectPath,
+              version.version,
+              packageJsonPath,
+            )
+            return@zip version.version
+          }
+          is PackageJsonPnpmVersion.Range ->
+            "its devEngines.packageManager declares the range ${version.spec}"
+          is PackageJsonPnpmVersion.Unsupported ->
+            "its devEngines.packageManager declares pnpm ${version.version}, which predates pnpm 11"
+          is PackageJsonPnpmVersion.Absent -> version.reason
+        }
+      logger.debug(
+        "pnpm: {} pins no fixed pnpm version to bootstrap because {}, so {} bootstraps pnpm {} " +
+          "from pnpm.version or the version pinned by the plugin",
+        packageJsonPath,
+        reason,
+        projectPath,
+        configured,
+      )
+      configured
     }
   }
 

@@ -191,6 +191,59 @@ class PnpmPluginTest {
   }
 
   @Test
+  fun `bootstraps the fixed pnpm version declared in the package json`(@TempDir directory: File) {
+    val project = workspaceProject(directory)
+    writeDevEngines(directory, PNPM_VERSION)
+
+    assertThat(extension(project).installDirectory.get().asFile)
+      .isEqualTo(File(project.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
+    assertThat(distributionDependency(project).version).isEqualTo(PNPM_VERSION)
+    assertThat(pnpmTask(project, "pnpmInstall").pnpmVersion.get()).isEqualTo(PNPM_VERSION)
+  }
+
+  @Test
+  fun `prefers the fixed version of the package json over a configured version`(
+    @TempDir directory: File,
+  ) {
+    val project = workspaceProject(directory)
+    writeDevEngines(directory, PNPM_VERSION)
+    extension(project).version.set("11.0.0")
+
+    assertThat(distributionDependency(project).version).isEqualTo(PNPM_VERSION)
+  }
+
+  @Test
+  fun `bootstraps the configured version when the package json declares a range`(
+    @TempDir directory: File,
+  ) {
+    val project = workspaceProject(directory)
+    writeDevEngines(directory, "^11.0.0")
+    extension(project).version.set(PNPM_VERSION)
+
+    assertThat(distributionDependency(project).version).isEqualTo(PNPM_VERSION)
+  }
+
+  @Test
+  fun `bootstraps the default version when the package json declares a range`(
+    @TempDir directory: File,
+  ) {
+    val project = workspaceProject(directory)
+    writeDevEngines(directory, "^11.0.0")
+
+    assertThat(distributionDependency(project).version).isEqualTo(PnpmPlugin.DEFAULT_PNPM_VERSION)
+  }
+
+  @Test
+  fun `a package runs the fixed version declared by its workspace root`(@TempDir directory: File) {
+    val project = packageProject(directory)
+    writeDevEngines(directory, PNPM_VERSION)
+
+    assertThat(extension(project).installDirectory.get().asFile)
+      .isEqualTo(File(project.rootProject.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
+    assertThat(checkTask(project, "prettierCheck").pnpmVersion.get()).isEqualTo(PNPM_VERSION)
+  }
+
+  @Test
   fun `declares the distribution configurations only on the workspace root`(
     @TempDir directory: File,
   ) {
@@ -975,6 +1028,23 @@ class PnpmPluginTest {
     val ESLINT_SOURCES: Array<String> = BASE_SOURCES
     val PRETTIER_SOURCES: Array<String> =
       arrayOf("eslint.config.ts", "package.json", "prettier.config.ts", "tsconfig.json")
+
+    /** Overwrites the `package.json` in [directory] with one pinning pnpm to [version]. */
+    fun writeDevEngines(directory: File, version: String) {
+      File(directory, "package.json")
+        .writeText(
+          """
+          {
+            "name": "root",
+            "private": true,
+            "devEngines": {
+              "packageManager": { "name": "pnpm", "version": "$version", "onFail": "download" }
+            }
+          }
+          """
+            .trimIndent(),
+        )
+    }
 
     fun writePackageJson(directory: File) {
       directory.mkdirs()
