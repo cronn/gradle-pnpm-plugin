@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 buildscript { configurations.classpath { resolutionStrategy.activateDependencyLocking() } }
 
 plugins {
+  `java-test-fixtures`
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.plugin.publish)
   alias(libs.plugins.spotless)
@@ -72,15 +73,39 @@ dependencies {
   testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-val functionalTest: SourceSet = sourceSets.create("functionalTest")
+dependencies {
+  // gradleTestKit() is only added to the test source sets of java-gradle-plugin, and the fixtures
+  // shared by them build on it.
+  testFixturesImplementation(gradleTestKit())
+  testFixturesImplementation(libs.kotlin.stdlib)
+  testImplementation(testFixtures(project))
+}
 
-configurations[functionalTest.implementationConfigurationName].extendsFrom(
-  configurations.testImplementation.get(),
-)
+// The test fixtures are no part of the published plugin.
+listOf(configurations.testFixturesApiElements, configurations.testFixturesRuntimeElements).forEach {
+  (components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(it.get()) {
+    skip()
+  }
+}
 
-configurations[functionalTest.runtimeOnlyConfigurationName].extendsFrom(
-  configurations.testRuntimeOnly.get(),
-)
+/** A TestKit source set whose tests see the internals of the plugin and the shared fixtures. */
+fun testKitSourceSet(name: String): SourceSet {
+  val sourceSet = sourceSets.create(name)
+  configurations[sourceSet.implementationConfigurationName].extendsFrom(
+    configurations.testImplementation.get(),
+  )
+  configurations[sourceSet.runtimeOnlyConfigurationName].extendsFrom(
+    configurations.testRuntimeOnly.get(),
+  )
+  kotlin.target.compilations.named(name) {
+    associateWith(kotlin.target.compilations.getByName("main"))
+  }
+  return sourceSet
+}
+
+val functionalTest: SourceSet = testKitSourceSet("functionalTest")
+
+val integrationTest: SourceSet = testKitSourceSet("integrationTest")
 
 dependencies {
   // Needed to build tar.gz fixtures for the PnpmSetupTask tests; ArchiveOperations only reads.
@@ -91,7 +116,7 @@ gradlePlugin {
   website = "https://github.com/cronn/gradle-pnpm-plugin"
   vcsUrl = "https://github.com/cronn/gradle-pnpm-plugin.git"
 
-  testSourceSets(functionalTest)
+  testSourceSets(functionalTest, integrationTest)
 
   plugins {
     register("pnpm") {
@@ -116,28 +141,44 @@ gradlePlugin {
   }
 }
 
+// A TestKit daemon outlives the build it ran and keeps file handles on the project's .gradle
+// directory open. Windows refuses to delete an open file, so deleting the @TempDir of a test fails
+// whenever the daemon has not let go yet. The leftovers are temporary directories of a throwaway
+// build, so a failure to delete them is logged instead of failing the test.
+fun Test.ignoreTempDirDeletionFailures() {
+  systemProperty(
+    "junit.jupiter.tempdir.deletion.strategy.default",
+    "org.junit.jupiter.api.io.TempDirDeletionStrategy${'$'}IgnoreFailures",
+  )
+}
+
 val functionalTestTask =
   tasks.register<Test>("functionalTest") {
-    description = "Runs the Gradle TestKit tests."
+    description = "Runs the Gradle TestKit tests against a pnpm stub."
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     testClassesDirs = functionalTest.output.classesDirs
     classpath = functionalTest.runtimeClasspath
     // TestKit spawns real Gradle builds, which spend most of their time waiting on I/O.
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
-    // Opt-in tier that additionally runs against other Gradle versions; see README.
-    systemProperty(
-      "pnpm.test.gradleVersions",
-      providers.gradleProperty("pnpmTestGradleVersions").getOrElse(""),
-    )
-    // A TestKit daemon outlives the build it ran and keeps file handles on the project's .gradle
-    // directory open. Windows refuses to delete an open file, so deleting the @TempDir of a test
-    // fails whenever the daemon has not let go yet. The leftovers are temporary directories of a
-    // throwaway build, so a failure to delete them is logged instead of failing the test.
-    systemProperty(
-      "junit.jupiter.tempdir.deletion.strategy.default",
-      "org.junit.jupiter.api.io.TempDirDeletionStrategy${'$'}IgnoreFailures",
-    )
+    ignoreTempDirDeletionFailures()
     shouldRunAfter(tasks.test)
+  }
+
+val integrationTestTask =
+  tasks.register<Test>("integrationTest") {
+    description = "Runs the Gradle TestKit tests against the real pnpm and Node.js."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    testClassesDirs = integrationTest.output.classesDirs
+    classpath = integrationTest.runtimeClasspath
+    // The workspace every test copies, without what a local pnpm install leaves behind in it.
+    val workspaceTemplate = layout.projectDirectory.dir("src/integrationTest/workspace")
+    systemProperty("pnpm.test.workspaceTemplate", workspaceTemplate.asFile.absolutePath)
+    inputs
+      .files(fileTree(workspaceTemplate) { exclude("**/node_modules/**", "**/build/**") })
+      .withPropertyName("workspaceTemplate")
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+    ignoreTempDirDeletionFailures()
+    shouldRunAfter(functionalTestTask)
   }
 
 tasks.withType<Test>().configureEach {
@@ -145,7 +186,7 @@ tasks.withType<Test>().configureEach {
   testLogging { exceptionFormat = TestExceptionFormat.FULL }
 }
 
-tasks.check { dependsOn(functionalTestTask) }
+tasks.check { dependsOn(functionalTestTask, integrationTestTask) }
 
 spotless {
   isEnforceCheck = true

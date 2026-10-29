@@ -254,17 +254,16 @@ plugins {
 }
 ```
 
-### Testing against other Gradle versions
+### Test suites
 
-`./gradlew build` runs the TestKit suite against the Gradle version of the wrapper only. To
-additionally run it against other versions, pass them as a comma-separated list:
+|       Task        |                                 Runs                                 |
+|-------------------|----------------------------------------------------------------------|
+| `test`            | Unit tests against `ProjectBuilder`                                  |
+| `functionalTest`  | TestKit builds against a pnpm stub that records its invocations      |
+| `integrationTest` | TestKit builds of `src/integrationTest/workspace` with the real pnpm |
 
-```bash
-./gradlew functionalTest -PpnpmTestGradleVersions=9.1.0,9.7.1
-```
-
-Each version is downloaded on demand. Without the property the version-specific tests are skipped.
-CI runs this tier in a separate job.
+`./gradlew build` runs all three with the Gradle version of the wrapper. The integration tests need
+network access on their first run to download pnpm and Node.js.
 
 ### Refreshing the dependency lockfiles
 
