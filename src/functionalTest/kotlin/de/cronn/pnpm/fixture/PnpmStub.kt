@@ -1,7 +1,7 @@
 package de.cronn.pnpm.fixture
 
+import de.cronn.pnpm.internal.PnpmPlatform
 import java.io.File
-import java.util.Locale
 
 /**
  * A fake pnpm executable that records how it was invoked, so that the functional tests can assert
@@ -56,6 +56,10 @@ class PnpmStub(private val directory: File) {
       }
     return invocations
   }
+
+  /** The last recorded invocation whose arguments contain [command], for example `eslint`. */
+  fun lastInvocationOf(command: String): PnpmInvocation =
+    invocations().last { it.arguments.contains(command) }
 
   /**
    * The numbered per-invocation record files, ordered by the slot each invocation claimed, which is
@@ -179,8 +183,7 @@ class PnpmStub(private val directory: File) {
   }
 
   companion object {
-    val isWindows: Boolean =
-      System.getProperty("os.name").lowercase(Locale.ROOT).startsWith("windows")
+    val isWindows: Boolean = PnpmPlatform.current().isWindows
 
     /**
      * Prefix of the environment variables the stub records. Recording only the variables the tests

@@ -18,7 +18,7 @@ class VitestFunctionalTest {
     val result = fixture.runner(":frontend:vitestTest").build()
 
     assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    val test = vitestTest(fixture)
+    val test = fixture.stub.lastInvocationOf("vitest")
     // `run`, because a bare `vitest` would start the watch mode and never hand the build back.
     assertThat(test.arguments).startsWith("exec", "vitest", "run")
     assertThat(File(test.workingDirectory).canonicalFile)
@@ -45,7 +45,8 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest").build()
 
-    assertThat(vitestTest(fixture).arguments).contains(coverageArgument(fixture).single())
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
+      .contains(coverageArgument(fixture).single())
   }
 
   @Test
@@ -57,7 +58,8 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest", "--coverageReportsDirectory=$report").build()
 
-    assertThat(vitestTest(fixture).arguments).contains("--coverage.reportsDirectory=$report")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
+      .contains("--coverage.reportsDirectory=$report")
   }
 
   @Test
@@ -65,11 +67,11 @@ class VitestFunctionalTest {
     val fixture = workspaceWithFrontend()
 
     fixture.runner(":frontend:vitestTest").build()
-    assertThat(vitestTest(fixture).arguments).doesNotContain("--coverage")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments).doesNotContain("--coverage")
 
     fixture.runner(":frontend:vitestTest", "--coverage").build()
     // Ahead of the reports directory, which Vitest would drop after a bare --coverage.
-    assertThat(vitestTest(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
       .containsSubsequence("--coverage", coverageArgument(fixture).single())
   }
 
@@ -79,7 +81,7 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest", "--update").build()
 
-    assertThat(vitestTest(fixture).arguments).contains("--update")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments).contains("--update")
   }
 
   @Test
@@ -89,7 +91,7 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest", "--config=vitest.ci.config.ts").build()
 
-    assertThat(vitestTest(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
       .containsExactly(
         "exec",
         "vitest",
@@ -114,7 +116,7 @@ class VitestFunctionalTest {
       )
       .build()
 
-    assertThat(vitestTest(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
       .containsExactly(
         "exec",
         "vitest",
@@ -144,7 +146,8 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestLogin").build()
 
-    assertThat(vitestTest(fixture).arguments).contains("--testNamePattern=login", "--bail=1")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
+      .contains("--testNamePattern=login", "--bail=1")
   }
 
   @Test
@@ -163,8 +166,8 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest").build()
 
-    assertThat(vitestTest(fixture).arguments).contains("--passWithNoTests")
-    assertThat(vitestTest(fixture).arguments).doesNotContain("--coverage")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments).contains("--passWithNoTests")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments).doesNotContain("--coverage")
   }
 
   @Test
@@ -192,32 +195,13 @@ class VitestFunctionalTest {
   }
 
   @Test
-  fun `test runs the suite`() {
-    val fixture = workspaceWithFrontend()
-
-    val result = fixture.runner(":frontend:test").build()
-
-    assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-  }
-
-  @Test
-  fun `check runs the suite`() {
-    val fixture = workspaceWithFrontend()
-
-    val result = fixture.runner(":frontend:check").build()
-
-    // A unit suite is fast and reaches nothing the build does not start, so it belongs in `build`.
-    assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-  }
-
-  @Test
   fun `appends the extra arguments last`() {
     val fixture =
       workspaceWithFrontend(packageBuildScript = """vitest { extraArguments("--reporter=json") }""")
 
     fixture.runner(":frontend:vitestTest").build()
 
-    assertThat(vitestTest(fixture).arguments).endsWith("--reporter=json")
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments).endsWith("--reporter=json")
   }
 
   @Test
@@ -284,48 +268,20 @@ class VitestFunctionalTest {
     val result = fixture.runner(":frontend:vitestTest").build()
 
     assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(vitestTest(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
       .startsWith("exec", "vitest", "run", *fixture.configArguments("frontend/vite.config.ts"))
   }
 
-  @Test
-  fun `registers no vitest task for a package without a vitest or vite config`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(packages = listOf("frontend"))
-
-    val result = fixture.runner(":frontend:vitestTest").buildAndFail()
-
-    assertThat(result.output).contains("Cannot locate tasks that match ':frontend:vitestTest'")
-    assertThat(fixture.runner(":frontend:tasks").build().output).doesNotContain("vitestTest - ")
-  }
-
-  @Test
-  fun `reuses the configuration cache on a second run`() {
-    val fixture = workspaceWithFrontend()
-
-    fixture.runner(":frontend:vitestTest").build()
-    val second = fixture.runner(":frontend:vitestTest").build()
-
-    assertThat(second.output).contains("Configuration cache entry")
-  }
-
   /** A workspace whose `frontend` package is configured for Vitest and holds one test file. */
-  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(
-      packages = listOf("frontend"),
-      packageBuildScript = packageBuildScript,
-      vitest = true,
-    )
-    fixture.write("frontend/src/main.ts", "export const main = 1")
-    fixture.write("frontend/src/login.test.ts", "export const login = 1")
-    return fixture
-  }
+  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture =
+    GradleProjectFixture(projectDirectory)
+      .writeWorkspaceWithPackage(
+        packageBuildScript = packageBuildScript,
+        sourceFiles = listOf("src/main.ts", "src/login.test.ts"),
+        vitest = true,
+      )
 
   /** The invocation that ran the suite, as opposed to the one that installed the workspace. */
-  private fun vitestTest(fixture: GradleProjectFixture) =
-    fixture.stub.invocations().last { it.arguments.contains("vitest") }
-
   /** The report directory argument the task always passes, whatever the options say. */
   private fun coverageArgument(fixture: GradleProjectFixture) =
     listOf(

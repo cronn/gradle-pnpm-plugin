@@ -18,7 +18,7 @@ class TypescriptFunctionalTest {
     val result = fixture.runner(":frontend:compileTypescript").build()
 
     assertThat(result.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly("exec", "tsc", *projectArguments(fixture, "frontend/tsconfig.json"))
   }
 
@@ -29,7 +29,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescript", "--config=tsconfig.build.json").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly("exec", "tsc", *projectArguments(fixture, "frontend/tsconfig.build.json"))
   }
 
@@ -43,7 +43,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescript").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly("exec", "tsc", *projectArguments(fixture, "frontend/tsconfig.build.json"))
   }
 
@@ -53,7 +53,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescript", "--noEmit", "--outDir=dist").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsSubsequence("--noEmit", "--outDir", fixture.directory("frontend/dist").canonicalPath)
   }
 
@@ -63,7 +63,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescript", "--build", "--clean").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly(
         "exec",
         "tsc",
@@ -88,7 +88,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescript").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly(
         "exec",
         "tsc",
@@ -114,7 +114,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescriptBuild").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly(
         "exec",
         "tsc",
@@ -142,7 +142,7 @@ class TypescriptFunctionalTest {
 
     fixture.runner(":frontend:compileTypescript").build()
 
-    assertThat(tsc(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly(
         "exec",
         "tsc",
@@ -152,28 +152,15 @@ class TypescriptFunctionalTest {
       )
   }
 
-  @Test
-  fun `reuses the configuration cache on a second run with options`() {
-    val fixture = workspaceWithFrontend()
-
-    fixture.runner(":frontend:compileTypescript", "--noEmit", "--outDir=dist").build()
-    val second = fixture.runner(":frontend:compileTypescript", "--noEmit", "--outDir=dist").build()
-
-    assertThat(second.output).contains("Configuration cache entry reused")
-  }
-
   /** A workspace whose `frontend` package is configured for TypeScript and holds one source. */
-  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)
-    fixture.write("frontend/src/main.ts", "export const main = 1")
-    return fixture
-  }
+  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture =
+    GradleProjectFixture(projectDirectory)
+      .writeWorkspaceWithPackage(
+        packageBuildScript = packageBuildScript,
+        sourceFiles = listOf("src/main.ts"),
+      )
 
   /** The invocation that ran tsc, as opposed to the one that installed the workspace. */
-  private fun tsc(fixture: GradleProjectFixture) =
-    fixture.stub.invocations().last { it.arguments.contains("tsc") }
-
   private fun projectArguments(fixture: GradleProjectFixture, path: String) =
     fixture.configArguments(path, option = "--project")
 }

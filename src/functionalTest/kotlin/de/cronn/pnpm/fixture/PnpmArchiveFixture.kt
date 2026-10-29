@@ -1,7 +1,7 @@
 package de.cronn.pnpm.fixture
 
+import de.cronn.pnpm.internal.PnpmPlatform
 import java.io.File
-import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
@@ -15,16 +15,13 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
  */
 object PnpmArchiveFixture {
 
-  /**
-   * Platform part of a release asset name for the machine running the tests. Mirrors
-   * `PnpmPlatform`, which is internal to the plugin and therefore not visible from this source set.
-   */
-  val platformIdentifier: String = "${osFamily()}-${architecture()}"
+  private val platform = PnpmPlatform.current()
 
-  val archiveExtension: String = if (PnpmStub.isWindows) "zip" else "tar.gz"
+  /** Name of the pnpm executable in a release for this platform. */
+  val executableName: String = platform.executableName
 
   /** Name of the release asset for this platform, for example `pnpm-linux-x64.tar.gz`. */
-  val assetName: String = "pnpm-$platformIdentifier.$archiveExtension"
+  val assetName: String = "pnpm-${platform.identifier}.${platform.archiveExtension}"
 
   /**
    * Writes the release of [version] into [directory], under the `v<version>/<asset>` path the Ivy
@@ -40,7 +37,7 @@ object PnpmArchiveFixture {
   ): String {
     val releaseDirectory = File(directory, "v$version").apply { mkdirs() }
     val archive = File(releaseDirectory, assetName)
-    if (PnpmStub.isWindows) writeZip(archive, entries) else writeTarGz(archive, entries)
+    if (platform.isWindows) writeZip(archive, entries) else writeTarGz(archive, entries)
     return directory.toURI().toString()
   }
 
@@ -82,20 +79,4 @@ object PnpmArchiveFixture {
   }
 
   private const val EXECUTABLE_MODE = 0b111_101_101
-
-  private fun osFamily(): String {
-    val osName = System.getProperty("os.name").lowercase(Locale.ROOT)
-    return when {
-      osName.startsWith("windows") -> "win32"
-      osName.startsWith("mac") || osName.contains("darwin") -> "darwin"
-      else -> "linux"
-    }
-  }
-
-  private fun architecture(): String =
-    when (System.getProperty("os.arch").lowercase(Locale.ROOT)) {
-      "aarch64",
-      "arm64" -> "arm64"
-      else -> "x64"
-    }
 }

@@ -1,5 +1,12 @@
 package de.cronn.pnpm
 
+import de.cronn.pnpm.fixture.ProjectFiles.PLUGIN_ID
+import de.cronn.pnpm.fixture.ProjectFiles.PNPM_VERSION
+import de.cronn.pnpm.fixture.ProjectFiles.writeCheckConfigs
+import de.cronn.pnpm.fixture.ProjectFiles.writeDevEngines
+import de.cronn.pnpm.fixture.ProjectFiles.writePlaywrightConfig
+import de.cronn.pnpm.fixture.ProjectFiles.writeRootPackageJson
+import de.cronn.pnpm.fixture.ProjectFiles.writeVitestConfig
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
@@ -319,7 +326,7 @@ class PnpmPluginTest {
   fun `treats a project without a workspace file as its own workspace root`(
     @TempDir directory: File,
   ) {
-    writePackageJson(directory)
+    writeRootPackageJson(directory)
     val project = ProjectBuilder.builder().withProjectDir(directory).build()
 
     project.pluginManager.apply(PLUGIN_ID)
@@ -431,7 +438,7 @@ class PnpmPluginTest {
 
   @Test
   fun `fails when the workspace root does not apply the plugin`(@TempDir directory: File) {
-    writePackageJson(directory)
+    writeRootPackageJson(directory)
     File(directory, "pnpm-workspace.yaml").writeText("packages:\n  - frontend\n")
     val root = ProjectBuilder.builder().withProjectDir(directory).build()
     val packageDirectory = File(directory, "frontend").apply { mkdirs() }
@@ -1210,9 +1217,6 @@ class PnpmPluginTest {
     task.dependsOn.filterIsInstance<Provider<*>>().map { it.get().toString() }
 
   internal companion object {
-    const val PNPM_VERSION = "11.23.0"
-    const val PLUGIN_ID = "de.cronn.gradle-pnpm-plugin"
-
     /** The default include patterns of ESLint. */
     val ESLINT_PATTERNS: Array<String> = EslintTasks.INCLUDES.toTypedArray()
 
@@ -1221,37 +1225,6 @@ class PnpmPluginTest {
     val ESLINT_SOURCES: Array<String> = BASE_SOURCES
     val PRETTIER_SOURCES: Array<String> =
       arrayOf("eslint.config.ts", "package.json", "prettier.config.ts", "tsconfig.json")
-
-    /** Overwrites the `package.json` in [directory] with one pinning pnpm to [version]. */
-    fun writeDevEngines(directory: File, version: String) {
-      File(directory, "package.json")
-        .writeText(
-          """
-          {
-            "name": "root",
-            "private": true,
-            "devEngines": {
-              "packageManager": { "name": "pnpm", "version": "$version", "onFail": "download" }
-            }
-          }
-          """
-            .trimIndent(),
-        )
-    }
-
-    fun writePackageJson(directory: File) {
-      directory.mkdirs()
-      File(directory, "package.json")
-        .writeText(
-          """
-          {
-            "name": "root",
-            "private": true
-          }
-          """
-            .trimIndent(),
-        )
-    }
 
     /**
      * A package project that is also configured for Playwright.
@@ -1267,12 +1240,6 @@ class PnpmPluginTest {
       writeCheckConfigs(packageDirectory)
       writePlaywrightConfig(packageDirectory)
       return childProject(name, root, packageDirectory)
-    }
-
-    /** Writes the config file that makes the plugin register the Playwright tasks. */
-    fun writePlaywrightConfig(directory: File) {
-      directory.mkdirs()
-      File(directory, "playwright.config.ts").writeText("export default {}\n")
     }
 
     /**
@@ -1291,23 +1258,9 @@ class PnpmPluginTest {
       return childProject(name, root, packageDirectory)
     }
 
-    /** Writes the config file that makes the plugin register the Vitest tasks. */
-    fun writeVitestConfig(directory: File) {
-      directory.mkdirs()
-      File(directory, "vitest.config.ts").writeText("export default {}\n")
-    }
-
-    /** Writes a config file for every check tool, so that all of their tasks are registered. */
-    fun writeCheckConfigs(directory: File) {
-      directory.mkdirs()
-      File(directory, "tsconfig.json").writeText("{}")
-      File(directory, "eslint.config.ts").writeText("export default []\n")
-      File(directory, "prettier.config.ts").writeText("export default {}\n")
-    }
-
     /** A project that is a pnpm workspace root, because its directory has a pnpm-workspace.yaml. */
     fun workspaceProject(directory: File, name: String? = null, parent: Project? = null): Project {
-      writePackageJson(directory)
+      writeRootPackageJson(directory)
       writeCheckConfigs(directory)
       File(directory, "pnpm-workspace.yaml").writeText("packages:\n  - frontend\n")
 
