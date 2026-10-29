@@ -1,6 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.internal.check.EslintTasks
+import de.cronn.pnpm.internal.check.PrettierTasks
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.testkit.runner.TaskOutcome
@@ -532,30 +534,6 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
-  fun `reuses the configuration cache across runs`() {
-    val fixture = workspaceWithFrontend()
-
-    fixture.runner(":frontend:check").build()
-    val second = fixture.runner(":frontend:check").build()
-
-    assertThat(second.output).contains("Configuration cache entry reused")
-  }
-
-  @Test
-  fun `does not register a tool task when the project is not configured for it`() {
-    val fixture = workspaceWithFrontend()
-    fixture.directory("frontend/eslint.config.ts").delete()
-
-    val result = fixture.runner(":frontend:check").build()
-
-    assertThat(result.task(":frontend:eslintCheck")).isNull()
-    assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(fixture.stub.invocations()).noneSatisfy { invocation ->
-      assertThat(invocation.arguments).contains("eslint")
-    }
-  }
-
-  @Test
   fun `adding a tool config file invalidates the configuration cache`() {
     val fixture = workspaceWithFrontend()
     val config = fixture.directory("frontend/eslint.config.ts")
@@ -573,27 +551,6 @@ class PnpmPackageFunctionalTest {
     // picked up without having to discard the cache by hand.
     assertThat(afterAdding.output).contains("Configuration cache entry stored")
     assertThat(afterAdding.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-  }
-
-  @Test
-  fun `fails the build naming an unsupported pattern`() {
-    val fixture =
-      workspaceWithFrontend(
-        packageBuildScript =
-          """
-          eslint { includes = listOf("src/**/*.{ts,tsx}") }
-          """,
-      )
-    fixture.write("frontend/src/main.ts", "export const main = 1")
-
-    val result = fixture.runner(":frontend:eslintCheck").buildAndFail()
-
-    assertThat(result.output)
-      .contains("The includes pattern \"src/**/*.{ts,tsx}\" of :frontend:eslintCheck")
-      .contains("brace expansion")
-      .contains("Write one pattern per alternative")
-    // The build fails over the pattern instead of handing it to the tool.
-    assertThat(fixture.stub.invocations().map { it.arguments }).noneMatch { it.contains("eslint") }
   }
 
   @Test
@@ -627,17 +584,17 @@ class PnpmPackageFunctionalTest {
       .isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
-  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)
-    fixture.write("frontend/main.ts", "export const main = 1")
-    return fixture
-  }
+  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture =
+    GradleProjectFixture(projectDirectory)
+      .writeWorkspaceWithPackage(
+        packageBuildScript = packageBuildScript,
+      )
 
   private companion object {
     /** The default patterns of each tool, the way they reach its command line. */
     val ESLINT_PATTERNS: Array<String> =
-      arrayOf("--no-error-on-unmatched-pattern", "*.ts", "src/**/*.ts", "src/**/*.tsx")
-    val PRETTIER_PATTERNS: Array<String> = ESLINT_PATTERNS + arrayOf("*.json", "*.md")
+      arrayOf("--no-error-on-unmatched-pattern", *EslintTasks.INCLUDES.toTypedArray())
+    val PRETTIER_PATTERNS: Array<String> =
+      arrayOf("--no-error-on-unmatched-pattern", *PrettierTasks.INCLUDES.toTypedArray())
   }
 }

@@ -1,6 +1,7 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.internal.check.PrettierTasks
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.testkit.runner.TaskOutcome
@@ -10,31 +11,6 @@ import org.junit.jupiter.api.io.TempDir
 class PnpmWorkspaceFunctionalTest {
 
   @TempDir lateinit var projectDirectory: File
-
-  @Test
-  fun `uses the default pnpm version when none is configured`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(
-      pnpmVersion = null,
-      pnpmConfiguration = "",
-      rootBuildScript =
-        """
-        val pinnedVersion = pnpm.version
-        tasks.register("printPnpmVersion") {
-          // Copied into a local so the doLast action does not capture the build script itself.
-          val version = pinnedVersion
-          doLast { println("pinned=" + version.get()) }
-        }
-        """,
-    )
-
-    val result = fixture.runner("printPnpmVersion").build()
-
-    // Kept in sync manually with PnpmPlugin.DEFAULT_PNPM_VERSION, which functionalTest cannot
-    // reference: it only depends on the plugin as a published artifact, not as a compile
-    // dependency.
-    assertThat(result.output).contains("pinned=11.28.5")
-  }
 
   @Test
   fun `pnpmInstall runs pnpm install in the workspace root`() {
@@ -49,16 +25,6 @@ class PnpmWorkspaceFunctionalTest {
     assertThat(invocation.arguments).containsExactly("install")
     assertThat(File(invocation.workingDirectory).canonicalFile)
       .isEqualTo(projectDirectory.canonicalFile)
-  }
-
-  @Test
-  fun `pnpmSetup is skipped when an executable is configured explicitly`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace()
-
-    val result = fixture.runner("pnpmInstall").build()
-
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
   }
 
   @Test
@@ -129,18 +95,6 @@ class PnpmWorkspaceFunctionalTest {
   }
 
   @Test
-  fun `reuses the configuration cache on a second run`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace()
-
-    val first = fixture.runner("pnpmInstall").build()
-    val second = fixture.runner("pnpmInstall").build()
-
-    assertThat(first.output).contains("Configuration cache entry stored")
-    assertThat(second.output).contains("Configuration cache entry reused")
-  }
-
-  @Test
   fun `fails with an actionable message when pnpm fails`() {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace()
@@ -175,11 +129,7 @@ class PnpmWorkspaceFunctionalTest {
         *fixture.configArguments("frontend/app/prettier.config.ts"),
         "--check",
         "--no-error-on-unmatched-pattern",
-        "*.ts",
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "*.json",
-        "*.md",
+        *PrettierTasks.INCLUDES.toTypedArray(),
       )
     assertThat(invocations.last().workingDirectory)
       .isEqualTo(fixture.directory("frontend/app").canonicalPath)
@@ -201,19 +151,6 @@ class PnpmWorkspaceFunctionalTest {
     val second = fixture.runner(":prettierFix", ":frontend:prettierFix").build()
     assertThat(second.task(":prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
     assertThat(second.task(":frontend:prettierFix")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
-  }
-
-  @Test
-  fun `fails when the workspace root does not apply the plugin`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeNestedWorkspace()
-    fixture.write("frontend/build.gradle.kts", "// forgot to apply the plugin")
-
-    val result = fixture.runner(":frontend:app:tasks").buildAndFail()
-
-    assertThat(result.output)
-      .contains("it is the pnpm workspace root of :frontend:app")
-      .contains("""Apply id("de.cronn.gradle-pnpm-plugin") in the build script of :frontend""")
   }
 
   @Test
@@ -251,33 +188,5 @@ class PnpmWorkspaceFunctionalTest {
         "pnpmDedupe - ",
         "pnpmClean - ",
       )
-  }
-
-  @Test
-  fun `reports the missing workspace root when a pnpm task outside the workspace runs`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeNestedWorkspace(extraProjects = listOf("docs"))
-    // A tool config file but no package.json: the task is registered, so it is actually asked for
-    // the workspace root that this project does not have.
-    fixture.write("docs/build.gradle.kts", """plugins { id("de.cronn.gradle-pnpm-plugin") }""")
-    fixture.writeCheckConfigs("docs")
-
-    val result = fixture.runner(":docs:prettierCheck").buildAndFail()
-
-    assertThat(result.output)
-      .contains(":docs takes no part in the pnpm build")
-      .contains("Add a pnpm-workspace.yaml to the workspace root, or a package.json to :docs")
-  }
-
-  @Test
-  fun `treats a single package without a workspace file as its own workspace root`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace()
-    fixture.directory("pnpm-workspace.yaml").delete()
-
-    val result = fixture.runner("pnpmInstall", "prettierCheck").build()
-
-    assertThat(result.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(result.task(":prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
   }
 }

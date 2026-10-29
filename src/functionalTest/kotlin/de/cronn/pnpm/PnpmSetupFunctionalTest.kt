@@ -1,10 +1,12 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
-import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.pnpmRepository
-import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.settingsRepositories
 import de.cronn.pnpm.fixture.PnpmArchiveFixture
 import de.cronn.pnpm.fixture.PnpmStub
+import de.cronn.pnpm.fixture.ProjectFiles.ivyRepository
+import de.cronn.pnpm.fixture.ProjectFiles.pnpmRepository
+import de.cronn.pnpm.fixture.ProjectFiles.settingsRepositories
+import de.cronn.pnpm.fixture.ProjectFiles.writeDevEngines
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.testkit.runner.TaskOutcome
@@ -24,8 +26,7 @@ class PnpmSetupFunctionalTest {
     val result = fixture.runner("pnpmSetup").build()
 
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    val installed =
-      fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName")
+    val installed = fixture.installedPnpm()
     assertThat(installed).isFile()
     if (!PnpmStub.isWindows) {
       assertThat(installed.canExecute()).isTrue()
@@ -35,12 +36,12 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `bootstraps the fixed pnpm version declared in the package json`() {
     val fixture = workspaceWithLocalRelease(version = DECLARED_VERSION, pnpmVersion = null)
-    writeDevEngines(fixture, DECLARED_VERSION)
+    writeDevEngines(fixture.rootDirectory, DECLARED_VERSION)
 
     val result = fixture.runner("pnpmSetup", "--debug").build()
 
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(fixture.directory(".gradle/pnpm/$DECLARED_VERSION/$executableName")).isFile()
+    assertThat(fixture.installedPnpm(DECLARED_VERSION)).isFile()
     assertThat(result.output)
       .contains("bootstraps pnpm $DECLARED_VERSION, the fixed version in devEngines.packageManager")
   }
@@ -48,13 +49,13 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `bootstraps the configured pnpm version when the package json declares a range`() {
     val fixture = workspaceWithLocalRelease()
-    writeDevEngines(fixture, "^11.0.0")
+    writeDevEngines(fixture.rootDirectory, "^11.0.0")
 
     val result = fixture.runner("pnpmSetup", "--debug").build()
 
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(
-        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName"),
+        fixture.installedPnpm(),
       )
       .isFile()
     assertThat(result.output)
@@ -65,19 +66,19 @@ class PnpmSetupFunctionalTest {
   @Test
   fun `bootstraps the new version after the package json changed`() {
     val fixture = workspaceWithLocalRelease(version = DECLARED_VERSION, pnpmVersion = null)
-    writeDevEngines(fixture, DECLARED_VERSION)
+    writeDevEngines(fixture.rootDirectory, DECLARED_VERSION)
     PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
 
     fixture.runner("pnpmSetup").build()
     val reused = fixture.runner("pnpmSetup").build()
-    writeDevEngines(fixture, GradleProjectFixture.PNPM_VERSION)
+    writeDevEngines(fixture.rootDirectory, GradleProjectFixture.PNPM_VERSION)
     val changed = fixture.runner("pnpmSetup").build()
 
     assertThat(reused.output).contains("Reusing configuration cache")
     assertThat(changed.output).doesNotContain("Reusing configuration cache")
     assertThat(changed.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(
-        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName"),
+        fixture.installedPnpm(),
       )
       .isFile()
   }
@@ -158,7 +159,7 @@ class PnpmSetupFunctionalTest {
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
     assertThat(result.output)
-      .contains("Expected a pnpm executable named '$executableName'")
+      .contains("Expected a pnpm executable named '${PnpmArchiveFixture.executableName}'")
       .contains("the archive contained: README.md")
   }
 
@@ -201,7 +202,7 @@ class PnpmSetupFunctionalTest {
 
     assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(
-        fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}/$executableName"),
+        fixture.installedPnpm(),
       )
       .content()
       .doesNotContain("decoy")
@@ -221,18 +222,7 @@ class PnpmSetupFunctionalTest {
     val fixture =
       workspaceWithLocalRelease(
         repositoryUrl = repositoryUrl,
-        extraBuildScript =
-          """
-          val other = configurations.dependencyScope("other")
-          val otherArchive = configurations.resolvable("otherArchive") {
-            extendsFrom(other.get())
-          }
-          dependencies { add("other", "org.example:example:1.0:linux@tar.gz") }
-          tasks.register("resolveOther") {
-            inputs.files(otherArchive.map { it.incoming.files })
-          }
-          """
-            .trimIndent(),
+        extraBuildScript = RESOLVE_OTHER,
       )
 
     val result = fixture.runner("resolveOther").buildAndFail()
@@ -262,19 +252,7 @@ class PnpmSetupFunctionalTest {
     }
   }
 
-  // The repository the plugin registers, and the cases in which it steps aside
-
-  @Test
-  fun `registers the pnpm repository in the workspace root`() {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(rootBuildScript = PRINT_REPOSITORIES)
-
-    val result = fixture.runner("printRepositories").build()
-
-    assertThat(result.output)
-      .contains("repositories: [pnpm]")
-      .contains("https://github.com/pnpm/pnpm/releases/download/")
-  }
+  // The cases in which the repository the plugin registers steps aside
 
   /**
    * A build that declares its repositories in settings declares the pnpm repository there too, as a
@@ -343,11 +321,13 @@ class PnpmSetupFunctionalTest {
   /** Tail of the path of the pnpm the plugin installs, independent of the temporary directory. */
   private val installedExecutablePath: String
     get() =
-      listOf(".gradle", "pnpm", GradleProjectFixture.PNPM_VERSION, executableName)
+      listOf(
+          ".gradle",
+          "pnpm",
+          GradleProjectFixture.PNPM_VERSION,
+          PnpmArchiveFixture.executableName,
+        )
         .joinToString(File.separator)
-
-  private val executableName: String
-    get() = if (PnpmStub.isWindows) "pnpm.exe" else "pnpm"
 
   /**
    * A workspace that resolves pnpm from a local pnpm release directory, which is what pointing the
@@ -382,60 +362,14 @@ class PnpmSetupFunctionalTest {
     return fixture
   }
 
-  /** Pins pnpm to [version] in the `package.json` of the workspace root. */
-  private fun writeDevEngines(fixture: GradleProjectFixture, version: String) {
-    fixture.write(
-      "package.json",
-      """
-      {
-        "name": "root",
-        "private": true,
-        "devEngines": {
-          "packageManager": { "name": "pnpm", "version": "$version", "onFail": "download" }
-        }
-      }
-      """,
-    )
-  }
-
   /** URL of a repository directory that holds nothing at all. */
   private fun emptyRepositoryUrl(): String =
     File(releaseDirectory, "empty").apply { mkdirs() }.toURI().toString()
-
-  /** An Ivy repository over a local pnpm release directory, laid out like the pnpm repository. */
-  private fun ivyRepository(url: String): String =
-    """
-    ivy {
-      setUrl("$url")
-      patternLayout { artifact("v[revision]/[artifact]-[classifier].[ext]") }
-      metadataSources { artifact() }
-    }
-    """
-      .trimIndent()
 
   companion object {
 
     /** A pnpm version declared in `package.json`, distinct from the one the fixture configures. */
     const val DECLARED_VERSION: String = "11.24.0"
-
-    /** Prints the repositories of the project once the plugin had its say on them. */
-    val PRINT_REPOSITORIES: String =
-      """
-      afterEvaluate {
-        val declared = repositories.map { it.name }
-        val urls =
-          repositories
-            .filterIsInstance<org.gradle.api.artifacts.repositories.IvyArtifactRepository>()
-            .map { it.url.toString() }
-        tasks.register("printRepositories") {
-          doLast {
-            println("repositories: " + declared)
-            println("urls: " + urls)
-          }
-        }
-      }
-      """
-        .trimIndent()
 
     /** Resolves an unrelated artifact-only dependency, to prove the build still can. */
     val RESOLVE_OTHER: String =

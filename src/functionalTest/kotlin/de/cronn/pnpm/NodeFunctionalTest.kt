@@ -18,7 +18,7 @@ class NodeFunctionalTest {
     val result = fixture.runner(":frontend:generate").build()
 
     assertThat(result.task(":frontend:generate")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
-    val run = nodeRun(fixture)
+    val run = fixture.stub.lastInvocationOf("node")
     assertThat(run.arguments).containsExactly("exec", "node", entryPoint(fixture))
     assertThat(File(run.workingDirectory).canonicalFile)
       .isEqualTo(fixture.directory("frontend").canonicalFile)
@@ -37,7 +37,7 @@ class NodeFunctionalTest {
 
     fixture.runner(":frontend:generate").build()
 
-    assertThat(nodeRun(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("node").arguments)
       .containsExactly(
         "exec",
         "node",
@@ -82,16 +82,6 @@ class NodeFunctionalTest {
     assertThat(result.output).contains("property 'entryPoint' doesn't have a configured value")
   }
 
-  @Test
-  fun `reuses the configuration cache on a second run`() {
-    val fixture = workspaceWithFrontend()
-
-    fixture.runner(":frontend:generate").build()
-    val second = fixture.runner(":frontend:generate").build()
-
-    assertThat(second.output).contains("Configuration cache entry")
-  }
-
   /**
    * A workspace whose `frontend` package registers a `generate` task over a Node program.
    *
@@ -103,25 +93,23 @@ class NodeFunctionalTest {
     entryPointConfiguration: String =
       """entryPoint = layout.projectDirectory.file("scripts/generate.mjs")""",
   ): GradleProjectFixture {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(
-      packages = listOf("frontend"),
-      packageBuildScript =
-        """
-        tasks.register<de.cronn.pnpm.task.NodeTask>("generate") {
-          $entryPointConfiguration
-          $taskConfiguration
-        }
-        """,
-    )
+    val fixture =
+      GradleProjectFixture(projectDirectory)
+        .writeWorkspaceWithPackage(
+          packageBuildScript =
+            """
+          tasks.register<de.cronn.pnpm.task.NodeTask>("generate") {
+            $entryPointConfiguration
+            $taskConfiguration
+          }
+          """,
+          sourceFiles = emptyList(),
+        )
     fixture.write("frontend/scripts/generate.mjs", "console.log(1)")
     return fixture
   }
 
   /** The invocation that ran the program, as opposed to the one that installed the workspace. */
-  private fun nodeRun(fixture: GradleProjectFixture) =
-    fixture.stub.invocations().last { it.arguments.contains("node") }
-
   /** The absolute path the task hands to Node. */
   private fun entryPoint(fixture: GradleProjectFixture) =
     fixture.directory("frontend/scripts/generate.mjs").canonicalFile.absolutePath

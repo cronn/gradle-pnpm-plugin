@@ -1,11 +1,10 @@
 package de.cronn.pnpm.fixture
 
 import java.io.File
-import java.util.Properties
 import org.gradle.testkit.runner.GradleRunner
 
-/** Builds a pnpm workspace on disk and runs Gradle against it. */
-class GradleProjectFixture(val rootDirectory: File) {
+/** Builds a pnpm workspace on disk and runs Gradle against it, with a stub as its pnpm. */
+class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
 
   val stub: PnpmStub = PnpmStub(File(rootDirectory, "pnpm-stub"))
 
@@ -43,7 +42,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "build.gradle.kts",
       """
-      plugins { id("de.cronn.gradle-pnpm-plugin") }
+      plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
       pnpm {
         ${pnpmVersion?.let { "version = \"$it\"" } ?: ""}
@@ -56,6 +55,29 @@ class GradleProjectFixture(val rootDirectory: File) {
     )
 
     packages.forEach { name -> writePackage(name, packageBuildScript, playwright, vitest) }
+  }
+
+  /**
+   * Writes a workspace with the single package [name], holding a TypeScript module at each of
+   * [sourceFiles] for the tools to run over.
+   */
+  fun writeWorkspaceWithPackage(
+    name: String = "frontend",
+    packageBuildScript: String = "",
+    sourceFiles: List<String> = listOf("main.ts"),
+    playwright: Boolean = false,
+    vitest: Boolean = false,
+  ): GradleProjectFixture {
+    writeWorkspace(
+      packages = listOf(name),
+      packageBuildScript = packageBuildScript,
+      playwright = playwright,
+      vitest = vitest,
+    )
+    sourceFiles.forEach { path ->
+      write("$name/$path", "export const ${path.substringAfterLast('/').substringBefore('.')} = 1")
+    }
+    return this
   }
 
   /**
@@ -82,7 +104,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "$workspaceRoot/build.gradle.kts",
       """
-      plugins { id("de.cronn.gradle-pnpm-plugin") }
+      plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
       pnpm {
         version = "$pnpmVersion"
@@ -133,7 +155,7 @@ class GradleProjectFixture(val rootDirectory: File) {
         // plugin surface that does not depend on the role of a project.
         CONVENTION_PLUGIN_ID to
           """
-          plugins { id("de.cronn.gradle-pnpm-plugin") }
+          plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
           pnpm {
             version = "$PNPM_VERSION"
@@ -166,28 +188,6 @@ class GradleProjectFixture(val rootDirectory: File) {
     }
   }
 
-  /** Kotlin string literals of the plugin classpath, for an `implementation(files(...))` call. */
-  private fun pluginClasspathLiterals(): String =
-    pluginClasspath().joinToString(", ") { quoted(it) }
-
-  /**
-   * The classpath of the plugin under test, read from the metadata the `java-gradle-plugin` plugin
-   * generates and puts on this source set's runtime classpath.
-   */
-  private fun pluginClasspath(): List<File> {
-    val stream =
-      checkNotNull(javaClass.classLoader.getResourceAsStream(PLUGIN_METADATA)) {
-        "$PLUGIN_METADATA is not on the classpath"
-      }
-    val properties = Properties().apply { stream.use { load(it) } }
-    // Properties.load has already unescaped the entry, so it splits on the plain path separator.
-    return checkNotNull(properties.getProperty("implementation-classpath")) {
-        "$PLUGIN_METADATA declares no implementation-classpath"
-      }
-      .split(File.pathSeparator)
-      .map(::File)
-  }
-
   private fun writeSettings(
     rootProjectName: String,
     projects: List<String>,
@@ -207,15 +207,7 @@ class GradleProjectFixture(val rootDirectory: File) {
   /** The files that make [directory] a pnpm workspace root. */
   private fun writePackageRoot(directory: String, packages: List<String>) {
     val prefix = if (directory.isEmpty()) "" else "$directory/"
-    write(
-      "${prefix}package.json",
-      """
-      {
-        "name": "root",
-        "private": true
-      }
-      """,
-    )
+    ProjectFiles.writeRootPackageJson(directory(directory))
     write("${prefix}pnpm-lock.yaml", "lockfileVersion: '9.0'")
     write("${prefix}pnpm-workspace.yaml", "packages:\n${packages.joinToString("\n") { "  - $it" }}")
     writeCheckConfigs(directory)
@@ -231,7 +223,7 @@ class GradleProjectFixture(val rootDirectory: File) {
     write(
       "$path/build.gradle.kts",
       """
-      plugins { id("de.cronn.gradle-pnpm-plugin") }
+      plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
       $buildScript
       """,
@@ -242,76 +234,34 @@ class GradleProjectFixture(val rootDirectory: File) {
     if (vitest) writeVitestConfig(path)
   }
 
-  /**
-   * Writes a config file for TypeScript, ESLint and Prettier, which is what makes the plugin
-   * register the tasks of those tools for a project.
-   */
+  /** Writes a config file for TypeScript, ESLint and Prettier into the project at [directory]. */
   fun writeCheckConfigs(directory: String) {
-    val prefix = if (directory.isEmpty()) "" else "$directory/"
-    write("${prefix}tsconfig.json", "{}")
-    write("${prefix}eslint.config.ts", "export default []")
-    write("${prefix}prettier.config.ts", "export default {}")
+    ProjectFiles.writeCheckConfigs(directory(directory))
   }
 
-  /**
-   * Writes the `playwright.config.ts` that makes the plugin register the Playwright tasks for
-   * [directory].
-   *
-   * Deliberately not part of [writeCheckConfigs]: registering the Playwright tasks everywhere would
-   * add them, and their pnpm invocations, to every test that only cares about the source tools.
-   */
   fun writePlaywrightConfig(directory: String) {
-    val prefix = if (directory.isEmpty()) "" else "$directory/"
-    write("${prefix}playwright.config.ts", "export default { testDir: \"tests\" }")
+    ProjectFiles.writePlaywrightConfig(directory(directory))
   }
 
-  /**
-   * Writes the `vitest.config.ts` that makes the plugin register the Vitest tasks for [directory].
-   *
-   * Deliberately not part of [writeCheckConfigs], for the same reason as [writePlaywrightConfig]:
-   * registering the suite everywhere would add it, and its pnpm invocations, to every test that
-   * only cares about the source tools.
-   */
   fun writeVitestConfig(directory: String) {
-    val prefix = if (directory.isEmpty()) "" else "$directory/"
-    write("${prefix}vitest.config.ts", "export default {}")
-  }
-
-  fun write(path: String, content: String) {
-    val file = File(rootDirectory, path)
-    file.parentFile.mkdirs()
-    file.writeText(content.trimIndent().trim() + "\n")
+    ProjectFiles.writeVitestConfig(directory(directory))
   }
 
   /**
    * Runs Gradle, with [pnpmOnPath] as the only pnpm the build finds on its `PATH`.
    *
-   * Set [injectPluginClasspath] to `false` for a build that gets the plugin through `buildSrc`:
-   * injecting it into the outer build's script classpath as well would load the plugin's classes a
-   * second time, so the extension the convention plugin created would not be the type the outer
-   * build script sees.
+   * See [gradleRunner] for [injectPluginClasspath].
    */
   fun runner(
     vararg arguments: String,
     pnpmOnPath: File? = null,
     injectPluginClasspath: Boolean = true,
   ): GradleRunner =
-    GradleRunner.create()
-      .withProjectDir(rootDirectory)
-      .apply { if (injectPluginClasspath) withPluginClasspath() }
-      .withEnvironment(environmentWith(pnpmOnPath))
-      .withArguments(
-        arguments.toList() +
-          listOf(
-            "--configuration-cache",
-            // Turn every configuration cache problem into a build failure instead of a warning.
-            "-Dorg.gradle.configuration-cache.problems=fail",
-            "--stacktrace",
-          ),
-      )
-      .forwardOutput()
+    gradleRunner(arguments.toList(), environmentWith(pnpmOnPath), injectPluginClasspath)
 
-  fun directory(path: String): File = File(rootDirectory, path)
+  /** The pnpm executable the plugin installs for [version] with the default install directory. */
+  fun installedPnpm(version: String = PNPM_VERSION): File =
+    directory(".gradle/pnpm/$version/${PnpmArchiveFixture.executableName}")
 
   /** The arguments a tool task hands its tool the config file at [path] with. */
   fun configArguments(path: String, option: String = "--config"): Array<String> =
@@ -340,52 +290,13 @@ class GradleProjectFixture(val rootDirectory: File) {
       }
     }
 
-  /** Kotlin string literal for [file], safe on Windows where paths contain backslashes. */
-  private fun quoted(file: File): String = "\"${file.invariantSeparatorsPath}\""
-
   companion object {
     /** Variable every runner's environment holds, recorded by [PnpmStub]. */
     const val INHERITED_VARIABLE: String = "${PnpmStub.ENVIRONMENT_PREFIX}INHERITED"
 
     const val INHERITED_VALUE: String = "inherited"
 
-    const val PNPM_VERSION: String = "11.23.0"
-
-    /**
-     * The declaration of the pnpm repository the README documents, over [url]. Builds that declare
-     * their repositories themselves write exactly this, in a build script or in the settings
-     * script, and it deliberately mentions none of the plugin's classes.
-     */
-    fun pnpmRepository(url: String): String =
-      """
-      exclusiveContent {
-        forRepository {
-          ivy {
-            name = "pnpm"
-            setUrl("$url")
-            patternLayout { artifact("v[revision]/[artifact]-[classifier].[ext]") }
-            metadataSources { artifact() }
-          }
-        }
-        filter { includeModule("pnpm", "pnpm") }
-      }
-      """
-        .trimIndent()
-
-    /** A `dependencyResolutionManagement` block declaring [repositories]. */
-    fun settingsRepositories(
-      vararg repositories: String,
-      failOnProjectRepositories: Boolean = false,
-    ): String =
-      """
-      dependencyResolutionManagement {
-        ${if (failOnProjectRepositories) "repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS" else ""}
-        repositories {
-          ${repositories.joinToString("\n")}
-        }
-      }
-      """
-        .trimIndent()
+    const val PNPM_VERSION: String = ProjectFiles.PNPM_VERSION
 
     /**
      * Id of the convention plugin every project of [writeWorkspaceWithConventionPlugins] applies.
@@ -394,8 +305,6 @@ class GradleProjectFixture(val rootDirectory: File) {
 
     /** Id of the convention plugin only the workspace root applies. */
     const val WORKSPACE_CONVENTION_PLUGIN_ID: String = "pnpm-workspace-conventions"
-
-    private const val PLUGIN_METADATA = "plugin-under-test-metadata.properties"
 
     private val PNPM_EXECUTABLE_NAMES = listOf("pnpm", "pnpm.exe", "pnpm.cmd", "pnpm.bat")
   }
