@@ -121,12 +121,14 @@ public abstract class VitestRunTask : PnpmTestTask() {
   }
 
   override fun testArguments(): List<String> = buildList {
+    // Ahead of any --coverage.* option: Vitest parses a bare --coverage as the whole coverage
+    // object, so after one it would drop the options set before it.
+    if (coverage.getOrElse(false)) add("--coverage")
     // Passed whatever the options say, so that a configuration switching coverage on by itself
     // still writes into the directory this task declares as its output. Read at execution time
     // rather than through a provider feeding an input, which would make the task depend on the
     // task producing coverageReportsDirectory -- this very task.
     add("--coverage.reportsDirectory=${coverageReportsDirectory.get().asFile.absolutePath}")
-    if (coverage.getOrElse(false)) add("--coverage")
     if (update.getOrElse(false)) add("--update")
     testNamePattern.orNull?.let { add("--testNamePattern=$it") }
     dir.orNull?.let { add("--dir=${it.asFile.absolutePath}") }

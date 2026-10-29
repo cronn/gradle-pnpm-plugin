@@ -68,7 +68,9 @@ class VitestFunctionalTest {
     assertThat(vitestTest(fixture).arguments).doesNotContain("--coverage")
 
     fixture.runner(":frontend:vitestTest", "--coverage").build()
-    assertThat(vitestTest(fixture).arguments).contains("--coverage")
+    // Ahead of the reports directory, which Vitest would drop after a bare --coverage.
+    assertThat(vitestTest(fixture).arguments)
+      .containsSubsequence("--coverage", coverageArgument(fixture).single())
   }
 
   @Test
