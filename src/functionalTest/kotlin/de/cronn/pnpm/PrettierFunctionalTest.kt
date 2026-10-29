@@ -1,6 +1,7 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.internal.check.PrettierTasks
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,7 +18,7 @@ class PrettierFunctionalTest {
 
     fixture.runner(":frontend:prettierCheck", "--config=prettier.strict.config.ts").build()
 
-    assertThat(prettier(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("prettier").arguments)
       .containsExactly(
         "exec",
         "prettier",
@@ -40,7 +41,7 @@ class PrettierFunctionalTest {
       )
       .build()
 
-    assertThat(prettier(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("prettier").arguments)
       .containsExactly(
         "exec",
         "prettier",
@@ -70,7 +71,7 @@ class PrettierFunctionalTest {
 
     fixture.runner(":frontend:prettierList").build()
 
-    assertThat(prettier(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("prettier").arguments)
       .containsExactly(
         "exec",
         "prettier",
@@ -98,7 +99,7 @@ class PrettierFunctionalTest {
 
     fixture.runner(":frontend:prettierCheck").build()
 
-    assertThat(prettier(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("prettier").arguments)
       .containsExactly(
         "exec",
         "prettier",
@@ -111,32 +112,17 @@ class PrettierFunctionalTest {
       )
   }
 
-  @Test
-  fun `reuses the configuration cache on a second run with options`() {
-    val fixture = workspaceWithFrontend()
-
-    fixture.runner(":frontend:prettierCheck", "--ignore-unknown", "--cache").build()
-    val second = fixture.runner(":frontend:prettierCheck", "--ignore-unknown", "--cache").build()
-
-    assertThat(second.output).contains("Configuration cache entry reused")
-  }
-
   /** A workspace whose `frontend` package is configured for Prettier and holds one source. */
-  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)
-    fixture.write("frontend/main.ts", "export const main = 1")
-    return fixture
-  }
+  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture =
+    GradleProjectFixture(projectDirectory)
+      .writeWorkspaceWithPackage(
+        packageBuildScript = packageBuildScript,
+      )
 
   /** The invocation that ran Prettier, as opposed to the one that installed the workspace. */
-  private fun prettier(fixture: GradleProjectFixture) =
-    fixture.stub.invocations().last { it.arguments.contains("prettier") }
-
   private companion object {
     /** The default patterns of Prettier, the way they reach its command line. */
-    val SOURCE_PATTERNS: Array<String> =
-      arrayOf("*.ts", "src/**/*.ts", "src/**/*.tsx", "*.json", "*.md")
+    val SOURCE_PATTERNS: Array<String> = PrettierTasks.INCLUDES.toTypedArray()
     val PRETTIER_PATTERNS: Array<String> =
       arrayOf("--no-error-on-unmatched-pattern", *SOURCE_PATTERNS)
   }

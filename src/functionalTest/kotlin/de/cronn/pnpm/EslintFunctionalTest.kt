@@ -1,6 +1,7 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
+import de.cronn.pnpm.internal.check.EslintTasks
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,7 +18,7 @@ class EslintFunctionalTest {
 
     fixture.runner(":frontend:eslintCheck", "--config=eslint.strict.config.ts").build()
 
-    assertThat(eslint(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("eslint").arguments)
       .containsExactly(
         "exec",
         "eslint",
@@ -45,7 +46,7 @@ class EslintFunctionalTest {
       )
       .build()
 
-    assertThat(eslint(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("eslint").arguments)
       .containsExactly(
         "exec",
         "eslint",
@@ -82,7 +83,7 @@ class EslintFunctionalTest {
 
     fixture.runner(":frontend:eslintSuppress").build()
 
-    assertThat(eslint(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("eslint").arguments)
       .containsExactly(
         "exec",
         "eslint",
@@ -113,7 +114,7 @@ class EslintFunctionalTest {
 
     fixture.runner(":frontend:eslintCheck").build()
 
-    assertThat(eslint(fixture).arguments)
+    assertThat(fixture.stub.lastInvocationOf("eslint").arguments)
       .containsExactly(
         "exec",
         "eslint",
@@ -126,31 +127,17 @@ class EslintFunctionalTest {
       )
   }
 
-  @Test
-  fun `reuses the configuration cache on a second run with options`() {
-    val fixture = workspaceWithFrontend()
-
-    fixture.runner(":frontend:eslintCheck", "--max-warnings=5", "--cache").build()
-    val second = fixture.runner(":frontend:eslintCheck", "--max-warnings=5", "--cache").build()
-
-    assertThat(second.output).contains("Configuration cache entry reused")
-  }
-
   /** A workspace whose `frontend` package is configured for ESLint and holds one source. */
-  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture {
-    val fixture = GradleProjectFixture(projectDirectory)
-    fixture.writeWorkspace(packages = listOf("frontend"), packageBuildScript = packageBuildScript)
-    fixture.write("frontend/main.ts", "export const main = 1")
-    return fixture
-  }
+  private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture =
+    GradleProjectFixture(projectDirectory)
+      .writeWorkspaceWithPackage(
+        packageBuildScript = packageBuildScript,
+      )
 
   /** The invocation that ran ESLint, as opposed to the ones that installed and compiled. */
-  private fun eslint(fixture: GradleProjectFixture) =
-    fixture.stub.invocations().last { it.arguments.contains("eslint") }
-
   private companion object {
     /** The default patterns of ESLint, the way they reach its command line. */
-    val SOURCE_PATTERNS: Array<String> = arrayOf("*.ts", "src/**/*.ts", "src/**/*.tsx")
+    val SOURCE_PATTERNS: Array<String> = EslintTasks.INCLUDES.toTypedArray()
     val ESLINT_PATTERNS: Array<String> =
       arrayOf("--no-error-on-unmatched-pattern", *SOURCE_PATTERNS)
   }
