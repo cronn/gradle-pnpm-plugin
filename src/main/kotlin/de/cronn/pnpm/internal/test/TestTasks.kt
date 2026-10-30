@@ -25,11 +25,11 @@ internal abstract class TestTasks<T : PnpmTestTask, E : PnpmTestExtension>(
   ToolTasks<T, E>(target, extension, taskType, configFileNames, defaultIncludes, defaultExcludes) {
 
   /**
-   * Configures every task of this tool, and registers the predefined ones when [discovered] says
-   * the project is configured for the tool. `null` means the tool contributes none.
+   * Configures every task of this tool, and registers the predefined ones when the project has a
+   * config file for the tool. `null` means the tool contributes none.
    */
-  fun register(discovered: Boolean): RegisteredTestTasks? {
-    configureTasks()
+  open fun register(): RegisteredTestTasks? {
+    val discovered = configureTasks()
 
     // A local, so that the task configuration captures the property instead of this registrar.
     val alwaysRerun = extension.alwaysRerun

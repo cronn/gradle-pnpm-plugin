@@ -21,16 +21,15 @@ internal class PlaywrightTasks(target: Project, playwright: PlaywrightExtension)
   ) {
 
   /**
-   * Registers the Playwright tasks when [discovered] says the project has a `playwright.config.*`.
+   * Registers the Playwright tasks when the project has a `playwright.config.*`.
    *
-   * The conventions of both task types are applied whatever [discovered] is, so a suite a build
-   * script registers behaves like the predefined one. The browser download is a predefined task
-   * like the suite, so a project without a Playwright configuration gets neither, and there is then
-   * no edge to wire.
+   * The conventions of both task types are applied either way, so a suite a build script registers
+   * behaves like the predefined one. The browser download is a predefined task like the suite, so a
+   * project without a Playwright configuration gets neither, and there is then no edge to wire.
    */
-  fun registerAll(discovered: Boolean): RegisteredTestTasks? {
+  override fun register(): RegisteredTestTasks? {
     configureInstallTasks()
-    val registered = register(discovered)
+    val registered = super.register()
     if (registered == null) {
       return null
     }

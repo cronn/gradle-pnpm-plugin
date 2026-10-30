@@ -10,7 +10,6 @@ import de.cronn.pnpm.internal.PnpmRole
 import de.cronn.pnpm.internal.PnpmTestTasks
 import de.cronn.pnpm.internal.PnpmWorkspaceLayout
 import de.cronn.pnpm.internal.PnpmWorkspaceTasks
-import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmRunTask
 import de.cronn.pnpm.task.PnpmTask
@@ -308,10 +307,8 @@ public class PnpmPlugin : Plugin<Project> {
    * Creates the extension of each Node tool and registers the tasks of the tools the project is
    * configured for.
    *
-   * A tool contributes its tasks exactly when the project is configured for it, so that a project
-   * does not carry tasks for tools it does not use. Only the existence of the config files is
-   * checked, which Gradle tracks as a configuration cache input, so adding one registers the tasks
-   * of the tool on the next build.
+   * A tool contributes its tasks exactly when the project has a config file for it, so that a
+   * project does not carry tasks for tools it does not use.
    *
    * The extensions are created whatever the project contains: they are the part of the plugin
    * surface a convention plugin derives its accessors from, and those come from a synthetic project
@@ -344,17 +341,8 @@ public class PnpmPlugin : Plugin<Project> {
     // A lint warning is worth fixing as much as an error, so it fails the task.
     eslint.maxWarnings.convention(0)
 
-    PnpmCheckTasks(target, typescript, prettier, eslint)
-      .register(
-        typescript = configured(target, TYPESCRIPT_EXTENSION_NAME, ToolConfigFiles.TYPESCRIPT),
-        prettier = configured(target, PRETTIER_EXTENSION_NAME, ToolConfigFiles.PRETTIER),
-        eslint = configured(target, ESLINT_EXTENSION_NAME, ToolConfigFiles.ESLINT),
-      )
-    PnpmTestTasks(target, playwright, vitest)
-      .register(
-        playwright = configured(target, PLAYWRIGHT_EXTENSION_NAME, ToolConfigFiles.PLAYWRIGHT),
-        vitest = configured(target, VITEST_EXTENSION_NAME, ToolConfigFiles.VITEST),
-      )
+    PnpmCheckTasks(target, typescript, prettier, eslint).register()
+    PnpmTestTasks(target, playwright, vitest).register()
   }
 
   /**
@@ -370,26 +358,6 @@ public class PnpmPlugin : Plugin<Project> {
     val lockfile = File(root.projectDir, LOCKFILE)
     target.logger.debug("pnpm: the tools of {} are pinned by {}", target.path, lockfile)
     return lockfile
-  }
-
-  /** Whether [target] contains one of [configFiles], logging the decision made for [name]. */
-  private fun configured(target: Project, name: String, configFiles: List<String>): Boolean {
-    val present = ToolConfigFiles.anyPresent(target, configFiles)
-    if (present) {
-      target.logger.debug(
-        "pnpm: registering the {} tasks in {}, it has a config file",
-        name,
-        target.path,
-      )
-    } else {
-      target.logger.debug(
-        "pnpm: not registering the {} tasks in {}, none of {} exists",
-        name,
-        target.path,
-        configFiles.joinToString(", "),
-      )
-    }
-    return present
   }
 
   private fun requireSupportedGradleVersion() {

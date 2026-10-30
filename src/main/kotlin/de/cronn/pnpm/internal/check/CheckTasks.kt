@@ -22,12 +22,11 @@ internal abstract class CheckTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
 ) : ToolTasks<T, E>(target, extension, taskType, configFileNames, defaultIncludes, emptyList()) {
 
   /**
-   * Configures every task of this tool, and registers the predefined ones when [discovered] says
-   * the project is configured for the tool. `null` means the tool contributes none.
+   * Configures every task of this tool, and registers the predefined ones when the project has a
+   * config file for the tool. `null` means the tool contributes none.
    */
-  fun register(discovered: Boolean): RegisteredCheckTasks? {
-    configureTasks()
-    if (!discovered) {
+  fun register(): RegisteredCheckTasks? {
+    if (!configureTasks()) {
       return null
     }
     return RegisteredCheckTasks(check = registerCheckTask(), fix = registerFixTask())
