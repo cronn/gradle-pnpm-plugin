@@ -11,10 +11,8 @@ import org.gradle.api.Project
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
- * Registers the tasks of every Node tool of a single pnpm package and wires them into the Gradle
- * lifecycle. Each tool defines its own tasks; what is left here is what crosses tool boundaries.
- *
- * A pnpm workspace root is a package like any other, so it gets the same tasks.
+ * Registers the tasks of every Node check tool of a pnpm package and wires them into `check` and
+ * `fix`. Each tool defines its own tasks; what is left here crosses tool boundaries.
  */
 internal class PnpmCheckTasks(
   private val target: Project,

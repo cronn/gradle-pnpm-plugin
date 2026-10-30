@@ -11,14 +11,8 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
- * Registers the tasks of every Node test tool of a single pnpm package and wires them into the
- * `test` and `check` lifecycle tasks. Each tool defines its own tasks; what is left here is what
- * crosses tool boundaries.
- *
- * `check` always depends on `test`, so that any suite the build script adds to `test` itself also
- * runs as part of `check`. Whether a tool's own suite is added to `test` is the tool's own
- * decision, carried by [RegisteredTestTasks.contributesToTest]: a unit suite belongs in `build`,
- * while an end-to-end suite is slow and usually needs a server the build does not start.
+ * Registers the tasks of every Node test tool of a pnpm package and wires them into `test` and
+ * `check`. Each tool defines its own tasks; what is left here crosses tool boundaries.
  */
 internal class PnpmTestTasks(
   private val target: Project,
@@ -73,11 +67,7 @@ internal class PnpmTestTasks(
     return test
   }
 
-  /**
-   * Adds `test` to `check`. `check` is always there: `PnpmPlugin` applies the Base Plugin before
-   * any tool is registered. This is unconditional, so a suite a build script adds to `test` itself
-   * also runs as part of `check`.
-   */
+  /** Adds `test` to `check`, so that a suite a build script adds to `test` runs there as well. */
   private fun wireCheck(test: TaskProvider<Task>) {
     target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).configure { task ->
       task.dependsOn(test)

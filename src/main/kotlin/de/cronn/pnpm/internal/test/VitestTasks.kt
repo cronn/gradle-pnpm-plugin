@@ -7,11 +7,8 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /**
- * The Vitest tasks of a pnpm package.
- *
- * Unlike Playwright, Vitest needs nothing provisioned, so the suite is all there is -- and it takes
- * part in `check`: a unit suite is fast and reaches nothing the build does not start, so there is
- * no reason to keep it out of `build`.
+ * The Vitest tasks of a pnpm package. The suite takes part in `test` and `check`: a unit suite is
+ * fast and reaches nothing the build does not start.
  */
 internal class VitestTasks(target: Project, vitest: VitestExtension) :
   TestTasks<VitestRunTask, VitestExtension>(
