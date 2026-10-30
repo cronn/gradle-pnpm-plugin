@@ -128,7 +128,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmRole.WORKSPACE_ROOT -> applyWorkspaceConventions(target, extension)
       PnpmRole.PACKAGE ->
         applyPackageConventions(target, extension, checkNotNull(layout.workspaceRoot))
-      PnpmRole.NONE -> applyInertConventions(extension)
+      PnpmRole.NONE -> applyDefaultConventions(extension)
     }
     return extension
   }
@@ -145,8 +145,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmWorkspaceTasks.taskPath(workspaceRootPath, PnpmWorkspaceTasks.INSTALL_TASK_NAME),
     )
 
-    extension.version.convention(DEFAULT_PNPM_VERSION)
-    extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
+    applyDefaultConventions(extension)
   }
 
   /**
@@ -186,12 +185,12 @@ public class PnpmPlugin : Plugin<Project> {
   }
 
   /**
-   * Conventions of a project that takes no part in the pnpm build.
-   * [PnpmExtension.workspaceRootPath] deliberately gets none: its absence is what makes
-   * [lifecycleTaskPath] report the missing workspace root, and only if a pnpm task of this project
-   * is actually requested.
+   * Conventions of a project that does not inherit them from a workspace root. A project that takes
+   * no part in the pnpm build gets only these: the absence of [PnpmExtension.workspaceRootPath] is
+   * what makes [lifecycleTaskPath] report the missing workspace root, and only if a pnpm task of
+   * this project is actually requested.
    */
-  private fun applyInertConventions(extension: PnpmExtension) {
+  private fun applyDefaultConventions(extension: PnpmExtension) {
     extension.version.convention(DEFAULT_PNPM_VERSION)
     extension.repositoryUrl.convention(PnpmRepository.PNPM_RELEASES_URL)
   }
