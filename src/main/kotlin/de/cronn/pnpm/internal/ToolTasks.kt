@@ -19,13 +19,11 @@ internal abstract class ToolTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
 ) {
 
   /**
-   * Applies the defaults of the tool to its extension, and the conventions of the extension to
-   * every task of the tool -- the ones a build script registers included, so that they behave like
-   * the predefined ones even in a project that has no config file for the tool.
+   * Applies the defaults of the tool to its extension, and the extension to every task of the tool,
+   * including the ones a build script registers.
    *
-   * Returns whether the project has a config file for the tool, which is what decides whether the
-   * predefined tasks are registered. Only its existence is checked, which Gradle tracks as a
-   * configuration cache input, so adding one registers the tasks on the next build.
+   * Returns whether the project has a config file for the tool, which decides whether the
+   * predefined tasks are registered.
    */
   protected fun configureTasks(): Boolean {
     configureExtension()
