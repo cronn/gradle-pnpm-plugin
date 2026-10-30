@@ -17,15 +17,13 @@ import org.gradle.work.DisableCachingByDefault
  * negation only excludes what it matches literally, so an exclude naming a directory needs the
  * trailing globstar an Ant pattern can leave out.
  *
- * The common options of Prettier are command line options of the task as well, so that an ad-hoc
- * run needs no edit to the build script:
+ * The common options are command line options of the task as well:
  * ```bash
  * ./gradlew :frontend:prettierCheck --ignore-unknown
  * ./gradlew :frontend:prettierFix --cache --cache-location=build/prettier-cache
  * ```
  *
- * Each of them is handed to Prettier as it is; which of them combine is up to Prettier. Anything
- * else Prettier takes goes into the [arguments] of the task, or into the `extraArguments` of the
+ * Any other option goes into the [arguments] of the task, or into the `extraArguments` of the
  * `prettier` extension.
  */
 @DisableCachingByDefault(

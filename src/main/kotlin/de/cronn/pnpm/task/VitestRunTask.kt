@@ -16,17 +16,15 @@ import org.gradle.work.DisableCachingByDefault
 /**
  * Runs a Vitest test suite through `pnpm exec vitest run`.
  *
- * What a test run is usually varied by is a command line option of the task, so that an ad-hoc run
- * needs no edit to the build script:
+ * The common options are command line options of the task as well:
  * ```bash
  * ./gradlew :frontend:vitestTest --coverage
  * ./gradlew :frontend:vitestTest --update
  * ./gradlew :frontend:vitestTest --testNamePattern=login --bail=1
  * ```
  *
- * `./gradlew help --task vitestTest` lists them all. Each of them is handed to Vitest as it is;
- * which of them combine is up to Vitest. Anything else Vitest takes goes into the [arguments] of
- * the task, or into the `extraArguments` of the `vitest` extension.
+ * Any other option goes into the [arguments] of the task, or into the `extraArguments` of the
+ * `vitest` extension.
  */
 @DisableCachingByDefault(
   because = "Runs a Vitest suite; its effects are not fully described by declared outputs.",

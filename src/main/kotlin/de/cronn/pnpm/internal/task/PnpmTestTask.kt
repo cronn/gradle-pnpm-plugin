@@ -1,7 +1,5 @@
 package de.cronn.pnpm.internal.task
 
-import de.cronn.pnpm.internal.extension.PnpmSourceExtension
-import de.cronn.pnpm.internal.extension.PnpmTestExtension
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Internal
 import org.gradle.work.DisableCachingByDefault
@@ -9,21 +7,8 @@ import org.gradle.work.DisableCachingByDefault
 /**
  * Runs the test suite of a Node test tool.
  *
- * One of the three [PnpmSourceTask] kinds, and the counterpart of [PnpmCheckTask]: the plugin
- * configures every task of a subclass -- `VitestRunTask` and `PlaywrightTestTask` today -- with the
- * [includes][PnpmSourceExtension.includes], the [excludes][PnpmSourceExtension.excludes], the
- * [extraArguments][PnpmSourceExtension.extraArguments] and the
- * [alwaysRerun][PnpmTestExtension.alwaysRerun] of the tool's extension, so a task a build script
- * registers behaves like the predefined one and only has to say what is different about it -- in a
- * project that has no configuration file for the tool, and therefore none of its predefined tasks,
- * as well.
- *
- * Like `TypescriptTask` and unlike a [PnpmCheckTask], a test tool is never handed the patterns:
- * which tests run is decided by its configuration file and by the command line options of the task.
- * [includes] and [excludes] therefore only describe the [sourceFiles] Gradle compares to decide
- * whether the suite has to run again. A test task declares where it writes, and those locations sit
- * in the build directory, so its [excludes] have to keep the build directory out of the sources the
- * way they keep `node_modules` out.
+ * The tool is not handed the patterns: its configuration and the options of the task decide which
+ * tests run, and the patterns only when the suite is up to date.
  */
 @DisableCachingByDefault(
   because = "Runs a test suite; its effects are not fully described by declared outputs.",
@@ -32,9 +17,7 @@ public abstract class PnpmTestTask : PnpmSourceTask() {
 
   /**
    * Whether this task runs on every invocation. Defaults to the `alwaysRerun` of the extension.
-   *
-   * Read by an `upToDateWhen` spec, which the configuration cache serializes -- so the decision is
-   * carried by the task rather than captured in the spec.
+   * Carried by the task, because the `upToDateWhen` spec reading it must not capture anything.
    */
   @get:Internal public abstract val alwaysRerun: Property<Boolean>
 
