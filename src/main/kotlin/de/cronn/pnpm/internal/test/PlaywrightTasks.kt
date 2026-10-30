@@ -3,6 +3,7 @@ package de.cronn.pnpm.internal.test
 import de.cronn.pnpm.PlaywrightExtension
 import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PlaywrightInstallTask
+import de.cronn.pnpm.internal.writeStamp
 import de.cronn.pnpm.task.PlaywrightTestTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
@@ -81,9 +82,10 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
       // land in a cache outside the project. Written in an action rather than in the task class, so
       // that a task a build script registers gets it too.
       task.doLast("write the install stamp") { candidate ->
-        val file = (candidate as PlaywrightInstallTask).stampFile.get().asFile
-        file.parentFile.mkdirs()
-        file.writeText("playwright install completed\n")
+        writeStamp(
+          (candidate as PlaywrightInstallTask).stampFile.get().asFile,
+          "playwright install completed\n",
+        )
       }
     }
   }
