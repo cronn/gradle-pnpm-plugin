@@ -3,14 +3,10 @@ package de.cronn.pnpm.task
 import de.cronn.pnpm.internal.task.PnpmSourceTask
 import java.io.File
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.options.Option
 import org.gradle.work.DisableCachingByDefault
 
@@ -40,13 +36,6 @@ import org.gradle.work.DisableCachingByDefault
 public abstract class TypescriptTask : PnpmSourceTask() {
 
   override val configFileOption: String = "--project"
-
-  /** The `tsconfig.json` handed to `tsc` as `--project`, or as the project to [build]. */
-  @get:InputFile
-  @get:Optional
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  @get:Option(option = "config", description = "Compiles the project of this tsconfig file")
-  abstract override val configFile: RegularFileProperty
 
   /** Runs `tsc` in build mode, passed as `--build`. */
   @get:Input

@@ -5,7 +5,6 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
@@ -37,13 +36,6 @@ import org.gradle.work.DisableCachingByDefault
   because = "Runs ESLint; its effects are not fully described by declared outputs.",
 )
 public abstract class EslintTask : PnpmCheckTask() {
-
-  /** The ESLint configuration file, passed as `--config`. */
-  @get:InputFile
-  @get:Optional
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  @get:Option(option = "config", description = "Lints with this configuration file")
-  abstract override val configFile: RegularFileProperty
 
   /** Applies the automatic fixes to the files, passed as `--fix`. */
   @get:Input

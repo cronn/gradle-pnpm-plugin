@@ -6,13 +6,10 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.options.Option
 import org.gradle.work.DisableCachingByDefault
 
@@ -35,13 +32,6 @@ import org.gradle.work.DisableCachingByDefault
   because = "Runs a Vitest suite; its effects are not fully described by declared outputs.",
 )
 public abstract class VitestRunTask : PnpmTestTask() {
-
-  /** The Vitest configuration file, passed as `--config`. */
-  @get:InputFile
-  @get:Optional
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  @get:Option(option = "config", description = "Runs the suite with this configuration file")
-  abstract override val configFile: RegularFileProperty
 
   /** Directory the coverage report goes to, passed as `--coverage.reportsDirectory`. */
   @get:OutputDirectory
