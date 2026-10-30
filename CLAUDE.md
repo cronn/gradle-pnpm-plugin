@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Conventions
 
 - Use Conventional Commits
+- Commit unrelated changes individually and keep commits small
 
 ## Documentation
 
