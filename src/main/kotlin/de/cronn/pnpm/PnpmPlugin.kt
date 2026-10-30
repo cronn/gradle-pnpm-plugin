@@ -325,22 +325,6 @@ public class PnpmPlugin : Plugin<Project> {
       target.extensions.create(PLAYWRIGHT_EXTENSION_NAME, PlaywrightExtension::class.java)
     val vitest = target.extensions.create(VITEST_EXTENSION_NAME, VitestExtension::class.java)
 
-    playwright.installBrowsers.convention(true)
-    playwright.installSystemDependencies.convention(false)
-    // A browser suite talks to a backend, a database, a fixture server -- none of which a Gradle
-    // input describes, so its inputs being unchanged is no reason to believe its result still
-    // holds.
-    playwright.alwaysRerun.convention(true)
-    // A unit suite, by contrast, really is a function of the files it runs over -- and it takes
-    // part in `check`, so skipping it on an unchanged source tree is worth having.
-    vitest.alwaysRerun.convention(false)
-    // A pattern of the plugin rather than of the project easily matches nothing, which must not
-    // fail the task.
-    prettier.noErrorOnUnmatchedPattern.convention(true)
-    eslint.noErrorOnUnmatchedPattern.convention(true)
-    // A lint warning is worth fixing as much as an error, so it fails the task.
-    eslint.maxWarnings.convention(0)
-
     PnpmCheckTasks(target, typescript, prettier, eslint).register()
     PnpmTestTasks(target, playwright, vitest).register()
   }

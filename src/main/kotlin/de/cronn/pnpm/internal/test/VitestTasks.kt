@@ -24,6 +24,12 @@ internal class VitestTasks(target: Project, vitest: VitestExtension) :
     contributesToTest = true,
   ) {
 
+  override fun configureExtension() {
+    // A unit suite really is a function of the files it runs over -- and it takes part in `check`,
+    // so skipping it on an unchanged source tree is worth having.
+    extension.alwaysRerun.convention(false)
+  }
+
   override fun configureTask(task: VitestRunTask) {
     val buildDirectory = target.layout.buildDirectory
 

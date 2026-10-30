@@ -16,6 +16,11 @@ internal class PrettierTasks(target: Project, prettier: PrettierExtension) :
     INCLUDES,
   ) {
 
+  override fun configureExtension() {
+    // A pattern of the plugin rather than of the project easily matches nothing.
+    extension.noErrorOnUnmatchedPattern.convention(true)
+  }
+
   override fun configureTask(task: PrettierTask) {
     task.ignoreUnknown.convention(extension.ignoreUnknown)
     task.noErrorOnUnmatchedPattern.convention(extension.noErrorOnUnmatchedPattern)

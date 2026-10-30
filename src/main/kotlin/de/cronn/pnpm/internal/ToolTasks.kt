@@ -28,6 +28,8 @@ internal abstract class ToolTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
    * configuration cache input, so adding one registers the tasks on the next build.
    */
   protected fun configureTasks(): Boolean {
+    configureExtension()
+
     // Values, not conventions: adding to a property that only has a convention discards it, which
     // would make the additive includes(...) and excludes(...) methods replace the defaults.
     extension.includes.set(defaultIncludes)
@@ -66,6 +68,9 @@ internal abstract class ToolTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
     }
     return configFile != null
   }
+
+  /** Applies the defaults of the tool-specific properties of the [extension]. */
+  protected open fun configureExtension() {}
 
   /** Applied to every task of this tool, the ones registered by a build script included. */
   protected open fun configureTask(task: T) {}
