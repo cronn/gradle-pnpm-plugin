@@ -94,11 +94,8 @@ public class PnpmPlugin : Plugin<Project> {
 
     // pnpm exec and pnpm run both need the workspace dependencies to be present.
     val installTaskPath = lifecycleTaskPath(target, workspace, PnpmWorkspaceTasks.INSTALL_TASK_NAME)
-    target.tasks.withType(PnpmExecTask::class.java).configureEach { task ->
-      task.dependsOn(installTaskPath)
-    }
-    target.tasks.withType(PnpmRunTask::class.java).configureEach { task ->
-      task.dependsOn(installTaskPath)
+    listOf(PnpmExecTask::class.java, PnpmRunTask::class.java).forEach { type ->
+      target.tasks.withType(type).configureEach { task -> task.dependsOn(installTaskPath) }
     }
 
     if (layout.isWorkspaceRoot) {
