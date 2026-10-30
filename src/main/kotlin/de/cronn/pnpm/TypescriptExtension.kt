@@ -9,9 +9,6 @@ import org.gradle.api.provider.Property
  * extension.
  *
  * Pre-defined tasks are registered only when the project contains a `tsconfig.json` file.
- *
- * [build], [noEmit] and [outDir] are the defaults of every `TypescriptTask`, which a task can
- * override with a value of its own. Unset, the task leaves the option to the `tsconfig.json`.
  */
 public abstract class TypescriptExtension : PnpmSourceExtension() {
 

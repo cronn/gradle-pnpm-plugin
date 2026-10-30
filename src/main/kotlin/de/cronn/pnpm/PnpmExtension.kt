@@ -8,18 +8,12 @@ import org.gradle.api.provider.Property
  * extension.
  *
  * [version], [installDirectory] and [executable] describe the one pnpm installation the whole
- * workspace shares, so configure them once, in the build script of the workspace root -- the
- * project whose directory contains the `pnpm-workspace.yaml`. Every package inherits its values
- * from there, and keeps inheriting them however late in the configuration phase the workspace root
- * is configured. Setting one of them on a package overrides it for that project's own pnpm
- * invocations only; pnpm is still provisioned by the workspace root, so overriding
- * [installDirectory] on a package merely points that project at a directory nothing fills.
+ * workspace shares, so configure them once, in the build script of the workspace root. Every
+ * package inherits them from there. Setting one on a package overrides it for that project's own
+ * pnpm invocations only, while pnpm is still provisioned by the workspace root.
  *
- * [workspaceRootPath] is the one property that is genuinely per project: it says which project
- * provisions pnpm for this one.
- *
- * The Node tools are configured separately, per project, through the `typescript`, `prettier` and
- * `eslint` extensions.
+ * The Node tools are configured per project, through the `typescript`, `prettier`, `eslint`,
+ * `playwright` and `vitest` extensions.
  */
 public abstract class PnpmExtension {
 
