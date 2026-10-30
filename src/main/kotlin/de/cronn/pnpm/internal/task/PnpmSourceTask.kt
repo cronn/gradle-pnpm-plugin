@@ -1,7 +1,9 @@
 package de.cronn.pnpm.internal.task
 
 import de.cronn.pnpm.internal.SourcePatterns
+import de.cronn.pnpm.task.CommandLine
 import de.cronn.pnpm.task.PnpmExecTask
+import java.io.File
 import javax.inject.Inject
 import org.gradle.api.file.FileTree
 import org.gradle.api.file.RegularFileProperty
@@ -59,17 +61,8 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val configFile: RegularFileProperty
 
-  /**
-   * The command line option the tool takes its configuration file with, owned by the concrete task
-   * type -- the same way it owns the [command][de.cronn.pnpm.task.PnpmExecTask.command] it runs.
-   */
-  @get:Internal protected abstract val configFileOption: String
-
-  /**
-   * The subcommand of the tool this task runs, such as the `run` of `vitest run`, owned by the
-   * concrete task type. `null` for a tool that is invoked without one.
-   */
-  @get:Internal protected open val subcommand: String? = null
+  /** The command line option the tool takes its configuration file with. */
+  @get:Internal protected open val configFileOption: String = "--config"
 
   /**
    * The files [includes] and [excludes] resolve to, which are the inputs deciding when this task is
@@ -112,13 +105,14 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   }
 
   /**
-   * The [subcommand] followed by the [configFile], which lead the command line of every tool: where
-   * a tool has a subcommand, the config option is one of that subcommand.
+   * The [configFile] leads, after the subcommand it is an option of; the [extraArguments] trail.
    */
-  protected fun leadingArguments(): List<String> =
-    listOfNotNull(subcommand) +
-      configFile.orNull?.let { listOf(configFileOption, it.asFile.absolutePath) }.orEmpty()
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
+    configFile.orNull?.let { commandLine.head(configFileArguments(it.asFile)) }
+    commandLine.tail(extraArguments.get())
+  }
 
-  override fun commandArguments(): List<String> =
-    leadingArguments() + arguments.get() + extraArguments.get()
+  /** The arguments handing [file] to the tool as its configuration file. */
+  protected open fun configFileArguments(file: File): List<Any> = listOf(configFileOption, file)
 }

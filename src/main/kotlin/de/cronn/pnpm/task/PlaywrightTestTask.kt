@@ -31,8 +31,6 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class PlaywrightTestTask : PnpmTestTask() {
 
-  override val configFileOption: String = "--config"
-
   /** Directory of the artifacts of a failing test, passed as `--output`. */
   @get:OutputDirectory public abstract val outputDirectory: DirectoryProperty
 
@@ -139,19 +137,20 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
   override fun rerunRequested(): Boolean =
     super.rerunRequested() || ui.getOrElse(false) || headed.getOrElse(false)
 
-  override fun testArguments(): List<String> = buildList {
-    addAll(filters.getOrElse(emptyList()))
-    add("--output=${outputDirectory.get().asFile.absolutePath}")
-    if (ui.getOrElse(false)) add("--ui")
-    if (headed.getOrElse(false)) add("--headed")
-    if (updateSnapshots.getOrElse(false)) add("--update-snapshots")
-    if (lastFailed.getOrElse(false)) add("--last-failed")
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
+    commandLine.add(filters.getOrElse(emptyList()))
+    commandLine.option("--output", outputDirectory, joined = true)
+    commandLine.flag("--ui", ui)
+    commandLine.flag("--headed", headed)
+    commandLine.flag("--update-snapshots", updateSnapshots)
+    commandLine.flag("--last-failed", lastFailed)
     // Repeating a test is how a flaky one is hunted down, and the run is over as soon as it fails
     // once -- so asking for the repetitions asks for stopping at the first failure as well.
-    if (failFast.getOrElse(false) || repeatEach.isPresent) add("-x")
-    projects.getOrElse(emptyList()).forEach { add("--project=$it") }
-    grep.orNull?.let { add("--grep=$it") }
-    repeatEach.orNull?.let { add("--repeat-each=$it") }
-    trace.orNull?.let { add("--trace=${TraceMode.require(it, path)}") }
+    if (failFast.getOrElse(false) || repeatEach.isPresent) commandLine.add("-x")
+    commandLine.repeated("--project", projects, joined = true)
+    commandLine.option("--grep", grep, joined = true)
+    commandLine.option("--repeat-each", repeatEach, joined = true)
+    trace.orNull?.let { commandLine.add("--trace=${TraceMode.require(it, path)}") }
   }
 }

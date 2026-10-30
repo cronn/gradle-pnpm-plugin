@@ -38,8 +38,6 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class EslintTask : PnpmCheckTask() {
 
-  override val configFileOption: String = "--config"
-
   /** The ESLint configuration file, passed as `--config`. */
   @get:InputFile
   @get:Optional
@@ -124,19 +122,18 @@ public abstract class EslintTask : PnpmCheckTask() {
     command.convention("eslint")
   }
 
-  override fun optionArguments(): List<String> = buildList {
-    if (fix.getOrElse(false)) add("--fix")
-    maxWarnings.orNull?.let { addAll(listOf("--max-warnings", it.toString())) }
-    if (cache.getOrElse(false)) add("--cache")
-    cacheLocation.orNull?.let { addAll(listOf("--cache-location", it.asFile.absolutePath)) }
-    if (suppressAll.getOrElse(false)) add("--suppress-all")
-    suppressRules.getOrElse(emptyList()).forEach { addAll(listOf("--suppress-rule", it)) }
-    suppressionsLocation.orNull?.let {
-      addAll(listOf("--suppressions-location", it.asFile.absolutePath))
-    }
-    if (pruneSuppressions.getOrElse(false)) add("--prune-suppressions")
-    if (passOnNoPatterns.getOrElse(false)) add("--pass-on-no-patterns")
-    if (noErrorOnUnmatchedPattern.getOrElse(false)) add(NO_ERROR_ON_UNMATCHED_PATTERN)
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
+    commandLine.flag("--fix", fix)
+    commandLine.option("--max-warnings", maxWarnings)
+    commandLine.flag("--cache", cache)
+    commandLine.option("--cache-location", cacheLocation)
+    commandLine.flag("--suppress-all", suppressAll)
+    commandLine.repeated("--suppress-rule", suppressRules)
+    commandLine.option("--suppressions-location", suppressionsLocation)
+    commandLine.flag("--prune-suppressions", pruneSuppressions)
+    commandLine.flag("--pass-on-no-patterns", passOnNoPatterns)
+    commandLine.flag(NO_ERROR_ON_UNMATCHED_PATTERN, noErrorOnUnmatchedPattern)
   }
 
   override fun patternArguments(includes: List<String>, excludes: List<String>): List<String> =

@@ -1,5 +1,6 @@
 package de.cronn.pnpm.internal.task
 
+import de.cronn.pnpm.task.CommandLine
 import de.cronn.pnpm.task.PnpmExecTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
@@ -41,10 +42,11 @@ public abstract class PlaywrightInstallTask : PnpmExecTask() {
     withDependencies.convention(false)
   }
 
-  override fun commandArguments(): List<String> = buildList {
-    add("install")
-    if (withDependencies.get()) add("--with-deps")
-    addAll(browsers.get())
-    addAll(arguments.get())
+  override val subcommand: String = "install"
+
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
+    commandLine.flag("--with-deps", withDependencies)
+    commandLine.add(browsers.get())
   }
 }

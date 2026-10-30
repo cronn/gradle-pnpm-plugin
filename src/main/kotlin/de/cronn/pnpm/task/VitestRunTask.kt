@@ -36,8 +36,6 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class VitestRunTask : PnpmTestTask() {
 
-  override val configFileOption: String = "--config"
-
   /** The Vitest configuration file, passed as `--config`. */
   @get:InputFile
   @get:Optional
@@ -120,20 +118,21 @@ public abstract class VitestRunTask : PnpmTestTask() {
     command.convention("vitest")
   }
 
-  override fun testArguments(): List<String> = buildList {
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
     // Ahead of any --coverage.* option: Vitest parses a bare --coverage as the whole coverage
     // object, so after one it would drop the options set before it.
-    if (coverage.getOrElse(false)) add("--coverage")
+    commandLine.flag("--coverage", coverage)
     // Passed whatever the options say, so that a configuration switching coverage on by itself
     // still writes into the directory this task declares as its output. Read at execution time
     // rather than through a provider feeding an input, which would make the task depend on the
     // task producing coverageReportsDirectory -- this very task.
-    add("--coverage.reportsDirectory=${coverageReportsDirectory.get().asFile.absolutePath}")
-    if (update.getOrElse(false)) add("--update")
-    testNamePattern.orNull?.let { add("--testNamePattern=$it") }
-    dir.orNull?.let { add("--dir=${it.asFile.absolutePath}") }
-    outputFile.orNull?.let { add("--outputFile=${it.asFile.absolutePath}") }
-    if (passWithNoTests.getOrElse(false)) add("--passWithNoTests")
-    bail.orNull?.let { add("--bail=$it") }
+    commandLine.option("--coverage.reportsDirectory", coverageReportsDirectory, joined = true)
+    commandLine.flag("--update", update)
+    commandLine.option("--testNamePattern", testNamePattern, joined = true)
+    commandLine.option("--dir", dir, joined = true)
+    commandLine.option("--outputFile", outputFile, joined = true)
+    commandLine.flag("--passWithNoTests", passWithNoTests)
+    commandLine.option("--bail", bail, joined = true)
   }
 }

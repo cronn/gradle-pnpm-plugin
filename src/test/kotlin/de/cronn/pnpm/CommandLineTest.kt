@@ -1,6 +1,6 @@
 package de.cronn.pnpm
 
-import de.cronn.pnpm.internal.CommandLine
+import de.cronn.pnpm.task.CommandLine
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.model.ObjectFactory

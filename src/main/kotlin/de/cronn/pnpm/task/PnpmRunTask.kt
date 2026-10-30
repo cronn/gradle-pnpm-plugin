@@ -14,5 +14,8 @@ public abstract class PnpmRunTask : PnpmTask() {
   /** The `package.json` script to run, for example `build`. */
   @get:Input public abstract val script: Property<String>
 
-  override fun buildArguments(): List<String> = listOf("run", script.get()) + arguments.get()
+  override fun contribute(commandLine: CommandLine) {
+    commandLine.head("run", script.get())
+    super.contribute(commandLine)
+  }
 }

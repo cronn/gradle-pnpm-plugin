@@ -36,6 +36,9 @@ public abstract class NodeTask : PnpmExecTask() {
     command.convention("node")
   }
 
-  override fun commandArguments(): List<String> =
-    nodeOptions.get() + entryPoint.get().asFile.absolutePath + arguments.get()
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
+    commandLine.head(nodeOptions.get())
+    commandLine.head(entryPoint.get())
+  }
 }

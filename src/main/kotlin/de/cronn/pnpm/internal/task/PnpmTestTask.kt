@@ -43,10 +43,4 @@ public abstract class PnpmTestTask : PnpmSourceTask() {
    * with [alwaysRerun], or because it is interactive and there is a person waiting for it.
    */
   public open fun rerunRequested(): Boolean = alwaysRerun.get()
-
-  /** The arguments of the test command, which subclasses assemble from their own configuration. */
-  protected abstract fun testArguments(): List<String>
-
-  final override fun commandArguments(): List<String> =
-    leadingArguments() + arguments.get() + testArguments() + extraArguments.get()
 }
