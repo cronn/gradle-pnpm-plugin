@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal.test
 
 import de.cronn.pnpm.PlaywrightExtension
+import de.cronn.pnpm.PnpmPlugin
 import de.cronn.pnpm.internal.ToolConfigFiles
 import de.cronn.pnpm.internal.task.PlaywrightInstallTask
 import de.cronn.pnpm.internal.writeStamp
@@ -74,7 +75,7 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
     val stamp = target.layout.buildDirectory.file("playwright/install.stamp")
 
     target.tasks.withType(PlaywrightInstallTask::class.java).configureEach { task ->
-      task.group = TASK_GROUP
+      task.group = PnpmPlugin.TASK_GROUP
       task.browsers.convention(browsers)
       task.withDependencies.convention(withDependencies)
       task.stampFile.convention(stamp)
@@ -98,9 +99,6 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
   companion object {
     const val TEST_TASK_NAME: String = "playwrightTest"
     const val INSTALL_TASK_NAME: String = "playwrightInstall"
-
-    /** The group the browser download sits in; the suite itself is a verification task. */
-    private const val TASK_GROUP: String = "pnpm"
 
     /**
      * The test sources, anchored: an unanchored `**` pattern would walk `node_modules`, which is a
