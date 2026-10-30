@@ -10,7 +10,7 @@ pnpm distribution it resolves like any other dependency, then lets pnpm's own ve
 lockfile checks and checksum verification take it from there. It also installs the workspace
 dependencies and exposes pre-defined tasks for common tools like TypeScript, Prettier and ESLint.
 
-Requirements: **Gradle 9.0+**, **Java 21+** and **pnpm 11+**. Linux, macOS and Windows on x64 and
+Requirements: **Gradle 9.1+**, **Java 25+** and **pnpm 11+**. Linux, macOS and Windows on x64 and
 arm64.
 
 Earlier pnpm versions are not supported and can lead to errors, e.g. when one is configured as
@@ -260,7 +260,7 @@ plugins {
 additionally run it against other versions, pass them as a comma-separated list:
 
 ```bash
-./gradlew functionalTest -PpnpmTestGradleVersions=9.0.0,9.7.1
+./gradlew functionalTest -PpnpmTestGradleVersions=9.1.0,9.7.1
 ```
 
 Each version is downloaded on demand. Without the property the version-specific tests are skipped.
