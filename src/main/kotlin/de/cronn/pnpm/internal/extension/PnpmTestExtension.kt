@@ -3,36 +3,23 @@ package de.cronn.pnpm.internal.extension
 import org.gradle.api.provider.Property
 
 /**
- * Configuration shared by every test tool wired into the Gradle lifecycle by `PnpmPlugin`.
+ * Configuration of a Node test tool.
  *
- * A test tool runs a suite rather than inspecting a file set, which is what sets this apart from
- * the source tools deriving from [PnpmCheckExtension] directly: [includes] and [excludes] describe
- * the Gradle inputs of the tasks only, and no pattern reaches the tool itself. Which tests run is
- * the tool's own decision, steered by its configuration file and by the command line options of the
- * task.
+ * The [includes] and [excludes] only decide when the suite is up to date; which tests run is up to
+ * the configuration of the tool and the options of the task.
  *
- * Every test tool contributes its test task to the `test` lifecycle task of the project. Whether it
- * also takes part in `check` is the tool's own decision: `vitestTest` does, because a unit suite is
- * fast and self-contained, while `playwrightTest` does not, because an end-to-end suite is slow and
- * usually needs a server that the build does not start. Add the missing edge where that is not so:
+ * `vitestTest` takes part in `test`, and with it in `check`. `playwrightTest` does not, because an
+ * end-to-end suite is slow and usually needs a server the build does not start. Add it where it
+ * should:
  * ```kotlin
- * tasks.named("check") { dependsOn(tasks.named("test")) }
+ * tasks.named("test") { dependsOn("playwrightTest") }
  * ```
- *
- * `VitestExtension` and `PlaywrightExtension` are the extensions of the test tools the plugin
- * supports today.
  */
 public abstract class PnpmTestExtension : PnpmSourceExtension() {
 
   /**
    * Whether the test tasks of this tool run on every invocation, instead of being skipped when
-   * Gradle finds their inputs and outputs unchanged. The extension of each tool documents what it
-   * defaults to.
-   *
-   * A suite whose result depends on something the task does not declare -- a server it talks to, a
-   * database it reads -- is not described by its inputs, and only up to date by accident. Setting
-   * this to `false` is worth it only for a suite that really is a function of the files it runs
-   * over.
+   * their inputs and outputs are unchanged. The extension of each tool documents its default.
    */
   public abstract val alwaysRerun: Property<Boolean>
 }

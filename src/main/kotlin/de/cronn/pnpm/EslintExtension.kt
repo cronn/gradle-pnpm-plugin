@@ -8,10 +8,6 @@ import org.gradle.api.provider.Property
  * Configuration of the ESLint check and fix tasks, added by [PnpmPlugin] as the `eslint` extension.
  *
  * Pre-defined tasks are registered only when the project contains an `eslint.config.*` file.
- *
- * [maxWarnings], [noErrorOnUnmatchedPattern], [cache], [cacheLocation], [suppressionsLocation] and
- * [passOnNoPatterns] are the defaults of every `EslintTask`, which a task can override with a value
- * of its own. Unset, the task leaves the option to ESLint.
  */
 public abstract class EslintExtension : PnpmCheckExtension() {
 

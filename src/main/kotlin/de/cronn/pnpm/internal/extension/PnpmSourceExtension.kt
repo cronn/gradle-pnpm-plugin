@@ -4,25 +4,17 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 
 /**
- * Configuration shared by every Node tool wired into the Gradle lifecycle by `PnpmPlugin`.
+ * Configuration shared by every Node tool.
  *
- * The tools whose patterns reach a command line configure a [PnpmCheckExtension], the test tools a
- * [PnpmTestExtension], and `TypescriptExtension` derives from this one directly -- the same split
- * the tasks make.
+ * The properties of an extension are the defaults of every task of the tool, which a task can
+ * override with a value of its own. Unset, the task leaves the option to the tool.
  */
 public abstract class PnpmSourceExtension {
 
   /**
-   * Ant-style patterns of files that are inputs of this tool's tasks, and which the tool itself is
-   * invoked with.
-   *
-   * Defaults to the patterns documented by the extension of the tool. Assigning it replaces those
-   * defaults; the [includes] method adds to them.
-   *
-   * The patterns are always resolved by the Ant matcher of Gradle, to the files deciding when a
-   * task is up to date, and a pattern it cannot resolve fails the build when the task resolves its
-   * inputs. A tool that is handed the patterns has to understand them as well, which
-   * [PnpmCheckExtension] describes; the README has the details.
+   * Ant-style patterns of the sources, which decide when the tasks of this tool are up to date.
+   * ESLint and Prettier are handed them as well. Defaults to the patterns of the tool; assigning it
+   * replaces those, while the [includes] method adds to them.
    */
   public abstract val includes: ListProperty<String>
 
@@ -30,11 +22,8 @@ public abstract class PnpmSourceExtension {
   public abstract val excludes: ListProperty<String>
 
   /**
-   * The configuration file every task of this tool hands the tool, unless the task sets its own.
-   * Defaults to the configuration file detected in the project.
-   *
-   * Only changes the file the tool runs with: whether the predefined tasks are registered is still
-   * decided by the detected file.
+   * The configuration file handed to the tool. Defaults to the one detected in the project, which
+   * also decides whether the predefined tasks are registered.
    */
   public abstract val configFile: RegularFileProperty
 

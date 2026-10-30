@@ -10,10 +10,6 @@ import org.gradle.api.provider.Property
  *
  * Pre-defined tasks are registered only when the project contains a `prettier.config.*` or
  * `.prettierrc*` file.
- *
- * [ignoreUnknown], [noErrorOnUnmatchedPattern], [cache] and [cacheLocation] are the defaults of
- * every `PrettierTask`, which a task can override with a value of its own. Unset, the task leaves
- * the option to Prettier.
  */
 public abstract class PrettierExtension : PnpmCheckExtension() {
 

@@ -10,10 +10,9 @@ import org.gradle.api.provider.Property
  *
  * Pre-defined tasks are registered only when the project contains a `playwright.config.*` file.
  *
- * [alwaysRerun] defaults to `true` here: a browser suite reaches a backend, a database or a fixture
- * server, and none of those is a Gradle input, so unchanged inputs say nothing about whether the
- * last result still holds. Set it to `false` for a suite that really is a function of the files it
- * runs over.
+ * [alwaysRerun] defaults to `true`: a browser suite reaches a backend, a database or a fixture
+ * server, none of which is a Gradle input. Set it to `false` for a suite that is a function of the
+ * files it runs over.
  */
 public abstract class PlaywrightExtension : PnpmTestExtension() {
 
