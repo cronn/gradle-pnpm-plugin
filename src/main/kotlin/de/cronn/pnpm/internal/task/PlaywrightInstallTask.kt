@@ -12,11 +12,8 @@ import org.gradle.work.DisableCachingByDefault
 /**
  * Downloads the browsers Playwright drives, through `pnpm exec playwright install`.
  *
- * The browsers land in a cache outside the project -- `~/.cache/ms-playwright` and its equivalents
- * -- which is nothing Gradle can compare, so the task declares what decides the download instead:
- * the workspace lockfile that pins the Playwright version, wired onto every pnpm task by the
- * plugin, and the [browsers] asked for. A [stampFile] gives it the output that makes it skippable,
- * the way `pnpmInstall` does it.
+ * The browsers land in a cache outside the project, so the task is up to date on what decides the
+ * download instead: the lockfile pinning the Playwright version, the [browsers] and a [stampFile].
  */
 @DisableCachingByDefault(
   because =

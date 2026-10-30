@@ -14,8 +14,7 @@ import org.gradle.work.DisableCachingByDefault
 /**
  * Runs a Playwright test suite through `pnpm exec playwright test`.
  *
- * What a test run is usually varied by is a command line option of the task, so that an ad-hoc run
- * needs no edit to the build script:
+ * The common options are command line options of the task as well:
  * ```bash
  * ./gradlew :e2e:playwrightTest --grep=login --update-snapshots
  * ./gradlew :e2e:playwrightTest --filter=tests/login.spec.ts:42 --trace=on
@@ -23,8 +22,8 @@ import org.gradle.work.DisableCachingByDefault
  * ./gradlew :e2e:playwrightTest --project=chromium
  * ```
  *
- * `./gradlew help --task playwrightTest` lists them all. Anything else Playwright takes goes into
- * the [arguments] of the task, or into the `extraArguments` of the `playwright` extension.
+ * Any other option goes into the [arguments] of the task, or into the `extraArguments` of the
+ * `playwright` extension.
  */
 @DisableCachingByDefault(
   because = "Runs a Playwright suite; its effects are not fully described by declared outputs.",

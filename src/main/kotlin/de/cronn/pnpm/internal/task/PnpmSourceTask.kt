@@ -21,17 +21,10 @@ import org.gradle.api.tasks.options.Option
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * Runs a Node tool over a set of sources described by Ant-style patterns.
+ * Runs a Node tool over the sources the Ant-style [includes] and [excludes] describe.
  *
- * The base of every task the plugin registers for a tool: [PnpmCheckTask] for the tools that are
- * handed their patterns, [PnpmTestTask] for the ones that run a suite, and `TypescriptTask`, which
- * is handed no pattern but is no test task either. Everything the three have in common -- the
- * patterns, the [sourceFiles] they resolve to and the [extraArguments] appended to every invocation
- * -- lives here, so that a pattern means the same thing whichever task it is declared on.
- *
- * The patterns are always the Gradle inputs of the task, so they always have to be ones the Ant
- * matcher of Gradle can resolve; a pattern written for the globber of a tool would find nothing and
- * skip the task instead. Whether the tool is handed them as well is what the subclasses differ in.
+ * The patterns are the Gradle inputs of the task, so they have to be ones Gradle can resolve,
+ * whether the tool is handed them as well or not.
  */
 @DisableCachingByDefault(
   because =
@@ -43,8 +36,8 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:Inject protected abstract val objects: ObjectFactory
 
   /**
-   * Ant-style patterns of the files this task works on, relative to the [workingDirectory] the tool
-   * is invoked in. Defaults to the `includes` of the tool's extension.
+   * Ant-style patterns of the sources, relative to the [workingDirectory]. Defaults to the
+   * `includes` of the tool's extension.
    */
   @get:Input public abstract val includes: ListProperty<String>
 
@@ -52,10 +45,8 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:Input public abstract val excludes: ListProperty<String>
 
   /**
-   * The configuration file the tool is handed, through the [configFileOption] of the tool. Defaults
-   * to the configuration file the plugin detected in the project, so that the file deciding whether
-   * the tasks of a tool are registered is the one the tool runs with. Unset, the tool searches for
-   * its configuration on its own.
+   * The configuration file handed to the tool. Defaults to the one detected in the project; unset,
+   * the tool searches for its own.
    */
   @get:InputFile
   @get:Optional
@@ -67,15 +58,11 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:Internal protected open val configFileOption: String = "--config"
 
   /**
-   * The files [includes] and [excludes] resolve to, which are the inputs deciding when this task is
-   * up to date. Derived from the patterns; configure those instead.
+   * The files the patterns resolve to, which decide when the task is up to date. A task without
+   * sources is skipped, and a pattern that cannot be resolved fails the build.
    *
-   * A task whose sources are empty is skipped. The patterns are resolved in a single tree rooted at
-   * the [workingDirectory], so a task that writes below it -- into the build directory, say --
-   * needs an [excludes] entry keeping its own output out, the way it needs one for `node_modules`.
-   *
-   * Resolving the inputs is also where the patterns are validated, so that one no resolver
-   * understands fails the build instead of leaving the task without a source.
+   * The patterns are resolved below the [workingDirectory], so a task writing below it needs an
+   * [excludes] entry for its own output, the way it needs one for `node_modules`.
    */
   @get:InputFiles
   @get:SkipWhenEmpty
@@ -90,17 +77,10 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
       return tree
     }
 
-  /**
-   * Arguments appended after everything the task contributes itself. Defaults to the
-   * `extraArguments` of the tool's extension, so that they apply to every task of this tool.
-   */
+  /** Arguments after all others. Defaults to the `extraArguments` of the tool's extension. */
   @get:Input public abstract val extraArguments: ListProperty<String>
 
-  /**
-   * Rejects a pattern that would not describe what it says it does. Every pattern has to be one the
-   * Ant matcher of Gradle resolves; a subclass whose tool is handed the patterns adds what that
-   * tool requires on top.
-   */
+  /** Rejects a pattern Gradle cannot resolve. */
   protected open fun requireSupportedPatterns() {
     SourcePatterns.requireResolvable(includes.get(), "includes", path)
     SourcePatterns.requireResolvable(excludes.get(), "excludes", path)

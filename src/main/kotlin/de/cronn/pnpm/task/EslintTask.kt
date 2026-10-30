@@ -21,16 +21,14 @@ import org.gradle.work.DisableCachingByDefault
  * Those follow the gitignore syntax, in which a pattern without a slash matches at any depth --
  * unlike the Ant patterns of Gradle, which anchor it to the project directory.
  *
- * The common options of ESLint are command line options of the task as well, so that an ad-hoc run
- * needs no edit to the build script:
+ * The common options are command line options of the task as well:
  * ```bash
  * ./gradlew :frontend:eslintCheck --max-warnings=10
  * ./gradlew :frontend:eslintCheck --suppress-rule=no-console --suppress-rule=no-undef
  * ```
  *
- * Each of them is handed to ESLint as it is; which of them combine is up to ESLint. Anything else
- * ESLint takes goes into the [arguments] of the task, or into the `extraArguments` of the `eslint`
- * extension.
+ * Any other option goes into the [arguments] of the task, or into the `extraArguments` of the
+ * `eslint` extension.
  */
 @DisableCachingByDefault(
   because = "Runs ESLint; its effects are not fully described by declared outputs.",
