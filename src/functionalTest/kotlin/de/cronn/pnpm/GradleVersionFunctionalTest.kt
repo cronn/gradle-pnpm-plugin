@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource
  * Runs the plugins against other Gradle versions.
  *
  * This tier is opt-in, because it downloads Gradle distributions: pass
- * `-PpnpmTestGradleVersions=9.0,9.7.1`. Without it there are no test cases and the class is
+ * `-PpnpmTestGradleVersions=9.1,9.7.1`. Without it there are no test cases and the class is
  * skipped.
  */
 class GradleVersionFunctionalTest {
