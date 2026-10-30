@@ -7,8 +7,8 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /** The Prettier tasks of a pnpm package. */
-internal class PrettierTasks(target: Project, private val prettier: PrettierExtension) :
-  CheckTasks<PrettierTask>(
+internal class PrettierTasks(target: Project, prettier: PrettierExtension) :
+  CheckTasks<PrettierTask, PrettierExtension>(
     target,
     prettier,
     PrettierTask::class.java,
@@ -17,14 +17,14 @@ internal class PrettierTasks(target: Project, private val prettier: PrettierExte
   ) {
 
   override fun configureTask(task: PrettierTask) {
-    task.ignoreUnknown.convention(prettier.ignoreUnknown)
-    task.noErrorOnUnmatchedPattern.convention(prettier.noErrorOnUnmatchedPattern)
-    task.cache.convention(prettier.cache)
-    task.cacheLocation.convention(prettier.cacheLocation)
+    task.ignoreUnknown.convention(extension.ignoreUnknown)
+    task.noErrorOnUnmatchedPattern.convention(extension.noErrorOnUnmatchedPattern)
+    task.cache.convention(extension.cache)
+    task.cacheLocation.convention(extension.cacheLocation)
   }
 
   override fun registerCheckTask(): TaskProvider<PrettierTask> =
-    registerTask(
+    registerPredefinedTask(
       name = "prettierCheck",
       description = "Checks the formatting of the sources with Prettier",
     ) { task ->
@@ -32,7 +32,7 @@ internal class PrettierTasks(target: Project, private val prettier: PrettierExte
     }
 
   override fun registerFixTask(): TaskProvider<PrettierTask> =
-    registerTask(
+    registerPredefinedTask(
       name = "prettierFix",
       description = "Reformats the sources with Prettier",
     ) { task ->

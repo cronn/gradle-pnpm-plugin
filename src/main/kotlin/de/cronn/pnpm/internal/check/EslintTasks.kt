@@ -8,8 +8,8 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /** The ESLint tasks of a pnpm package. */
-internal class EslintTasks(target: Project, private val eslint: EslintExtension) :
-  CheckTasks<EslintTask>(
+internal class EslintTasks(target: Project, eslint: EslintExtension) :
+  CheckTasks<EslintTask, EslintExtension>(
     target,
     eslint,
     EslintTask::class.java,
@@ -24,22 +24,22 @@ internal class EslintTasks(target: Project, private val eslint: EslintExtension)
    */
   override fun configureTask(task: EslintTask) {
     task.dependsOn(target.tasks.withType(TypescriptTask::class.java))
-    task.maxWarnings.convention(eslint.maxWarnings)
-    task.noErrorOnUnmatchedPattern.convention(eslint.noErrorOnUnmatchedPattern)
-    task.cache.convention(eslint.cache)
-    task.cacheLocation.convention(eslint.cacheLocation)
-    task.suppressionsLocation.convention(eslint.suppressionsLocation)
-    task.passOnNoPatterns.convention(eslint.passOnNoPatterns)
+    task.maxWarnings.convention(extension.maxWarnings)
+    task.noErrorOnUnmatchedPattern.convention(extension.noErrorOnUnmatchedPattern)
+    task.cache.convention(extension.cache)
+    task.cacheLocation.convention(extension.cacheLocation)
+    task.suppressionsLocation.convention(extension.suppressionsLocation)
+    task.passOnNoPatterns.convention(extension.passOnNoPatterns)
   }
 
   override fun registerCheckTask(): TaskProvider<EslintTask> =
-    registerTask(
+    registerPredefinedTask(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
     )
 
   override fun registerFixTask(): TaskProvider<EslintTask> =
-    registerTask(
+    registerPredefinedTask(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
     ) { task ->

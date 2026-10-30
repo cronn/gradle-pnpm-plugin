@@ -10,8 +10,8 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /** The Playwright tasks of a pnpm package: the suite itself and the browser download it needs. */
-internal class PlaywrightTasks(target: Project, private val playwright: PlaywrightExtension) :
-  TestTasks<PlaywrightTestTask>(
+internal class PlaywrightTasks(target: Project, playwright: PlaywrightExtension) :
+  TestTasks<PlaywrightTestTask, PlaywrightExtension>(
     target,
     playwright,
     PlaywrightTestTask::class.java,
@@ -37,7 +37,7 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
 
     val install = registerInstallTask()
     // Locals again, so the configuration captures the property and not this registrar.
-    val installBrowsers = playwright.installBrowsers
+    val installBrowsers = extension.installBrowsers
     target.tasks.withType(PlaywrightTestTask::class.java).configureEach { task ->
       // An empty list is no dependency at all, so switching installBrowsers off after the plugin
       // was applied still drops the edge.
@@ -50,10 +50,10 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
     val buildDirectory = target.layout.buildDirectory
 
     task.outputDirectory.convention(
-      playwright.outputDirectory.orElse(buildDirectory.dir("playwright/test-results")),
+      extension.outputDirectory.orElse(buildDirectory.dir("playwright/test-results")),
     )
     task.reportDirectory.convention(
-      playwright.reportDirectory.orElse(buildDirectory.dir("reports/playwright")),
+      extension.reportDirectory.orElse(buildDirectory.dir("reports/playwright")),
     )
     // The report location becomes something the task declares rather than something the Playwright
     // configuration happens to choose. PLAYWRIGHT_HTML_REPORT is the name Playwright below 1.45
@@ -66,12 +66,12 @@ internal class PlaywrightTasks(target: Project, private val playwright: Playwrig
   }
 
   override fun registerTestTask(): TaskProvider<PlaywrightTestTask> =
-    registerTestTask(name = TEST_TASK_NAME, description = "Runs the Playwright test suite")
+    registerTask(name = TEST_TASK_NAME, description = "Runs the Playwright test suite")
 
   /** Applies to every browser download task, the ones a build script registers included. */
   private fun configureInstallTasks() {
-    val browsers = playwright.browsers
-    val withDependencies = playwright.installSystemDependencies
+    val browsers = extension.browsers
+    val withDependencies = extension.installSystemDependencies
     val stamp = target.layout.buildDirectory.file("playwright/install.stamp")
 
     target.tasks.withType(PlaywrightInstallTask::class.java).configureEach { task ->

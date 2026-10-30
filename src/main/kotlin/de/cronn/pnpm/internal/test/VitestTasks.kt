@@ -13,8 +13,8 @@ import org.gradle.api.tasks.TaskProvider
  * part in `check`: a unit suite is fast and reaches nothing the build does not start, so there is
  * no reason to keep it out of `build`.
  */
-internal class VitestTasks(target: Project, private val vitest: VitestExtension) :
-  TestTasks<VitestRunTask>(
+internal class VitestTasks(target: Project, vitest: VitestExtension) :
+  TestTasks<VitestRunTask, VitestExtension>(
     target,
     vitest,
     VitestRunTask::class.java,
@@ -28,16 +28,16 @@ internal class VitestTasks(target: Project, private val vitest: VitestExtension)
     val buildDirectory = target.layout.buildDirectory
 
     task.coverageReportsDirectory.convention(
-      vitest.coverageReportsDirectory.orElse(buildDirectory.dir("reports/vitest")),
+      extension.coverageReportsDirectory.orElse(buildDirectory.dir("reports/vitest")),
     )
-    task.coverage.convention(vitest.coverage)
-    task.passWithNoTests.convention(vitest.passWithNoTests)
-    task.dir.convention(vitest.dir)
-    task.outputFile.convention(vitest.outputFile)
+    task.coverage.convention(extension.coverage)
+    task.passWithNoTests.convention(extension.passWithNoTests)
+    task.dir.convention(extension.dir)
+    task.outputFile.convention(extension.outputFile)
   }
 
   override fun registerTestTask(): TaskProvider<VitestRunTask> =
-    registerTestTask(name = TEST_TASK_NAME, description = "Runs the Vitest test suite")
+    registerTask(name = TEST_TASK_NAME, description = "Runs the Vitest test suite")
 
   companion object {
     const val TEST_TASK_NAME: String = "vitestTest"
