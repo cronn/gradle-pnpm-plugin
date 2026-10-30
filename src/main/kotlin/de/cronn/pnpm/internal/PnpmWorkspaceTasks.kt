@@ -83,11 +83,7 @@ internal class PnpmWorkspaceTasks(
       // node_modules is a symlink farm pointing into a content-addressed store; snapshotting it is
       // slow and tells Gradle nothing useful. A stamp file gives the task a real output instead.
       task.outputs.file(stampFile).withPropertyName("stampFile")
-      task.doLast {
-        val stamp = stampFile.get().asFile
-        stamp.parentFile.mkdirs()
-        stamp.writeText("pnpm install completed\n")
-      }
+      task.doLast { writeStamp(stampFile.get().asFile, "pnpm install completed\n") }
     }
   }
 
