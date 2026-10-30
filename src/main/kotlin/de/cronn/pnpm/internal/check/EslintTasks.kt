@@ -17,6 +17,13 @@ internal class EslintTasks(target: Project, eslint: EslintExtension) :
     INCLUDES,
   ) {
 
+  override fun configureExtension() {
+    // A lint warning is worth fixing as much as an error, so it fails the task.
+    extension.maxWarnings.convention(0)
+    // A pattern of the plugin rather than of the project easily matches nothing.
+    extension.noErrorOnUnmatchedPattern.convention(true)
+  }
+
   /**
    * ESLint reports the type errors `tsc` would report as well, so type checking runs first to get
    * the better message. This holds for the tasks of a build script too, not just the predefined

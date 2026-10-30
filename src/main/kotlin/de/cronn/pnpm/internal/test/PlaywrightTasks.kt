@@ -45,6 +45,15 @@ internal class PlaywrightTasks(target: Project, playwright: PlaywrightExtension)
     return registered
   }
 
+  override fun configureExtension() {
+    extension.installBrowsers.convention(true)
+    extension.installSystemDependencies.convention(false)
+    // A browser suite talks to a backend, a database, a fixture server -- none of which a Gradle
+    // input describes, so its inputs being unchanged is no reason to believe its result still
+    // holds.
+    extension.alwaysRerun.convention(true)
+  }
+
   override fun configureTask(task: PlaywrightTestTask) {
     val buildDirectory = target.layout.buildDirectory
 
