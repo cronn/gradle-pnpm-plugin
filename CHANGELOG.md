@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.13.0
+
+### Minor Changes
+
+- d4396d1: Accept `--config` on the command line of `playwrightTest`, like the other tool tasks
+
+  ```bash
+  ./gradlew :e2e:playwrightTest --config=playwright.ci.config.ts
+  ```
+- cb5be82: Pass the `arguments` of every tool task ahead of the options the task sets through its properties
+
+  A task type extending `PnpmTask` now adds its arguments by overriding `contribute(CommandLine)` instead of `buildArguments()` or `commandArguments()`:
+
+  ```kotlin
+  abstract class AngularBuildTask : PnpmExecTask() {
+    @get:Input abstract val configuration: Property<String>
+
+    init {
+      command.convention("ng")
+    }
+
+    override val subcommand: String = "build"
+
+    override fun contribute(commandLine: CommandLine) {
+      super.contribute(commandLine)
+      commandLine.option("--configuration", configuration, joined = true)
+    }
+  }
+  ```
+
+### Patch Changes
+
+- 75660fb: Fix the Vitest coverage report being written to `coverage` instead of `coverageReportsDirectory` when `coverage` is enabled
+
 ## 0.12.0
 
 ### Minor Changes
