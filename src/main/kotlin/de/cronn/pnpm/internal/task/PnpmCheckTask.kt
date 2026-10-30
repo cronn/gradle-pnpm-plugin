@@ -2,6 +2,7 @@ package de.cronn.pnpm.internal.task
 
 import de.cronn.pnpm.internal.SourcePatterns
 import de.cronn.pnpm.internal.extension.PnpmSourceExtension
+import de.cronn.pnpm.task.CommandLine
 import org.gradle.work.DisableCachingByDefault
 
 /**
@@ -32,8 +33,7 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
 
   /**
    * The [includes] and [excludes] as command line arguments of the tool, in the order they were
-   * declared in. Every argument the tool contributes itself comes before the patterns, so that an
-   * [extraArguments] entry can never be taken for one.
+   * declared in.
    *
    * Implemented per tool: the tools agree on passing the includes as operands, but not on how to
    * exclude.
@@ -43,18 +43,11 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
     excludes: List<String>,
   ): List<String>
 
-  /**
-   * The options of the tool this task sets through properties of its own, which come after the
-   * [leadingArguments] and before the patterns. Empty for a tool that has no such properties.
-   */
-  protected open fun optionArguments(): List<String> = emptyList()
-
-  final override fun commandArguments(): List<String> =
-    leadingArguments() +
-      optionArguments() +
-      patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)) +
-      arguments.get() +
-      extraArguments.get()
+  /** The patterns trail every option of the tool, ahead of the [extraArguments]. */
+  override fun contribute(commandLine: CommandLine) {
+    commandLine.tail(patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)))
+    super.contribute(commandLine)
+  }
 
   /** Adds what the globber of the tool requires to what the Ant matcher of Gradle does. */
   final override fun requireSupportedPatterns() {

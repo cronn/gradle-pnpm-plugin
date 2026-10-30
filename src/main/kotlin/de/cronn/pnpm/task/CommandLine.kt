@@ -1,4 +1,4 @@
-package de.cronn.pnpm.internal
+package de.cronn.pnpm.task
 
 import java.io.File
 import org.gradle.api.file.FileSystemLocation
@@ -7,8 +7,9 @@ import org.gradle.api.provider.Provider
 /**
  * The arguments a pnpm task invokes pnpm with, assembled by every layer of the task hierarchy.
  *
- * The [head] names what runs and leads; the [tail] trails. Everything else forms the body, in the
- * order it is added. File locations are passed as absolute paths.
+ * The [head] names what runs and leads, the [tail] trails, and everything else forms the body in
+ * between. Each part keeps the order its arguments are added in. File locations are passed as
+ * absolute paths.
  */
 public class CommandLine {
 
@@ -36,7 +37,7 @@ public class CommandLine {
     arguments.mapTo(body, ::render)
   }
 
-  /** Adds [arguments] to the tail. */
+  /** Adds [arguments] to the tail, such as operands that have to follow every option. */
   public fun tail(arguments: Iterable<Any>) {
     arguments.mapTo(tail, ::render)
   }

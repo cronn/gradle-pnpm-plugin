@@ -83,7 +83,7 @@ public abstract class PnpmTask : DefaultTask() {
 
   @TaskAction
   public fun run() {
-    val commandLine = listOf(executable.get()) + buildArguments()
+    val commandLine = listOf(executable.get()) + CommandLine().also(::contribute).build()
     val directory = workingDirectory.get().asFile
     val variables = environment.get()
     // The names only: a variable set here is where a token or a credential would sit.
@@ -105,6 +105,11 @@ public abstract class PnpmTask : DefaultTask() {
     }
   }
 
-  /** The full pnpm argument list, which subclasses prefix with their own command. */
-  protected open fun buildArguments(): List<String> = arguments.get()
+  /**
+   * Adds the arguments of this task to [commandLine]. An override calls `super` first, so that the
+   * [arguments] precede what it adds to the body.
+   */
+  protected open fun contribute(commandLine: CommandLine) {
+    commandLine.add(arguments.get())
+  }
 }

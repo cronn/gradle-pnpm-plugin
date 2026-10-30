@@ -2,6 +2,7 @@ package de.cronn.pnpm.task
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.work.DisableCachingByDefault
 
 /** Runs `pnpm exec <command>`, which executes a binary provided by a workspace dependency. */
@@ -14,13 +15,15 @@ public abstract class PnpmExecTask : PnpmTask() {
   /** The binary to execute, for example `eslint`. */
   @get:Input public abstract val command: Property<String>
 
-  final override fun buildArguments(): List<String> =
-    listOf("exec", command.get()) + commandArguments()
-
   /**
-   * The arguments of [command], which subclasses assemble from whatever they configure the binary
-   * with. Overriding this rather than [buildArguments] is what keeps every subclass on the same
-   * `pnpm exec <command>` prefix.
+   * The subcommand of [command] this task runs, such as the `run` of `vitest run`, owned by the
+   * concrete task type. `null` for a binary that is invoked without one.
    */
-  protected open fun commandArguments(): List<String> = arguments.get()
+  @get:Internal protected open val subcommand: String? = null
+
+  override fun contribute(commandLine: CommandLine) {
+    commandLine.head("exec", command.get())
+    subcommand?.let { commandLine.head(it) }
+    super.contribute(commandLine)
+  }
 }

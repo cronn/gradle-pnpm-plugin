@@ -1,6 +1,7 @@
 package de.cronn.pnpm.task
 
 import de.cronn.pnpm.internal.task.PnpmSourceTask
+import java.io.File
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -79,14 +80,16 @@ public abstract class TypescriptTask : PnpmSourceTask() {
    * `--build` leads, because `tsc` only recognizes it as the first argument. Build mode takes no
    * `--project`, but the projects to build as the last arguments, so the [configFile] trails then.
    */
-  override fun commandArguments(): List<String> = buildList {
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
     val buildMode = build.getOrElse(false)
-    if (buildMode) add("--build") else addAll(leadingArguments())
-    if (clean.getOrElse(false)) add("--clean")
-    if (noEmit.getOrElse(false)) add("--noEmit")
-    outDir.orNull?.let { addAll(listOf("--outDir", it.asFile.absolutePath)) }
-    addAll(arguments.get())
-    addAll(extraArguments.get())
-    if (buildMode) configFile.orNull?.let { add(it.asFile.absolutePath) }
+    if (buildMode) commandLine.head("--build")
+    commandLine.flag("--clean", clean)
+    commandLine.flag("--noEmit", noEmit)
+    commandLine.option("--outDir", outDir)
+    if (buildMode) configFile.orNull?.let { commandLine.tail(listOf(it)) }
   }
+
+  override fun configFileArguments(file: File): List<Any> =
+    if (build.getOrElse(false)) emptyList() else super.configFileArguments(file)
 }

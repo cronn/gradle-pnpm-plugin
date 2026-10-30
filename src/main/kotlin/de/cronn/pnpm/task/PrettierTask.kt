@@ -36,8 +36,6 @@ import org.gradle.work.DisableCachingByDefault
 )
 public abstract class PrettierTask : PnpmCheckTask() {
 
-  override val configFileOption: String = "--config"
-
   /** The Prettier configuration file, passed as `--config`. */
   @get:InputFile
   @get:Optional
@@ -97,14 +95,15 @@ public abstract class PrettierTask : PnpmCheckTask() {
     command.convention("prettier")
   }
 
-  override fun optionArguments(): List<String> = buildList {
-    if (check.getOrElse(false)) add("--check")
-    if (write.getOrElse(false)) add("--write")
-    if (listDifferent.getOrElse(false)) add("--list-different")
-    if (ignoreUnknown.getOrElse(false)) add("--ignore-unknown")
-    if (noErrorOnUnmatchedPattern.getOrElse(false)) add(NO_ERROR_ON_UNMATCHED_PATTERN)
-    if (cache.getOrElse(false)) add("--cache")
-    cacheLocation.orNull?.let { addAll(listOf("--cache-location", it.asFile.absolutePath)) }
+  override fun contribute(commandLine: CommandLine) {
+    super.contribute(commandLine)
+    commandLine.flag("--check", check)
+    commandLine.flag("--write", write)
+    commandLine.flag("--list-different", listDifferent)
+    commandLine.flag("--ignore-unknown", ignoreUnknown)
+    commandLine.flag(NO_ERROR_ON_UNMATCHED_PATTERN, noErrorOnUnmatchedPattern)
+    commandLine.flag("--cache", cache)
+    commandLine.option("--cache-location", cacheLocation)
   }
 
   override fun patternArguments(includes: List<String>, excludes: List<String>): List<String> =
