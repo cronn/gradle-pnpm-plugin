@@ -31,11 +31,11 @@ internal class PnpmCheckTasks(
    * Registers the tasks of every tool the project is configured for, and wires them into `check`
    * and `fix`. A tool whose config file is absent contributes no task at all.
    */
-  fun register(typescript: Boolean, prettier: Boolean, eslint: Boolean) {
+  fun register() {
     // A further tool is registered here and added to the list below.
-    val typescriptTasks = typescriptTasks.register(typescript)
-    val prettierTasks = prettierTasks.register(prettier)
-    val eslintTasks = eslintTasks.register(eslint)
+    val typescriptTasks = typescriptTasks.register()
+    val prettierTasks = prettierTasks.register()
+    val eslintTasks = eslintTasks.register()
 
     // Prettier has the final say on formatting, so it must not run before ESLint's --fix. Either
     // tool may be missing entirely, so both sides of the edge are optional.

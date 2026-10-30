@@ -1,7 +1,5 @@
 package de.cronn.pnpm.internal
 
-import java.io.File
-import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 
@@ -46,13 +44,10 @@ internal object ToolConfigFiles {
         listOf(".prettierrc.$extension", "prettier.config.$extension")
       }
 
-  fun anyPresent(project: Project, fileNames: List<String>): Boolean = fileNames.any {
-    File(project.projectDir, it).isFile
-  }
-
   /**
    * The first of [fileNames] that exists in [projectDirectory], which is the one the tool is
-   * handed. Resolved eagerly, the same as [anyPresent], for the same reason.
+   * handed. Resolved eagerly, so that only the existence of the file is a configuration cache
+   * input.
    */
   fun firstExisting(projectDirectory: Directory, fileNames: List<String>): RegularFile? =
     fileNames.map { projectDirectory.file(it) }.firstOrNull { it.asFile.isFile }

@@ -33,10 +33,10 @@ internal class PnpmTestTasks(
    * Registers the tasks of every test tool the project is configured for, and wires them into
    * `test` and `check`. A tool whose config file is absent contributes no task at all.
    */
-  fun register(playwright: Boolean, vitest: Boolean) {
+  fun register() {
     // A further test tool is registered here and added to the list below.
-    val playwrightTasks = playwrightTasks.registerAll(playwright)
-    val vitestTasks = vitestTasks.register(vitest)
+    val playwrightTasks = playwrightTasks.register()
+    val vitestTasks = vitestTasks.register()
 
     val registered = listOfNotNull(playwrightTasks, vitestTasks)
     val test = wireTest(registered.filter { tool -> tool.contributesToTest })
