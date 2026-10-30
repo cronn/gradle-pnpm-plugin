@@ -17,6 +17,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
+import org.gradle.api.tasks.options.Option
 import org.gradle.work.DisableCachingByDefault
 
 /**
@@ -59,6 +60,7 @@ public abstract class PnpmSourceTask : PnpmExecTask() {
   @get:InputFile
   @get:Optional
   @get:PathSensitive(PathSensitivity.RELATIVE)
+  @get:Option(option = "config", description = "Runs the tool with this configuration file")
   public abstract val configFile: RegularFileProperty
 
   /** The command line option the tool takes its configuration file with. */
