@@ -51,19 +51,12 @@ internal abstract class ToolTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
     )
     configFile?.let { extension.configFile.convention(it) }
 
-    // Locals, so that the task configuration captures the extension properties instead of this
-    // registrar, which holds the Project and would fail to serialize into the configuration cache.
-    val includes = extension.includes
-    val excludes = extension.excludes
-    val extensionConfigFile = extension.configFile
-    val extraArguments = extension.extraArguments
-
     target.tasks.withType(taskType).configureEach { task ->
       task.group = LifecycleBasePlugin.VERIFICATION_GROUP
-      task.includes.convention(includes)
-      task.excludes.convention(excludes)
-      task.configFile.convention(extensionConfigFile)
-      task.extraArguments.convention(extraArguments)
+      task.includes.convention(extension.includes)
+      task.excludes.convention(extension.excludes)
+      task.configFile.convention(extension.configFile)
+      task.extraArguments.convention(extension.extraArguments)
       configureTask(task)
     }
     return configFile != null
