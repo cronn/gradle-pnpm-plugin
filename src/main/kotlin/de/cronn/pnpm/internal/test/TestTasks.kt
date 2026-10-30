@@ -31,10 +31,8 @@ internal abstract class TestTasks<T : PnpmTestTask, E : PnpmTestExtension>(
   open fun register(): RegisteredTestTasks? {
     val discovered = configureTasks()
 
-    // A local, so that the task configuration captures the property instead of this registrar.
-    val alwaysRerun = extension.alwaysRerun
     target.tasks.withType(taskType).configureEach { task ->
-      task.alwaysRerun.convention(alwaysRerun)
+      task.alwaysRerun.convention(extension.alwaysRerun)
       // The spec must not capture anything: the configuration cache serializes it, so the decision
       // is read off the task the way PnpmSetupTask carries its own.
       task.outputs.upToDateWhen { candidate -> !(candidate as PnpmTestTask).rerunRequested() }

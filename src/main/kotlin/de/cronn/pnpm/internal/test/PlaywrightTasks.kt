@@ -35,12 +35,12 @@ internal class PlaywrightTasks(target: Project, playwright: PlaywrightExtension)
     }
 
     val install = registerInstallTask()
-    // Locals again, so the configuration captures the property and not this registrar.
-    val installBrowsers = extension.installBrowsers
     target.tasks.withType(PlaywrightTestTask::class.java).configureEach { task ->
       // An empty list is no dependency at all, so switching installBrowsers off after the plugin
       // was applied still drops the edge.
-      task.dependsOn(installBrowsers.map { wanted -> if (wanted) listOf(install) else emptyList() })
+      task.dependsOn(
+        extension.installBrowsers.map { wanted -> if (wanted) listOf(install) else emptyList() },
+      )
     }
     return registered
   }
@@ -78,15 +78,11 @@ internal class PlaywrightTasks(target: Project, playwright: PlaywrightExtension)
 
   /** Applies to every browser download task, the ones a build script registers included. */
   private fun configureInstallTasks() {
-    val browsers = extension.browsers
-    val withDependencies = extension.installSystemDependencies
-    val stamp = target.layout.buildDirectory.file("playwright/install.stamp")
-
     target.tasks.withType(PlaywrightInstallTask::class.java).configureEach { task ->
       task.group = PnpmPlugin.TASK_GROUP
-      task.browsers.convention(browsers)
-      task.withDependencies.convention(withDependencies)
-      task.stampFile.convention(stamp)
+      task.browsers.convention(extension.browsers)
+      task.withDependencies.convention(extension.installSystemDependencies)
+      task.stampFile.convention(target.layout.buildDirectory.file("playwright/install.stamp"))
       // The stamp is what gives the task an output to be up to date about; the browsers themselves
       // land in a cache outside the project. Written in an action rather than in the task class, so
       // that a task a build script registers gets it too.
