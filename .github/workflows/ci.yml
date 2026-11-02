@@ -73,7 +73,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6.4.0
 
       # Downloads the named Gradle distributions and runs the TestKit suite against each of them.
-      - run: ./gradlew functionalTest -PpnpmTestGradleVersions=9.1.0,9.8.1 --stacktrace
+      - run: ./gradlew functionalTest -PpnpmTestGradleVersions=9.1.0,9.8.2 --stacktrace
 
       - if: failure()
         uses: actions/upload-artifact@v7.0.2

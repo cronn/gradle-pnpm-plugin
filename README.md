@@ -260,7 +260,7 @@ plugins {
 additionally run it against other versions, pass them as a comma-separated list:
 
 ```bash
-./gradlew functionalTest -PpnpmTestGradleVersions=9.1.0,9.7.1
+./gradlew functionalTest -PpnpmTestGradleVersions=9.1.0,9.8.2
 ```
 
 Each version is downloaded on demand. Without the property the version-specific tests are skipped.
