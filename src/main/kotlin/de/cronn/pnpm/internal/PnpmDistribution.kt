@@ -77,7 +77,7 @@ internal object PnpmDistribution {
   }
 
   /**
-   * `pnpm:pnpm:11.28.5:linux-x64@tar.gz`. Passing an extension makes Gradle add an explicit
+   * `pnpm:pnpm:11.28.8:linux-x64@tar.gz`. Passing an extension makes Gradle add an explicit
    * artifact and mark the dependency as not transitive, which is what turns this into an
    * artifact-only dependency that needs no module metadata.
    */
