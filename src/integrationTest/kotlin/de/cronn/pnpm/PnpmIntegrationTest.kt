@@ -79,6 +79,6 @@ class PnpmIntegrationTest {
 
     assertThat(result.task(":app:greet")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
     // The version devEngines.runtime pins, which pnpm downloads whatever Node.js is installed.
-    assertThat(result.output).contains("Hello, Gradle, from Node.js v24.22.1!")
+    assertThat(result.output).contains("Hello, Gradle, from Node.js v26.13.0!")
   }
 }
