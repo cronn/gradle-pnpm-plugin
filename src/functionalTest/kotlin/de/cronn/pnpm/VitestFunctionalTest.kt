@@ -15,9 +15,7 @@ class VitestFunctionalTest {
   fun `runs the suite through pnpm exec in the package directory`() {
     val fixture = workspaceWithFrontend()
 
-    val result = fixture.runner(":frontend:vitestTest").build()
-
-    assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
     val test = fixture.stub.lastInvocationOf("vitest")
     // `run`, because a bare `vitest` would start the watch mode and never hand the build back.
     assertThat(test.arguments).startsWith("exec", "vitest", "run")
@@ -176,20 +174,12 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest", "--dir=src").build()
     assertThat(
-        fixture
-          .runner(":frontend:vitestTest", "--dir=src")
-          .build()
-          .task(":frontend:vitestTest")
-          ?.outcome,
+        fixture.outcomeOf(":frontend:vitestTest", "--dir=src"),
       )
       .isEqualTo(TaskOutcome.UP_TO_DATE)
 
     assertThat(
-        fixture
-          .runner(":frontend:vitestTest", "--dir=src", "--testNamePattern=login")
-          .build()
-          .task(":frontend:vitestTest")
-          ?.outcome,
+        fixture.outcomeOf(":frontend:vitestTest", "--dir=src", "--testNamePattern=login"),
       )
       .isEqualTo(TaskOutcome.SUCCESS)
   }
@@ -208,15 +198,12 @@ class VitestFunctionalTest {
   fun `is up to date when the tests are unchanged`() {
     val fixture = workspaceWithFrontend()
 
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("frontend/src/login.test.ts", "export const login = 2")
 
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -224,13 +211,11 @@ class VitestFunctionalTest {
     val fixture = workspaceWithFrontend()
 
     fixture.runner(":frontend:vitestTest").build()
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("frontend/vitest.config.ts", "export default { test: { globals: true } }")
 
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -238,13 +223,11 @@ class VitestFunctionalTest {
     val fixture = workspaceWithFrontend()
 
     fixture.runner(":frontend:vitestTest").build()
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
 
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -253,8 +236,7 @@ class VitestFunctionalTest {
 
     fixture.runner(":frontend:vitestTest").build()
 
-    assertThat(fixture.runner(":frontend:vitestTest").build().task(":frontend:vitestTest")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -265,9 +247,7 @@ class VitestFunctionalTest {
     fixture.write("frontend/vite.config.ts", "export default {}")
     fixture.write("frontend/src/login.test.ts", "export const login = 1")
 
-    val result = fixture.runner(":frontend:vitestTest").build()
-
-    assertThat(result.task(":frontend:vitestTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:vitestTest")).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(fixture.stub.lastInvocationOf("vitest").arguments)
       .startsWith("exec", "vitest", "run", *fixture.configArguments("frontend/vite.config.ts"))
   }
