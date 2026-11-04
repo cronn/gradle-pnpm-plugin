@@ -19,13 +19,19 @@ class PackageJsonPnpmVersionTest {
   @ValueSource(strings = ["^11.28.5", "~11.28.5", ">=11.0.0", "11.x", "11", "latest", "=11.28.5"])
   fun `treats anything but a fixed version as a range`(spec: String) {
     assertThat(PackageJsonPnpmVersion.parse(packageJson(spec)))
-      .isEqualTo(PackageJsonPnpmVersion.Range(spec))
+      .isEqualTo(
+        PackageJsonPnpmVersion.Fallback("its devEngines.packageManager declares the range $spec"),
+      )
   }
 
   @Test
   fun `rejects a fixed version the plugin cannot provision`() {
     assertThat(PackageJsonPnpmVersion.parse(packageJson("10.33.0")))
-      .isEqualTo(PackageJsonPnpmVersion.Unsupported("10.33.0"))
+      .isEqualTo(
+        PackageJsonPnpmVersion.Fallback(
+          "its devEngines.packageManager declares pnpm 10.33.0, which predates pnpm 11",
+        ),
+      )
   }
 
   @Test
@@ -52,13 +58,17 @@ class PackageJsonPnpmVersionTest {
       """{ "devEngines": { "packageManager": { "name": "npm", "version": "11.6.0" } } }"""
 
     assertThat(PackageJsonPnpmVersion.parse(packageJson))
-      .isInstanceOf(PackageJsonPnpmVersion.Absent::class.java)
+      .isEqualTo(
+        PackageJsonPnpmVersion.Fallback("it declares no pnpm in devEngines.packageManager"),
+      )
   }
 
   @Test
   fun `finds nothing without devEngines`() {
     assertThat(PackageJsonPnpmVersion.parse("""{ "name": "root" }"""))
-      .isInstanceOf(PackageJsonPnpmVersion.Absent::class.java)
+      .isEqualTo(
+        PackageJsonPnpmVersion.Fallback("it declares no pnpm in devEngines.packageManager"),
+      )
   }
 
   @Test
@@ -66,14 +76,18 @@ class PackageJsonPnpmVersionTest {
     val packageJson = """{ "devEngines": { "packageManager": { "name": "pnpm" } } }"""
 
     assertThat(PackageJsonPnpmVersion.parse(packageJson))
-      .isInstanceOf(PackageJsonPnpmVersion.Absent::class.java)
+      .isEqualTo(
+        PackageJsonPnpmVersion.Fallback(
+          "its pnpm entry in devEngines.packageManager has no version",
+        ),
+      )
   }
 
   @ParameterizedTest
   @ValueSource(strings = ["", "{", "[1, 2", "not json"])
   fun `finds nothing in a malformed package json`(packageJson: String) {
     assertThat(PackageJsonPnpmVersion.parse(packageJson))
-      .isInstanceOf(PackageJsonPnpmVersion.Absent::class.java)
+      .isInstanceOf(PackageJsonPnpmVersion.Fallback::class.java)
   }
 
   private fun packageJson(version: String): String =
