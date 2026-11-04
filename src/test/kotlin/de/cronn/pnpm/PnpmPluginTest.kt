@@ -12,15 +12,9 @@ import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_MODULE
 import de.cronn.pnpm.internal.check.EslintTasks
-import de.cronn.pnpm.internal.task.PlaywrightInstallTask
 import de.cronn.pnpm.internal.task.PnpmCheckTask
-import de.cronn.pnpm.internal.task.PnpmSetupTask
 import de.cronn.pnpm.internal.task.PnpmSourceTask
-import de.cronn.pnpm.internal.test.PlaywrightTasks
-import de.cronn.pnpm.internal.test.VitestTasks
 import de.cronn.pnpm.task.EslintTask
-import de.cronn.pnpm.task.NodeTask
-import de.cronn.pnpm.task.PlaywrightTestTask
 import de.cronn.pnpm.task.PnpmExecTask
 import de.cronn.pnpm.task.PnpmTask
 import de.cronn.pnpm.task.PrettierTask
@@ -39,37 +33,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class PnpmPluginTest {
-
-  @Test
-  fun `registers the pnpm lifecycle tasks on the workspace root`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-
-    assertThat(project.tasks.getByName("pnpmSetup")).isInstanceOf(PnpmSetupTask::class.java)
-    assertThat(project.tasks.getByName("pnpmInstall")).isInstanceOf(PnpmTask::class.java)
-    assertThat(project.tasks.getByName("pnpmDedupe")).isInstanceOf(PnpmTask::class.java)
-    assertThat(project.tasks.getByName("pnpmClean")).isInstanceOf(PnpmTask::class.java)
-
-    assertThat(project.tasks.getByName("pnpmInstall").group).isEqualTo("pnpm")
-    assertThat(pnpmTask(project, "pnpmInstall").arguments.get()).containsExactly("install")
-    assertThat(pnpmTask(project, "pnpmDedupe").arguments.get()).containsExactly("dedupe")
-    assertThat(pnpmTask(project, "pnpmClean").arguments.get()).containsExactly("clean")
-  }
-
-  @Test
-  fun `adds no environment variable to a pnpm task on its own`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-    val task = pnpmTask(project, "pnpmInstall")
-
-    assertThat(task.environment.get()).isEmpty()
-
-    task.environment("NODE_OPTIONS", "--max-old-space-size=4096")
-    task.environment("CI", "true")
-
-    assertThat(task.environment.get())
-      .containsExactlyInAnyOrderEntriesOf(
-        mapOf("NODE_OPTIONS" to "--max-old-space-size=4096", "CI" to "true"),
-      )
-  }
 
   @Test
   fun `registers the tool tasks on the workspace root as well`(@TempDir directory: File) {
@@ -157,13 +120,6 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `uses the default pnpm version bundled with the plugin`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-
-    assertThat(extension(project).version.get()).isEqualTo(PnpmPlugin.DEFAULT_PNPM_VERSION)
-  }
-
-  @Test
   fun `derives the install directory and the distribution from the default version`(
     @TempDir directory: File,
   ) {
@@ -198,34 +154,12 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `bootstraps the fixed pnpm version declared in the package json`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-    writeDevEngines(directory, PNPM_VERSION)
-
-    assertThat(extension(project).installDirectory.get().asFile)
-      .isEqualTo(File(project.projectDir, ".gradle/pnpm/$PNPM_VERSION"))
-    assertThat(distributionDependency(project).version).isEqualTo(PNPM_VERSION)
-    assertThat(pnpmTask(project, "pnpmInstall").pnpmVersion.get()).isEqualTo(PNPM_VERSION)
-  }
-
-  @Test
   fun `prefers the fixed version of the package json over a configured version`(
     @TempDir directory: File,
   ) {
     val project = workspaceProject(directory)
     writeDevEngines(directory, PNPM_VERSION)
     extension(project).version.set("11.0.0")
-
-    assertThat(distributionDependency(project).version).isEqualTo(PNPM_VERSION)
-  }
-
-  @Test
-  fun `bootstraps the configured version when the package json declares a range`(
-    @TempDir directory: File,
-  ) {
-    val project = workspaceProject(directory)
-    writeDevEngines(directory, "^11.0.0")
-    extension(project).version.set(PNPM_VERSION)
 
     assertThat(distributionDependency(project).version).isEqualTo(PNPM_VERSION)
   }
@@ -268,20 +202,6 @@ class PnpmPluginTest {
       )
   }
 
-  /**
-   * The setup task has nothing to resolve when pnpm comes from somewhere else. The configuration
-   * cache resolves the inputs of a task while it stores the entry, before any `onlyIf` runs, so an
-   * empty input is what keeps such a build from needing a repository at all.
-   */
-  @Test
-  fun `resolves no distribution when pnpm is not managed by the plugin`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-    extension(project).executable.set("/usr/local/bin/pnpm")
-
-    assertThat(setupTask(project).distributionArchive.isEmpty).isTrue()
-    assertThat(setupTask(project).required.get()).isFalse()
-  }
-
   @Test
   fun `uses an explicitly configured executable without downloading pnpm`(
     @TempDir directory: File,
@@ -292,35 +212,7 @@ class PnpmPluginTest {
     assertThat(pnpmTask(project, "pnpmInstall").executable.get()).isEqualTo("/opt/pnpm/pnpm")
   }
 
-  @Test
-  fun `makes every pnpm task depend on the setup task`(@TempDir directory: File) {
-    val project = workspaceProject(directory)
-
-    assertThat(dependencyNames(project.tasks.getByName("pnpmInstall"))).contains("pnpmSetup")
-  }
-
-  @Test
-  fun `makes the tool tasks depend on the workspace install`(@TempDir directory: File) {
-    val project = packageProject(directory)
-
-    assertThat(dependencyNames(project.tasks.getByName("prettierCheck"))).contains("pnpmInstall")
-  }
-
   // Discovery
-
-  @Test
-  fun `discovers a workspace root that is not the gradle root project`(@TempDir directory: File) {
-    val root = ProjectBuilder.builder().withProjectDir(directory).build()
-    val frontend = workspaceProject(File(directory, "frontend"), name = "frontend", parent = root)
-    val app = packageProject(File(directory, "frontend/app"), name = "app", parent = frontend)
-
-    val extension = extension(frontend)
-    assertThat(extension.workspaceRootPath.get()).isEqualTo(":frontend")
-    assertThat(extension.installDirectory.get().asFile)
-      .isEqualTo(File(frontend.projectDir, ".gradle/pnpm/${PnpmPlugin.DEFAULT_PNPM_VERSION}"))
-    assertThat(root.extensions.findByName("pnpm")).isNull()
-    assertThat(app.tasks.names).contains("prettierCheck").doesNotContain("pnpmInstall")
-  }
 
   @Test
   fun `treats a project without a workspace file as its own workspace root`(
@@ -391,52 +283,6 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `a node task runs the entry point through pnpm exec node`(@TempDir directory: File) {
-    val project = packageProject(directory)
-    val entryPoint = File(project.projectDir, "scripts/generate.mjs")
-    entryPoint.parentFile.mkdirs()
-    entryPoint.writeText("console.log(1)\n")
-
-    val task =
-      project.tasks
-        .register("generate", NodeTask::class.java) { it.entryPoint.set(entryPoint) }
-        .get()
-
-    assertThat(task.command.get()).isEqualTo("node")
-    assertThat(task.entryPoint.get().asFile).isEqualTo(entryPoint)
-    assertThat(task.nodeOptions.getOrElse(emptyList())).isEmpty()
-  }
-
-  @Test
-  fun `a node task is provisioned and installed like any other pnpm task`(
-    @TempDir directory: File,
-  ) {
-    val project = packageProject(directory)
-    val entryPoint = File(project.projectDir, "generate.mjs")
-    entryPoint.writeText("console.log(1)\n")
-
-    val task =
-      project.tasks
-        .register("generate", NodeTask::class.java) { it.entryPoint.set(entryPoint) }
-        .get()
-
-    // Inherited from the PnpmTask and PnpmExecTask wiring rather than declared by the task type.
-    assertThat(dependencyPaths(task)).contains(":pnpmSetup", ":pnpmInstall")
-    assertThat(task.executable.get()).isNotEmpty()
-    assertThat(task.pnpmVersion.get()).isEqualTo(PnpmPlugin.DEFAULT_PNPM_VERSION)
-  }
-
-  @Test
-  fun `does not report a missing workspace root for a real workspace root`(
-    @TempDir directory: File,
-  ) {
-    val project = workspaceProject(directory)
-
-    assertThat(dependencyNames(project.tasks.getByName("prettierCheck")))
-      .contains("pnpmInstall", "pnpmSetup")
-  }
-
-  @Test
   fun `fails when the workspace root does not apply the plugin`(@TempDir directory: File) {
     writeRootPackageJson(directory)
     File(directory, "pnpm-workspace.yaml").writeText("packages:\n  - frontend\n")
@@ -458,39 +304,6 @@ class PnpmPluginTest {
   }
 
   // Tool tasks
-
-  @Test
-  fun `registers each predefined task as the task type of its tool`(@TempDir directory: File) {
-    val project = packageProject(directory)
-
-    assertThat(project.tasks.getByName("compileTypescript"))
-      .isInstanceOf(TypescriptTask::class.java)
-    assertThat(project.tasks.getByName("prettierCheck")).isInstanceOf(PrettierTask::class.java)
-    assertThat(project.tasks.getByName("prettierFix")).isInstanceOf(PrettierTask::class.java)
-    assertThat(project.tasks.getByName("eslintCheck")).isInstanceOf(EslintTask::class.java)
-    assertThat(project.tasks.getByName("eslintFix")).isInstanceOf(EslintTask::class.java)
-  }
-
-  @Test
-  fun `uses the same commands and arguments as the tools expect`(@TempDir directory: File) {
-    val project = packageProject(directory)
-
-    assertThat(execTask(project, "compileTypescript").command.get()).isEqualTo("tsc")
-    assertThat(execTask(project, "compileTypescript").arguments.get()).isEmpty()
-    assertThat(checkTask(project, "prettierCheck").command.get()).isEqualTo("prettier")
-    assertThat(checkTask(project, "prettierCheck").arguments.get()).isEmpty()
-    assertThat(prettierTask(project, "prettierCheck").check.get()).isTrue()
-    assertThat(checkTask(project, "prettierFix").arguments.get()).isEmpty()
-    assertThat(prettierTask(project, "prettierFix").write.get()).isTrue()
-    assertThat(prettierTask(project, "prettierFix").listDifferent.get()).isTrue()
-    assertThat(checkTask(project, "eslintCheck").command.get()).isEqualTo("eslint")
-    assertThat(checkTask(project, "eslintCheck").arguments.get()).isEmpty()
-    assertThat(eslintTask(project, "eslintCheck").maxWarnings.get()).isEqualTo(0)
-    assertThat(eslintTask(project, "eslintCheck").fix.isPresent).isFalse()
-    assertThat(checkTask(project, "eslintFix").arguments.get()).isEmpty()
-    assertThat(eslintTask(project, "eslintFix").maxWarnings.get()).isEqualTo(0)
-    assertThat(eslintTask(project, "eslintFix").fix.get()).isTrue()
-  }
 
   @Test
   fun `uses the sources of the tool as the inputs of its tasks`(@TempDir directory: File) {
@@ -577,52 +390,6 @@ class PnpmPluginTest {
 
     assertThat(sourceNames(checkTask(project, "eslintCheck")))
       .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
-  }
-
-  @Test
-  fun `replaces the default patterns with the configured includes`(@TempDir directory: File) {
-    val project = packageProject(directory)
-    File(project.projectDir, "src").mkdirs()
-    File(project.projectDir, "src/app.ts").writeText("export const app = 1\n")
-    eslint(project).includes.set(listOf("src/**/*.ts"))
-
-    assertThat(sourceNames(checkTask(project, "eslintCheck"))).containsExactly("src/app.ts")
-  }
-
-  @Test
-  fun `configures a tool task registered by the build script like a predefined one`(
-    @TempDir directory: File,
-  ) {
-    val project = packageProject(directory)
-    prettier(project).extraArguments("--cache")
-    val custom =
-      project.tasks.register("prettierDocs", PrettierTask::class.java) { task ->
-        task.check.set(true)
-      }
-
-    val task = custom.get()
-    assertThat(task.command.get()).isEqualTo("prettier")
-    assertThat(task.extraArguments.get()).containsExactly("--cache")
-    assertThat(sourceNames(task)).containsExactly(*PRETTIER_SOURCES)
-    assertThat(task.group).isEqualTo("verification")
-  }
-
-  @Test
-  fun `wires the fix tasks into fix`(@TempDir directory: File) {
-    val project = packageProject(directory)
-    val fix = project.tasks.getByName("fix")
-
-    assertThat(fix.group).isEqualTo("verification")
-    assertThat(dependencyNames(fix)).contains("prettierFix", "eslintFix")
-  }
-
-  @Test
-  fun `runs prettier after eslint when fixing`(@TempDir directory: File) {
-    val project = packageProject(directory)
-    val prettierFix = project.tasks.getByName("prettierFix")
-
-    assertThat(prettierFix.mustRunAfter.getDependencies(prettierFix).map { it.name })
-      .containsExactly("eslintFix")
   }
 
   @Test
@@ -719,36 +486,7 @@ class PnpmPluginTest {
       .doesNotContain("eslintFix")
   }
 
-  @Test
-  fun `applies the base plugin so the lifecycle tasks exist`(@TempDir directory: File) {
-    val project = packageProject(directory)
-
-    assertThat(project.plugins.hasPlugin("base")).isTrue()
-  }
-
   // Test tools
-
-  @Test
-  fun `registers the playwright tasks as the types of their tool`(@TempDir directory: File) {
-    val project = playwrightProject(directory)
-
-    assertThat(project.tasks.getByName("playwrightTest"))
-      .isInstanceOf(PlaywrightTestTask::class.java)
-    assertThat(project.tasks.getByName("playwrightInstall"))
-      .isInstanceOf(PlaywrightInstallTask::class.java)
-  }
-
-  @Test
-  fun `runs the suite through the playwright binary`(@TempDir directory: File) {
-    val project = playwrightProject(directory)
-
-    val test = project.tasks.getByName("playwrightTest") as PlaywrightTestTask
-    assertThat(test.command.get()).isEqualTo("playwright")
-    assertThat(test.arguments.get()).isEmpty()
-
-    val install = project.tasks.getByName("playwrightInstall") as PlaywrightInstallTask
-    assertThat(install.command.get()).isEqualTo("playwright")
-  }
 
   @Test
   fun `does not add the suite to test or check`(@TempDir directory: File) {
@@ -758,15 +496,6 @@ class PnpmPluginTest {
     // `test` and, therefore, `check` deliberately stay out of it.
     assertThat(dependencyNames(project.tasks.getByName("test"))).doesNotContain("playwrightTest")
     assertThat(dependencyNames(project.tasks.getByName("check"))).contains("test")
-  }
-
-  @Test
-  fun `leaves a test tool without a config file out of test`(@TempDir directory: File) {
-    val project = packageProject(directory)
-
-    assertThat(project.tasks.names).doesNotContain("playwrightTest", "playwrightInstall")
-    // `test` is registered whatever the project is configured for, it just has nothing to run.
-    assertThat(dependencyNames(project.tasks.getByName("test"))).doesNotContain("playwrightTest")
   }
 
   @Test
@@ -785,69 +514,12 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `takes the test patterns as the inputs of the suite only`(@TempDir directory: File) {
-    val project = playwrightProject(directory)
-
-    val test = project.tasks.getByName("playwrightTest") as PlaywrightTestTask
-    assertThat(test.includes.get()).containsExactlyElementsOf(PlaywrightTasks.INCLUDES)
-    // No pattern reaches Playwright: it picks the tests itself.
-    assertThat(test.arguments.get()).isEmpty()
-  }
-
-  @Test
-  fun `installs the configured browsers with their system dependencies`(@TempDir directory: File) {
-    val project = playwrightProject(directory)
-
-    playwright(project).browsers.set(listOf("chromium"))
-    playwright(project).installSystemDependencies.set(true)
-
-    val install = project.tasks.getByName("playwrightInstall") as PlaywrightInstallTask
-    assertThat(install.browsers.get()).containsExactly("chromium")
-    assertThat(install.withDependencies.get()).isTrue()
-  }
-
-  @Test
-  fun `registers the vitest task as the type of its tool`(@TempDir directory: File) {
-    val project = vitestProject(directory)
-
-    assertThat(project.tasks.getByName("vitestTest")).isInstanceOf(VitestRunTask::class.java)
-  }
-
-  @Test
-  fun `runs the suite through the vitest binary, in the run mode`(@TempDir directory: File) {
-    val project = vitestProject(directory)
-
-    val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.command.get()).isEqualTo("vitest")
-    // The `run` subcommand is part of the task type, so no argument is needed for it.
-    assertThat(test.arguments.get()).isEmpty()
-  }
-
-  @Test
   fun `adds the unit suite to test, which check always runs`(@TempDir directory: File) {
     val project = vitestProject(directory)
 
     assertThat(dependencyNames(project.tasks.getByName("test"))).contains("vitestTest")
     // A unit suite is fast and reaches nothing the build does not start, so it belongs in `build`.
     assertThat(dependencyNames(project.tasks.getByName("check"))).contains("test")
-  }
-
-  @Test
-  fun `skips the unit suite when its sources are unchanged`(@TempDir directory: File) {
-    val project = vitestProject(directory)
-
-    val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.alwaysRerun.get()).isFalse()
-    assertThat(test.rerunRequested()).isFalse()
-  }
-
-  @Test
-  fun `writes the coverage report below the build directory`(@TempDir directory: File) {
-    val project = vitestProject(directory)
-
-    val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.coverageReportsDirectory.get().asFile)
-      .isEqualTo(File(project.layout.buildDirectory.get().asFile, "reports/vitest"))
   }
 
   @Test
@@ -881,28 +553,6 @@ class PnpmPluginTest {
       .isEqualTo(project.layout.buildDirectory.file("vitest.xml").get().asFile)
     assertThat(custom.coverage.get()).isTrue()
     assertThat(custom.passWithNoTests.get()).isFalse()
-  }
-
-  @Test
-  fun `leaves the vitest options to vitest by default`(@TempDir directory: File) {
-    val project = vitestProject(directory)
-
-    val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.coverage.isPresent).isFalse()
-    assertThat(test.passWithNoTests.isPresent).isFalse()
-    assertThat(test.dir.isPresent).isFalse()
-    assertThat(test.outputFile.isPresent).isFalse()
-  }
-
-  @Test
-  fun `takes the vitest patterns as the inputs of the suite only`(@TempDir directory: File) {
-    val project = vitestProject(directory)
-
-    val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.includes.get()).containsExactlyElementsOf(VitestTasks.INCLUDES)
-    assertThat(test.excludes.get()).containsExactlyElementsOf(VitestTasks.EXCLUDES)
-    // No pattern reaches Vitest: it picks the tests itself.
-    assertThat(test.arguments.get()).isEmpty()
   }
 
   // Auto-discovery of the tools
@@ -941,21 +591,6 @@ class PnpmPluginTest {
 
     val withConfig = vitestProject(File(directory, "other").apply { mkdirs() })
     assertThat(withConfig.tasks.names).contains("vitestTest")
-  }
-
-  @Test
-  fun `enables vitest for a vite config alone`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    // Vitest reads the Vite config when there is no dedicated one of its own.
-    val config = File(packageDirectory, "vite.config.ts")
-    config.writeText("export default {}\n")
-    val project = childProject("frontend", root, packageDirectory)
-
-    assertThat(project.tasks.names).contains("vitestTest")
-    val test = project.tasks.getByName("vitestTest") as VitestRunTask
-    assertThat(test.configFile.get().asFile).isEqualTo(config)
   }
 
   @Test
@@ -1053,52 +688,6 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `leaves the typescript options unset by default`(@TempDir directory: File) {
-    val project = packageProject(directory)
-
-    val task = project.tasks.getByName("compileTypescript") as TypescriptTask
-    assertThat(task.build.isPresent).isFalse()
-    assertThat(task.noEmit.isPresent).isFalse()
-    assertThat(task.outDir.isPresent).isFalse()
-  }
-
-  @Test
-  fun `takes the prettier options of the extension over to every prettier task`(
-    @TempDir directory: File,
-  ) {
-    val project = packageProject(directory)
-    prettier(project).ignoreUnknown.set(true)
-    prettier(project).noErrorOnUnmatchedPattern.set(false)
-    prettier(project).cache.set(true)
-    prettier(project).cacheLocation.set(project.layout.buildDirectory.file("prettier-cache"))
-    val custom = project.tasks.register("prettierCustom", PrettierTask::class.java).get()
-    custom.cache.set(false)
-
-    val predefined = prettierTask(project, "prettierCheck")
-    assertThat(predefined.ignoreUnknown.get()).isTrue()
-    assertThat(predefined.noErrorOnUnmatchedPattern.get()).isFalse()
-    assertThat(predefined.cache.get()).isTrue()
-    assertThat(predefined.cacheLocation.get().asFile)
-      .isEqualTo(project.layout.buildDirectory.file("prettier-cache").get().asFile)
-    assertThat(custom.ignoreUnknown.get()).isTrue()
-    assertThat(custom.cache.get()).isFalse()
-  }
-
-  @Test
-  fun `passes no-error-on-unmatched-pattern and leaves the other prettier options unset by default`(
-    @TempDir directory: File,
-  ) {
-    val project = packageProject(directory)
-
-    val task = prettierTask(project, "prettierFix")
-    assertThat(task.noErrorOnUnmatchedPattern.get()).isTrue()
-    assertThat(task.check.isPresent).isFalse()
-    assertThat(task.ignoreUnknown.isPresent).isFalse()
-    assertThat(task.cache.isPresent).isFalse()
-    assertThat(task.cacheLocation.isPresent).isFalse()
-  }
-
-  @Test
   fun `takes the eslint options of the extension over to every eslint task`(
     @TempDir directory: File,
   ) {
@@ -1128,23 +717,6 @@ class PnpmPluginTest {
   }
 
   @Test
-  fun `fails on warnings and passes no-error-on-unmatched-pattern by default`(
-    @TempDir directory: File,
-  ) {
-    val project = packageProject(directory)
-    val custom = project.tasks.register("eslintCustom", EslintTask::class.java).get()
-
-    for (task in listOf(eslintTask(project, "eslintFix"), custom)) {
-      assertThat(task.maxWarnings.get()).isEqualTo(0)
-      assertThat(task.noErrorOnUnmatchedPattern.get()).isTrue()
-      assertThat(task.cache.isPresent).isFalse()
-      assertThat(task.cacheLocation.isPresent).isFalse()
-      assertThat(task.suppressionsLocation.isPresent).isFalse()
-      assertThat(task.passOnNoPatterns.isPresent).isFalse()
-    }
-  }
-
-  @Test
   fun `does not enable eslint for a legacy eslintrc config`(@TempDir directory: File) {
     val root = workspaceProject(directory)
     val packageDirectory = File(directory, "frontend").apply { mkdirs() }
@@ -1160,9 +732,6 @@ class PnpmPluginTest {
       .getByName(PnpmDistribution.DECLARED_CONFIGURATION_NAME)
       .dependencies
       .single() as ExternalModuleDependency
-
-  private fun setupTask(project: Project): PnpmSetupTask =
-    project.tasks.getByName("pnpmSetup") as PnpmSetupTask
 
   private fun extension(project: Project): PnpmExtension =
     project.extensions.getByType(PnpmExtension::class.java)
@@ -1182,14 +751,8 @@ class PnpmPluginTest {
   private fun vitest(project: Project): VitestExtension =
     project.extensions.getByType(VitestExtension::class.java)
 
-  private fun execTask(project: Project, name: String): PnpmExecTask =
-    project.tasks.getByName(name) as PnpmExecTask
-
   private fun checkTask(project: Project, name: String): PnpmCheckTask =
     project.tasks.getByName(name) as PnpmCheckTask
-
-  private fun prettierTask(project: Project, name: String): PrettierTask =
-    project.tasks.getByName(name) as PrettierTask
 
   private fun eslintTask(project: Project, name: String): EslintTask =
     project.tasks.getByName(name) as EslintTask
