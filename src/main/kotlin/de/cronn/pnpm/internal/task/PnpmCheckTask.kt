@@ -39,8 +39,8 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
     SourcePatterns.requireSupportedByTool(excludes.get(), "excludes", path)
   }
 
-  protected companion object {
+  internal companion object {
     /** Keeps a tool from failing over a pattern that matches nothing. */
-    public const val NO_ERROR_ON_UNMATCHED_PATTERN: String = "--no-error-on-unmatched-pattern"
+    const val NO_ERROR_ON_UNMATCHED_PATTERN: String = "--no-error-on-unmatched-pattern"
   }
 }

@@ -24,7 +24,7 @@ import org.gradle.work.DisableCachingByDefault
     "Extracting a pnpm distribution that already sits in the dependency cache is not worth " +
       "transporting through a build cache.",
 )
-public abstract class PnpmSetupTask : DefaultTask() {
+internal abstract class PnpmSetupTask : DefaultTask() {
 
   @get:Inject protected abstract val fileSystemOperations: FileSystemOperations
 
@@ -39,26 +39,26 @@ public abstract class PnpmSetupTask : DefaultTask() {
    */
   @get:InputFiles
   @get:PathSensitive(PathSensitivity.NONE)
-  public abstract val distributionArchive: ConfigurableFileCollection
+  abstract val distributionArchive: ConfigurableFileCollection
 
   /** Name of the pnpm executable inside the archive. */
-  @get:Input public abstract val executableName: Property<String>
+  @get:Input abstract val executableName: Property<String>
 
   /**
    * Whether pnpm actually has to be installed. Read by an `onlyIf` spec, which the configuration
    * cache serializes -- so the decision is carried by the task rather than captured in the spec.
    */
-  @get:Internal public abstract val required: Property<Boolean>
+  @get:Internal abstract val required: Property<Boolean>
 
   /** Directory the archive is extracted into. */
-  @get:OutputDirectory public abstract val installDirectory: DirectoryProperty
+  @get:OutputDirectory abstract val installDirectory: DirectoryProperty
 
   init {
     required.convention(true)
   }
 
   @TaskAction
-  public fun install() {
+  fun install() {
     val archive = resolveArchive()
     logger.info("Extracting {} into {}", archive, installDirectory.get().asFile)
     extract(archive)

@@ -25,5 +25,5 @@ public abstract class PnpmTestTask : PnpmSourceTask() {
    * Whether this run has to happen whatever Gradle makes of the inputs: because it was asked for
    * with [alwaysRerun], or because it is interactive and there is a person waiting for it.
    */
-  public open fun rerunRequested(): Boolean = alwaysRerun.get()
+  internal open fun rerunRequested(): Boolean = alwaysRerun.get()
 }
