@@ -21,7 +21,7 @@ internal class PlaywrightTasks(target: Project, playwright: PlaywrightExtension)
   ) {
 
   /** Also configures every browser download, and registers the predefined one with the suite. */
-  override fun register(): RegisteredTestTasks? {
+  override fun register(): TaskProvider<PlaywrightTestTask>? {
     configureInstallTasks()
     val registered = super.register()
     if (registered == null) {

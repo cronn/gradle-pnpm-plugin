@@ -10,8 +10,9 @@ import org.gradle.api.tasks.TaskProvider
  * The tasks of one Node test tool.
  *
  * A tool contributes a task type, an extension and a subclass of this class that names its tasks.
- * Adding a test tool means adding those three and one entry to the list in
- * [PnpmTestTasks][de.cronn.pnpm.internal.PnpmTestTasks].
+ * Adding a test tool means adding those three and registering it in
+ * [PnpmToolTasks][de.cronn.pnpm.internal.PnpmToolTasks], which decides whether its suite joins
+ * `test`.
  */
 internal abstract class TestTasks<T : PnpmTestTask, E : PnpmTestExtension>(
   target: Project,
@@ -20,15 +21,14 @@ internal abstract class TestTasks<T : PnpmTestTask, E : PnpmTestExtension>(
   configFileNames: List<String>,
   defaultIncludes: List<String>,
   defaultExcludes: List<String>,
-  private val contributesToTest: Boolean = false,
 ) :
   ToolTasks<T, E>(target, extension, taskType, configFileNames, defaultIncludes, defaultExcludes) {
 
   /**
    * Configures every task of this tool, and registers the predefined ones when the project has a
-   * config file for the tool. `null` means the tool contributes none.
+   * config file for the tool. Returns the suite, or `null` when the tool contributes none.
    */
-  open fun register(): RegisteredTestTasks? {
+  open fun register(): TaskProvider<T>? {
     val discovered = configureTasks()
 
     target.tasks.withType(taskType).configureEach { task ->
@@ -41,15 +41,9 @@ internal abstract class TestTasks<T : PnpmTestTask, E : PnpmTestExtension>(
     if (!discovered) {
       return null
     }
-    return RegisteredTestTasks(test = registerTestTask(), contributesToTest = contributesToTest)
+    return registerTestTask()
   }
 
   /** The task of this tool that takes part in `test`. */
   protected abstract fun registerTestTask(): TaskProvider<T>
 }
-
-/** What a test tool contributes to the `test` lifecycle task, and with it to `check`. */
-internal class RegisteredTestTasks(
-  val test: TaskProvider<out PnpmTestTask>,
-  val contributesToTest: Boolean,
-)

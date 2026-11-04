@@ -18,7 +18,6 @@ internal class VitestTasks(target: Project, vitest: VitestExtension) :
     ToolConfigFiles.VITEST,
     INCLUDES,
     EXCLUDES,
-    contributesToTest = true,
   ) {
 
   override fun configureExtension() {

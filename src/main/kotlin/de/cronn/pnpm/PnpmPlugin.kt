@@ -1,13 +1,12 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.internal.PackageJsonPnpmVersion
-import de.cronn.pnpm.internal.PnpmCheckTasks
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository
 import de.cronn.pnpm.internal.PnpmResolution
 import de.cronn.pnpm.internal.PnpmRole
-import de.cronn.pnpm.internal.PnpmTestTasks
+import de.cronn.pnpm.internal.PnpmToolTasks
 import de.cronn.pnpm.internal.PnpmWorkspaceLayout
 import de.cronn.pnpm.internal.PnpmWorkspaceTasks
 import de.cronn.pnpm.task.PnpmExecTask
@@ -315,8 +314,7 @@ public class PnpmPlugin : Plugin<Project> {
       target.extensions.create(PLAYWRIGHT_EXTENSION_NAME, PlaywrightExtension::class.java)
     val vitest = target.extensions.create(VITEST_EXTENSION_NAME, VitestExtension::class.java)
 
-    PnpmCheckTasks(target, typescript, prettier, eslint).register()
-    PnpmTestTasks(target, playwright, vitest).register()
+    PnpmToolTasks(target, typescript, prettier, eslint, playwright, vitest).register()
   }
 
   /**
