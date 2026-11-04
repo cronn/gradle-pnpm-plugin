@@ -1,6 +1,7 @@
 package de.cronn.pnpm.internal
 
 import de.cronn.pnpm.PnpmExtension
+import de.cronn.pnpm.PnpmPlugin
 import de.cronn.pnpm.internal.task.PnpmSetupTask
 import de.cronn.pnpm.task.PnpmTask
 import org.gradle.api.Project
@@ -22,7 +23,6 @@ internal class PnpmWorkspaceTasks(
   private val extension: PnpmExtension,
   private val resolution: PnpmResolution,
   private val distributionArchive: Provider<out Iterable<FileCollection>>,
-  private val taskGroup: String,
 ) {
 
   fun register() {
@@ -37,7 +37,7 @@ internal class PnpmWorkspaceTasks(
 
   private fun registerSetupTask() {
     target.tasks.register(SETUP_TASK_NAME, PnpmSetupTask::class.java) { task ->
-      task.group = taskGroup
+      task.group = PnpmPlugin.TASK_GROUP
       task.description = "Install pnpm unless a pnpm executable is configured"
       task.distributionArchive.from(distributionArchive)
       task.executableName.set(resolution.executableName)
@@ -55,7 +55,7 @@ internal class PnpmWorkspaceTasks(
     val stampFile = target.layout.buildDirectory.file("pnpm/install.stamp")
 
     target.tasks.register(INSTALL_TASK_NAME, PnpmTask::class.java) { task ->
-      task.group = taskGroup
+      task.group = PnpmPlugin.TASK_GROUP
       task.description = "Install all pnpm dependencies"
       task.arguments.set(listOf("install"))
       // pnpm-workspace.yaml is absent for a standalone package, which inputs.files tolerates. The
@@ -89,7 +89,7 @@ internal class PnpmWorkspaceTasks(
 
   private fun registerDedupeTask() {
     target.tasks.register(DEDUPE_TASK_NAME, PnpmTask::class.java) { task ->
-      task.group = taskGroup
+      task.group = PnpmPlugin.TASK_GROUP
       task.description =
         "Perform an install removing older dependencies in the lockfile if a newer version can " +
           "be used"
@@ -102,7 +102,7 @@ internal class PnpmWorkspaceTasks(
 
   private fun registerCleanTask() {
     target.tasks.register(CLEAN_TASK_NAME, PnpmTask::class.java) { task ->
-      task.group = taskGroup
+      task.group = PnpmPlugin.TASK_GROUP
       task.description = "Safely remove node_modules contents from all workspace projects"
       task.arguments.set(listOf("clean"))
       task.outputs.upToDateWhen { false }

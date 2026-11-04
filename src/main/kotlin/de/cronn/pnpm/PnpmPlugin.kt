@@ -96,7 +96,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmRepository.register(target, workspace)
       val distributionArchive =
         PnpmDistribution.register(target, version, platform, resolution.usesManagedPnpm)
-      PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive, TASK_GROUP).register()
+      PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive).register()
     }
 
     registerPackageTasks(target)
