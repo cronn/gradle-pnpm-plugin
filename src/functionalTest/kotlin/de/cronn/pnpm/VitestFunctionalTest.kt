@@ -281,7 +281,6 @@ class VitestFunctionalTest {
         vitest = true,
       )
 
-  /** The invocation that ran the suite, as opposed to the one that installed the workspace. */
   /** The report directory argument the task always passes, whatever the options say. */
   private fun coverageArgument(fixture: GradleProjectFixture) =
     listOf(

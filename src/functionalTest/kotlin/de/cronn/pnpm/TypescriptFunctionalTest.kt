@@ -160,7 +160,6 @@ class TypescriptFunctionalTest {
         sourceFiles = listOf("src/main.ts"),
       )
 
-  /** The invocation that ran tsc, as opposed to the one that installed the workspace. */
   private fun projectArguments(fixture: GradleProjectFixture, path: String) =
     fixture.configArguments(path, option = "--project")
 }

@@ -109,7 +109,6 @@ class NodeFunctionalTest {
     return fixture
   }
 
-  /** The invocation that ran the program, as opposed to the one that installed the workspace. */
   /** The absolute path the task hands to Node. */
   private fun entryPoint(fixture: GradleProjectFixture) =
     fixture.directory("frontend/scripts/generate.mjs").canonicalFile.absolutePath

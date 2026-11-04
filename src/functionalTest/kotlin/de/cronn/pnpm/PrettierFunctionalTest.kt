@@ -119,7 +119,6 @@ class PrettierFunctionalTest {
         packageBuildScript = packageBuildScript,
       )
 
-  /** The invocation that ran Prettier, as opposed to the one that installed the workspace. */
   private companion object {
     /** The default patterns of Prettier, the way they reach its command line. */
     val SOURCE_PATTERNS: Array<String> = PrettierTasks.INCLUDES.toTypedArray()

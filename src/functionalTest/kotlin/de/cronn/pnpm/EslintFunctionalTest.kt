@@ -134,7 +134,6 @@ class EslintFunctionalTest {
         packageBuildScript = packageBuildScript,
       )
 
-  /** The invocation that ran ESLint, as opposed to the ones that installed and compiled. */
   private companion object {
     /** The default patterns of ESLint, the way they reach its command line. */
     val SOURCE_PATTERNS: Array<String> = EslintTasks.INCLUDES.toTypedArray()

@@ -82,38 +82,34 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
 
   /**
    * Writes a build whose Gradle root project holds no pnpm files at all, and whose pnpm workspace
-   * root is the [workspaceRoot] project. Covers the layout where a Gradle build only embeds a pnpm
-   * workspace.
+   * root is the `frontend` project with the package `app`. Covers the layout where a Gradle build
+   * only embeds a pnpm workspace.
    */
   fun writeNestedWorkspace(
-    workspaceRoot: String = "frontend",
-    packages: List<String> = listOf("app"),
-    pnpmVersion: String = PNPM_VERSION,
     /** Projects that hold no pnpm files and take no part in the pnpm build. */
     extraProjects: List<String> = emptyList(),
   ) {
     stubExecutable = stub.install()
 
-    val packagePaths = packages.map { "$workspaceRoot:$it" }
     writeSettings(
       rootProjectName = "build",
-      projects = listOf(workspaceRoot) + packagePaths + extraProjects,
+      projects = listOf("frontend", "frontend:app") + extraProjects,
     )
     write("build.gradle.kts", "// no pnpm files here")
-    writePackageRoot(workspaceRoot, packages)
+    writePackageRoot("frontend", listOf("app"))
     write(
-      "$workspaceRoot/build.gradle.kts",
+      "frontend/build.gradle.kts",
       """
       plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
       pnpm {
-        version = "$pnpmVersion"
+        version = "$PNPM_VERSION"
         executable = ${quoted(stubExecutable)}
       }
       """,
     )
 
-    packages.forEach { name -> writePackage("$workspaceRoot/$name") }
+    writePackage("frontend/app")
   }
 
   /**
@@ -123,7 +119,7 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
    * The plugin under test is put on buildSrc's compile classpath explicitly: `buildSrc` is a
    * separate build, so it does not see the plugin classpath TestKit injects into the outer build.
    */
-  fun writeConventionPlugins(conventionPlugins: Map<String, String>) {
+  private fun writeConventionPlugins(conventionPlugins: Map<String, String>) {
     write("buildSrc/settings.gradle.kts", """rootProject.name = "build-logic"""")
     write(
       "buildSrc/build.gradle.kts",
@@ -141,12 +137,13 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
   }
 
   /**
-   * A workspace whose root project and [packages] all get the plugin through the same convention
-   * plugin in `buildSrc`, which is what makes it the test of the role-independent plugin surface:
-   * the convention plugin configures `pnpm { }` and `prettier { }` for a workspace root and for a
-   * package alike.
+   * A workspace whose root project and its package `frontend` both get the plugin through the same
+   * convention plugin in `buildSrc`, which is what makes it the test of the role-independent plugin
+   * surface: the convention plugin configures `pnpm { }` and `prettier { }` for a workspace root
+   * and for a package alike.
    */
-  fun writeWorkspaceWithConventionPlugins(packages: List<String> = listOf("frontend")) {
+  fun writeWorkspaceWithConventionPlugins() {
+    val packages = listOf("frontend")
     stubExecutable = stub.install()
 
     writeConventionPlugins(
@@ -235,15 +232,15 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
   }
 
   /** Writes a config file for TypeScript, ESLint and Prettier into the project at [directory]. */
-  fun writeCheckConfigs(directory: String) {
+  private fun writeCheckConfigs(directory: String) {
     ProjectFiles.writeCheckConfigs(directory(directory))
   }
 
-  fun writePlaywrightConfig(directory: String) {
+  private fun writePlaywrightConfig(directory: String) {
     ProjectFiles.writePlaywrightConfig(directory(directory))
   }
 
-  fun writeVitestConfig(directory: String) {
+  private fun writeVitestConfig(directory: String) {
     ProjectFiles.writeVitestConfig(directory(directory))
   }
 
@@ -304,7 +301,7 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
     const val CONVENTION_PLUGIN_ID: String = "pnpm-conventions"
 
     /** Id of the convention plugin only the workspace root applies. */
-    const val WORKSPACE_CONVENTION_PLUGIN_ID: String = "pnpm-workspace-conventions"
+    private const val WORKSPACE_CONVENTION_PLUGIN_ID: String = "pnpm-workspace-conventions"
 
     private val PNPM_EXECUTABLE_NAMES = listOf("pnpm", "pnpm.exe", "pnpm.cmd", "pnpm.bat")
   }
