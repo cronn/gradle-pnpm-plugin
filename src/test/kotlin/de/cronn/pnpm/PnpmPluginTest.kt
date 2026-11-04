@@ -4,9 +4,11 @@ import de.cronn.pnpm.fixture.ProjectFiles.PLUGIN_ID
 import de.cronn.pnpm.fixture.ProjectFiles.PNPM_VERSION
 import de.cronn.pnpm.fixture.ProjectFiles.writeCheckConfigs
 import de.cronn.pnpm.fixture.ProjectFiles.writeDevEngines
-import de.cronn.pnpm.fixture.ProjectFiles.writePlaywrightConfig
 import de.cronn.pnpm.fixture.ProjectFiles.writeRootPackageJson
-import de.cronn.pnpm.fixture.ProjectFiles.writeVitestConfig
+import de.cronn.pnpm.fixture.TestProjects.packageProject
+import de.cronn.pnpm.fixture.TestProjects.playwrightProject
+import de.cronn.pnpm.fixture.TestProjects.vitestProject
+import de.cronn.pnpm.fixture.TestProjects.workspaceProject
 import de.cronn.pnpm.internal.PnpmDistribution
 import de.cronn.pnpm.internal.PnpmPlatform
 import de.cronn.pnpm.internal.PnpmRepository.PNPM_GROUP
@@ -311,7 +313,7 @@ class PnpmPluginTest {
 
     assertThat(sourceNames(checkTask(project, "prettierCheck"))).containsExactly(*PRETTIER_SOURCES)
     assertThat(sourceNames(checkTask(project, "prettierFix"))).containsExactly(*PRETTIER_SOURCES)
-    assertThat(sourceNames(checkTask(project, "eslintCheck"))).containsExactly(*ESLINT_SOURCES)
+    assertThat(sourceNames(checkTask(project, "eslintCheck"))).containsExactly(*BASE_SOURCES)
     assertThat(sourceNames(sourceTask(project, "compileTypescript"))).containsExactly(*BASE_SOURCES)
   }
 
@@ -320,7 +322,7 @@ class PnpmPluginTest {
     val project = packageProject(directory)
     eslint(project).excludes("generated.ts")
 
-    assertThat(checkTask(project, "eslintCheck").includes.get()).containsExactly(*ESLINT_PATTERNS)
+    assertThat(checkTask(project, "eslintCheck").includes.get()).containsExactly(*ESLINT_INCLUDES)
     assertThat(checkTask(project, "eslintCheck").excludes.get()).containsExactly("generated.ts")
     assertThat(checkTask(project, "eslintFix").excludes.get()).containsExactly("generated.ts")
   }
@@ -331,7 +333,7 @@ class PnpmPluginTest {
     val task = checkTask(project, "eslintCheck")
     eslint(project).includes("types/**")
 
-    assertThat(task.includes.get()).containsExactly(*ESLINT_PATTERNS, "types/**")
+    assertThat(task.includes.get()).containsExactly(*ESLINT_INCLUDES, "types/**")
   }
 
   @Test
@@ -342,7 +344,7 @@ class PnpmPluginTest {
     checkTask(project, "eslintCheck").includes.set(listOf("app/**/*.ts"))
 
     assertThat(checkTask(project, "eslintCheck").includes.get()).containsExactly("app/**/*.ts")
-    assertThat(checkTask(project, "eslintFix").includes.get()).containsExactly(*ESLINT_PATTERNS)
+    assertThat(checkTask(project, "eslintFix").includes.get()).containsExactly(*ESLINT_INCLUDES)
   }
 
   @Test
@@ -374,7 +376,7 @@ class PnpmPluginTest {
     eslint(project).includes("types/**")
 
     assertThat(sourceNames(checkTask(project, "eslintCheck")))
-      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
+      .containsExactly(*BASE_SOURCES, "types/api.d.ts")
   }
 
   @Test
@@ -389,7 +391,7 @@ class PnpmPluginTest {
     eslint(project).excludes(listOf("generated.ts"))
 
     assertThat(sourceNames(checkTask(project, "eslintCheck")))
-      .containsExactly(*ESLINT_SOURCES, "types/api.d.ts")
+      .containsExactly(*BASE_SOURCES, "types/api.d.ts")
   }
 
   @Test
@@ -469,13 +471,12 @@ class PnpmPluginTest {
 
   @Test
   fun `leaves a tool without a config file out of check and fix`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
     // Every tool but ESLint is configured.
-    File(packageDirectory, "tsconfig.json").writeText("{}")
-    File(packageDirectory, "prettier.config.ts").writeText("export default {}\n")
-    val project = childProject("frontend", root, packageDirectory)
+    val project =
+      packageProject(directory) { packageDirectory ->
+        File(packageDirectory, "tsconfig.json").writeText("{}")
+        File(packageDirectory, "prettier.config.ts").writeText("export default {}\n")
+      }
 
     assertThat(project.tasks.names).doesNotContain("eslintCheck", "eslintFix")
     assertThat(dependencyNames(project.tasks.getByName("check")))
@@ -559,11 +560,10 @@ class PnpmPluginTest {
 
   @Test
   fun `enables a tool only when the project is configured for it`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    File(packageDirectory, "eslint.config.mjs").writeText("export default []\n")
-    val project = childProject("frontend", root, packageDirectory)
+    val project =
+      packageProject(directory) { packageDirectory ->
+        File(packageDirectory, "eslint.config.mjs").writeText("export default []\n")
+      }
 
     assertThat(project.tasks.names)
       .contains("eslintCheck", "eslintFix")
@@ -595,13 +595,12 @@ class PnpmPluginTest {
 
   @Test
   fun `prefers the vitest config over the vite config`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    File(packageDirectory, "vite.config.ts").writeText("export default {}\n")
-    val config = File(packageDirectory, "vitest.config.mts")
-    config.writeText("export default {}\n")
-    val project = childProject("frontend", root, packageDirectory)
+    val config = File(directory, "frontend/vitest.config.mts")
+    val project =
+      packageProject(directory) { packageDirectory ->
+        File(packageDirectory, "vite.config.ts").writeText("export default {}\n")
+        config.writeText("export default {}\n")
+      }
 
     val test = project.tasks.getByName("vitestTest") as VitestRunTask
     assertThat(test.configFile.get().asFile).isEqualTo(config)
@@ -609,13 +608,12 @@ class PnpmPluginTest {
 
   @Test
   fun `picks the prettier config prettier itself would pick`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    writeCheckConfigs(packageDirectory)
-    val config = File(packageDirectory, ".prettierrc.json")
-    config.writeText("{}")
-    val project = childProject("frontend", root, packageDirectory)
+    val config = File(directory, "frontend/.prettierrc.json")
+    val project =
+      packageProject(directory) { packageDirectory ->
+        writeCheckConfigs(packageDirectory)
+        config.writeText("{}")
+      }
 
     val check = project.tasks.getByName("prettierCheck") as PrettierTask
     assertThat(check.configFile.get().asFile).isEqualTo(config)
@@ -718,11 +716,10 @@ class PnpmPluginTest {
 
   @Test
   fun `does not enable eslint for a legacy eslintrc config`(@TempDir directory: File) {
-    val root = workspaceProject(directory)
-    val packageDirectory = File(directory, "frontend").apply { mkdirs() }
-    File(packageDirectory, "package.json").writeText("""{ "name": "frontend" }""")
-    File(packageDirectory, ".eslintrc.json").writeText("{}")
-    val project = childProject("frontend", root, packageDirectory)
+    val project =
+      packageProject(directory) { packageDirectory ->
+        File(packageDirectory, ".eslintrc.json").writeText("{}")
+      }
 
     assertThat(project.tasks.names).doesNotContain("eslintCheck", "eslintFix")
   }
@@ -779,94 +776,13 @@ class PnpmPluginTest {
   private fun dependencyPaths(task: Task): List<String> =
     task.dependsOn.filterIsInstance<Provider<*>>().map { it.get().toString() }
 
-  internal companion object {
+  private companion object {
     /** The default include patterns of ESLint. */
-    val ESLINT_PATTERNS: Array<String> = EslintTasks.INCLUDES.toTypedArray()
+    val ESLINT_INCLUDES: Array<String> = EslintTasks.INCLUDES.toTypedArray()
 
     /** The files of a package project that match the default patterns of each tool. */
     val BASE_SOURCES: Array<String> = arrayOf("eslint.config.ts", "prettier.config.ts")
-    val ESLINT_SOURCES: Array<String> = BASE_SOURCES
     val PRETTIER_SOURCES: Array<String> =
       arrayOf("eslint.config.ts", "package.json", "prettier.config.ts", "tsconfig.json")
-
-    /**
-     * A package project that is also configured for Playwright.
-     *
-     * The config file is written before the plugin is applied, because that is when the plugin
-     * decides whether to register the Playwright tasks.
-     */
-    fun playwrightProject(directory: File, name: String = "e2e"): Project {
-      val root = workspaceProject(directory)
-      val packageDirectory = File(directory, name)
-      packageDirectory.mkdirs()
-      File(packageDirectory, "package.json").writeText("""{ "name": "$name" }""")
-      writeCheckConfigs(packageDirectory)
-      writePlaywrightConfig(packageDirectory)
-      return childProject(name, root, packageDirectory)
-    }
-
-    /**
-     * A package project that is also configured for Vitest.
-     *
-     * The config file is written before the plugin is applied, because that is when the plugin
-     * decides whether to register the Vitest tasks.
-     */
-    fun vitestProject(directory: File, name: String = "frontend"): Project {
-      val root = workspaceProject(directory)
-      val packageDirectory = File(directory, name)
-      packageDirectory.mkdirs()
-      File(packageDirectory, "package.json").writeText("""{ "name": "$name" }""")
-      writeCheckConfigs(packageDirectory)
-      writeVitestConfig(packageDirectory)
-      return childProject(name, root, packageDirectory)
-    }
-
-    /** A project that is a pnpm workspace root, because its directory has a pnpm-workspace.yaml. */
-    fun workspaceProject(directory: File, name: String? = null, parent: Project? = null): Project {
-      writeRootPackageJson(directory)
-      writeCheckConfigs(directory)
-      File(directory, "pnpm-workspace.yaml").writeText("packages:\n  - frontend\n")
-
-      val project =
-        if (parent == null) {
-          ProjectBuilder.builder().withProjectDir(directory).build()
-        } else {
-          childProjectBuilder(requireNotNull(name), parent, directory)
-        }
-      project.pluginManager.apply(PLUGIN_ID)
-      return project
-    }
-
-    /** A package of the workspace root [parent], defaulting to a `frontend` project below it. */
-    fun packageProject(
-      directory: File,
-      name: String = "frontend",
-      parent: Project? = null,
-    ): Project {
-      val (root, packageDirectory) =
-        if (parent == null) {
-          workspaceProject(directory) to File(directory, name)
-        } else {
-          parent to directory
-        }
-
-      packageDirectory.mkdirs()
-      File(packageDirectory, "package.json").writeText("""{ "name": "$name" }""")
-      writeCheckConfigs(packageDirectory)
-
-      return childProject(name, root, packageDirectory)
-    }
-
-    fun childProject(name: String, parent: Project, directory: File): Project =
-      childProjectBuilder(name, parent, directory).also { it.pluginManager.apply(PLUGIN_ID) }
-
-    private fun childProjectBuilder(name: String, parent: Project, directory: File): Project {
-      directory.mkdirs()
-      return ProjectBuilder.builder()
-        .withName(name)
-        .withParent(parent)
-        .withProjectDir(directory)
-        .build()
-    }
   }
 }
