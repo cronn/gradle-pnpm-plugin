@@ -6,5 +6,4 @@ import org.gradle.api.provider.Provider
 internal class PnpmResolution(
   val executable: Provider<String>,
   val usesManagedPnpm: Provider<Boolean>,
-  val executableName: String,
 )

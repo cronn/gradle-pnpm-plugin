@@ -96,7 +96,7 @@ public class PnpmPlugin : Plugin<Project> {
       PnpmRepository.register(target, workspace)
       val distributionArchive =
         PnpmDistribution.register(target, version, platform, resolution.usesManagedPnpm)
-      PnpmWorkspaceTasks(target, workspace, resolution, distributionArchive).register()
+      PnpmWorkspaceTasks(target, workspace, resolution, platform, distributionArchive).register()
     }
 
     registerPackageTasks(target)
@@ -290,7 +290,6 @@ public class PnpmPlugin : Plugin<Project> {
     return PnpmResolution(
       executable = configured.orElse(managed),
       usesManagedPnpm = extension.executable.map { false }.orElse(true),
-      executableName = platform.executableName,
     )
   }
 
