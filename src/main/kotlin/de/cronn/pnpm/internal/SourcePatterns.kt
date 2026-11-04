@@ -78,7 +78,7 @@ internal object SourcePatterns {
   }
 
   /** The Ant matcher of Gradle accepts a Windows separator in a pattern, a globber does not. */
-  private fun toGlob(pattern: String): String = pattern.replace('\\', '/')
+  fun toGlob(pattern: String): String = pattern.replace('\\', '/')
 
   private fun requireEach(
     patterns: List<String>,
