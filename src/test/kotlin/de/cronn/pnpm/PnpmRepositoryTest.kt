@@ -1,7 +1,7 @@
 package de.cronn.pnpm
 
-import de.cronn.pnpm.PnpmPluginTest.Companion.packageProject
-import de.cronn.pnpm.PnpmPluginTest.Companion.workspaceProject
+import de.cronn.pnpm.fixture.TestProjects.packageProject
+import de.cronn.pnpm.fixture.TestProjects.workspaceProject
 import de.cronn.pnpm.internal.PnpmRepository
 import java.io.File
 import java.net.URI
