@@ -26,7 +26,9 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
 
   /** The patterns trail every option of the tool, ahead of the [extraArguments]. */
   override fun contribute(commandLine: CommandLine) {
-    commandLine.tail(patternArguments(includes.get().map(::toGlob), excludes.get().map(::toGlob)))
+    val includes = includes.get().map(SourcePatterns::toGlob)
+    val excludes = excludes.get().map(SourcePatterns::toGlob)
+    commandLine.tail(patternArguments(includes, excludes))
     super.contribute(commandLine)
   }
 
@@ -36,9 +38,6 @@ public abstract class PnpmCheckTask : PnpmSourceTask() {
     SourcePatterns.requireSupportedByTool(includes.get(), "includes", path)
     SourcePatterns.requireSupportedByTool(excludes.get(), "excludes", path)
   }
-
-  /** Gradle accepts a Windows separator in a pattern, the tools do not. */
-  private fun toGlob(pattern: String): String = pattern.replace('\\', '/')
 
   protected companion object {
     /** Keeps a tool from failing over a pattern that matches nothing. */
