@@ -22,6 +22,7 @@ internal class PnpmWorkspaceTasks(
   private val target: Project,
   private val extension: PnpmExtension,
   private val resolution: PnpmResolution,
+  private val platform: PnpmPlatform,
   private val distributionArchive: Provider<out Iterable<FileCollection>>,
 ) {
 
@@ -40,7 +41,7 @@ internal class PnpmWorkspaceTasks(
       task.group = PnpmPlugin.TASK_GROUP
       task.description = "Install pnpm unless a pnpm executable is configured"
       task.distributionArchive.from(distributionArchive)
-      task.executableName.set(resolution.executableName)
+      task.executableName.set(platform.executableName)
       task.installDirectory.set(extension.installDirectory)
       task.required.set(resolution.usesManagedPnpm)
       // The spec must not capture anything: the configuration cache serializes it.
