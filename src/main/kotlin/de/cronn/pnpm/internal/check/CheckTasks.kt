@@ -10,8 +10,8 @@ import org.gradle.api.tasks.TaskProvider
  * The tasks of one Node tool that takes part in `check` and `fix`.
  *
  * A tool contributes a task type, an extension and a subclass of this class that names its tasks
- * and their arguments. Adding a tool means adding those three and one entry to the list in
- * [PnpmCheckTasks][de.cronn.pnpm.internal.PnpmCheckTasks].
+ * and their arguments. Adding a tool means adding those three and registering it in
+ * [PnpmToolTasks][de.cronn.pnpm.internal.PnpmToolTasks].
  */
 internal abstract class CheckTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
   target: Project,
