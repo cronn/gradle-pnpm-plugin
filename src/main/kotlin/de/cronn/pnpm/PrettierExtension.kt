@@ -1,6 +1,6 @@
 package de.cronn.pnpm
 
-import de.cronn.pnpm.internal.extension.PnpmCheckExtension
+import de.cronn.pnpm.internal.extension.PnpmSourceExtension
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
@@ -11,7 +11,7 @@ import org.gradle.api.provider.Property
  * Pre-defined tasks are registered only when the project contains a `prettier.config.*` or
  * `.prettierrc*` file.
  */
-public abstract class PrettierExtension : PnpmCheckExtension() {
+public abstract class PrettierExtension : PnpmSourceExtension() {
 
   /** Whether Prettier ignores files it cannot parse, as `--ignore-unknown`. */
   public abstract val ignoreUnknown: Property<Boolean>
