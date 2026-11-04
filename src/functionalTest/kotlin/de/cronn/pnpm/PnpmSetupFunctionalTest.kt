@@ -3,6 +3,7 @@ package de.cronn.pnpm
 import de.cronn.pnpm.fixture.GradleProjectFixture
 import de.cronn.pnpm.fixture.PnpmArchiveFixture
 import de.cronn.pnpm.fixture.PnpmStub
+import de.cronn.pnpm.fixture.ProjectFiles.PNPM_VERSION
 import de.cronn.pnpm.fixture.ProjectFiles.ivyRepository
 import de.cronn.pnpm.fixture.ProjectFiles.pnpmRepository
 import de.cronn.pnpm.fixture.ProjectFiles.settingsRepositories
@@ -60,18 +61,18 @@ class PnpmSetupFunctionalTest {
       .isFile()
     assertThat(result.output)
       .contains("its devEngines.packageManager declares the range ^11.0.0")
-      .contains("bootstraps pnpm ${GradleProjectFixture.PNPM_VERSION} from pnpm.version")
+      .contains("bootstraps pnpm ${PNPM_VERSION} from pnpm.version")
   }
 
   @Test
   fun `bootstraps the new version after the package json changed`() {
     val fixture = workspaceWithLocalRelease(version = DECLARED_VERSION, pnpmVersion = null)
     writeDevEngines(fixture.rootDirectory, DECLARED_VERSION)
-    PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    PnpmArchiveFixture.writeRelease(releaseDirectory, PNPM_VERSION)
 
     fixture.runner("pnpmSetup").build()
     val reused = fixture.runner("pnpmSetup").build()
-    writeDevEngines(fixture.rootDirectory, GradleProjectFixture.PNPM_VERSION)
+    writeDevEngines(fixture.rootDirectory, PNPM_VERSION)
     val changed = fixture.runner("pnpmSetup").build()
 
     assertThat(reused.output).contains("Reusing configuration cache")
@@ -99,7 +100,7 @@ class PnpmSetupFunctionalTest {
 
     fixture.runner("pnpmSetup").build()
 
-    val installDirectory = fixture.directory(".gradle/pnpm/${GradleProjectFixture.PNPM_VERSION}")
+    val installDirectory = fixture.directory(".gradle/pnpm/${PNPM_VERSION}")
     assertThat(installDirectory.walkTopDown().filter { it.isFile }.map { it.name }.toList())
       .noneMatch { it.endsWith(".tar.gz") || it.endsWith(".zip") }
   }
@@ -151,7 +152,7 @@ class PnpmSetupFunctionalTest {
     val repositoryUrl =
       PnpmArchiveFixture.writeRelease(
         releaseDirectory,
-        GradleProjectFixture.PNPM_VERSION,
+        PNPM_VERSION,
         entries = mapOf("README.md" to "no pnpm here\n", "bin/other" to "nope\n"),
       )
     val fixture = workspaceWithLocalRelease(repositoryUrl)
@@ -172,7 +173,7 @@ class PnpmSetupFunctionalTest {
 
     assertThat(result.output)
       .contains("pnpmDistributionArchive")
-      .contains("pnpm:pnpm:${GradleProjectFixture.PNPM_VERSION}")
+      .contains("pnpm:pnpm:${PNPM_VERSION}")
   }
 
   /**
@@ -185,7 +186,7 @@ class PnpmSetupFunctionalTest {
     val decoyUrl =
       PnpmArchiveFixture.writeRelease(
         decoy,
-        GradleProjectFixture.PNPM_VERSION,
+        PNPM_VERSION,
         entries = mapOf("pnpm" to "#!/bin/sh\necho decoy\n", "pnpm.exe" to "decoy\n"),
       )
     val fixture =
@@ -193,7 +194,7 @@ class PnpmSetupFunctionalTest {
         repositoryUrl =
           PnpmArchiveFixture.writeRelease(
             File(releaseDirectory, "releases").apply { mkdirs() },
-            GradleProjectFixture.PNPM_VERSION,
+            PNPM_VERSION,
           ),
         firstRepositories = ivyRepository(decoyUrl),
       )
@@ -214,8 +215,7 @@ class PnpmSetupFunctionalTest {
    */
   @Test
   fun `is not consulted for the other dependencies of the build`() {
-    val repositoryUrl =
-      PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val repositoryUrl = PnpmArchiveFixture.writeRelease(releaseDirectory, PNPM_VERSION)
     File(releaseDirectory, "v1.0").apply { mkdirs() }
     File(releaseDirectory, "v1.0/example-linux.tar.gz").writeText("not pnpm\n")
 
@@ -261,7 +261,7 @@ class PnpmSetupFunctionalTest {
    */
   @Test
   fun `resolves pnpm from the repository declared in settings`() {
-    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, PNPM_VERSION)
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(
       settingsScript = settingsRepositories(pnpmRepository(url), failOnProjectRepositories = true),
@@ -290,7 +290,7 @@ class PnpmSetupFunctionalTest {
     val result = fixture.runner("pnpmSetup").buildAndFail()
 
     assertThat(result.output)
-      .contains("Could not find pnpm:pnpm:${GradleProjectFixture.PNPM_VERSION}")
+      .contains("Could not find pnpm:pnpm:${PNPM_VERSION}")
       .doesNotContain("was added by")
   }
 
@@ -301,7 +301,7 @@ class PnpmSetupFunctionalTest {
    */
   @Test
   fun `leaves the repositories declared in settings in charge`() {
-    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, GradleProjectFixture.PNPM_VERSION)
+    val url = PnpmArchiveFixture.writeRelease(releaseDirectory, PNPM_VERSION)
     File(releaseDirectory, "v1.0").mkdirs()
     File(releaseDirectory, "v1.0/example-linux.tar.gz").writeText("an unrelated dependency\n")
 
@@ -324,7 +324,7 @@ class PnpmSetupFunctionalTest {
       listOf(
           ".gradle",
           "pnpm",
-          GradleProjectFixture.PNPM_VERSION,
+          PNPM_VERSION,
           PnpmArchiveFixture.executableName,
         )
         .joinToString(File.separator)
@@ -339,9 +339,9 @@ class PnpmSetupFunctionalTest {
     firstRepositories: String = "",
     extraBuildScript: String = "",
     /** The version of the release written to the local repository. */
-    version: String = GradleProjectFixture.PNPM_VERSION,
+    version: String = PNPM_VERSION,
     /** The version configured in `pnpm { }`, or `null` to leave it at the default. */
-    pnpmVersion: String? = GradleProjectFixture.PNPM_VERSION,
+    pnpmVersion: String? = PNPM_VERSION,
   ): GradleProjectFixture {
     val url = repositoryUrl ?: PnpmArchiveFixture.writeRelease(releaseDirectory, version)
     val fixture = GradleProjectFixture(projectDirectory)

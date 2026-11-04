@@ -1,5 +1,6 @@
 package de.cronn.pnpm.fixture
 
+import de.cronn.pnpm.fixture.ProjectFiles.PNPM_VERSION
 import java.io.File
 import org.gradle.testkit.runner.GradleRunner
 
@@ -103,7 +104,7 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
       plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
       pnpm {
-        version = "$PNPM_VERSION"
+        version = "${PNPM_VERSION}"
         executable = ${quoted(stubExecutable)}
       }
       """,
@@ -155,7 +156,7 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
           plugins { id("${ProjectFiles.PLUGIN_ID}") }
 
           pnpm {
-            version = "$PNPM_VERSION"
+            version = "${PNPM_VERSION}"
             executable = ${quoted(stubExecutable)}
           }
 
@@ -292,8 +293,6 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
     const val INHERITED_VARIABLE: String = "${PnpmStub.ENVIRONMENT_PREFIX}INHERITED"
 
     const val INHERITED_VALUE: String = "inherited"
-
-    const val PNPM_VERSION: String = ProjectFiles.PNPM_VERSION
 
     /**
      * Id of the convention plugin every project of [writeWorkspaceWithConventionPlugins] applies.
