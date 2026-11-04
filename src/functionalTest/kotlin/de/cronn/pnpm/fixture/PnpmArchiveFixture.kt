@@ -21,7 +21,7 @@ object PnpmArchiveFixture {
   val executableName: String = platform.executableName
 
   /** Name of the release asset for this platform, for example `pnpm-linux-x64.tar.gz`. */
-  val assetName: String = "pnpm-${platform.identifier}.${platform.archiveExtension}"
+  private val assetName: String = "pnpm-${platform.identifier}.${platform.archiveExtension}"
 
   /**
    * Writes the release of [version] into [directory], under the `v<version>/<asset>` path the Ivy
@@ -42,7 +42,7 @@ object PnpmArchiveFixture {
   }
 
   /** A pnpm stub that logs its arguments next to itself, mirroring [PnpmStub]. */
-  fun defaultEntries(): Map<String, String> =
+  private fun defaultEntries(): Map<String, String> =
     mapOf(
       "pnpm" to
         """

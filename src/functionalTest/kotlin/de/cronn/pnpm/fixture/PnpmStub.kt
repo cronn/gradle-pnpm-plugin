@@ -13,7 +13,7 @@ class PnpmStub(private val directory: File) {
   private val recordFile = File(directory, "invocations.txt")
 
   /** Installs the stub and returns its path, to be used as `pnpm.executable`. */
-  fun install(exitCode: Int = 0, standardOutput: String = ""): File {
+  fun install(exitCode: Int = 0): File {
     directory.mkdirs()
     // The lock directories go as well, so that the slots start over from zero.
     directory
@@ -21,8 +21,7 @@ class PnpmStub(private val directory: File) {
       .orEmpty()
       .filter { it.name.startsWith("${recordFile.name}.") || it.name == recordFile.name }
       .forEach { it.delete() }
-    return if (isWindows) installBatchFile(exitCode, standardOutput)
-    else installShellScript(exitCode, standardOutput)
+    return if (isWindows) installBatchFile(exitCode) else installShellScript(exitCode)
   }
 
   /** Every recorded invocation, in the order the stub was called. */
@@ -91,7 +90,7 @@ class PnpmStub(private val directory: File) {
    * under `set -C`, and not with `mkdir`, which is no builtin and therefore not on the stripped
    * `PATH`.
    */
-  private fun installShellScript(exitCode: Int, standardOutput: String): File {
+  private fun installShellScript(exitCode: Int): File {
     val script = File(directory, "pnpm")
     script.writeText(
       """
@@ -122,7 +121,6 @@ class PnpmStub(private val directory: File) {
         # prints for a redirection onto an existing file is suppressed as well.
         if printf '%s\n---\n' "${'$'}record" 2>/dev/null > '${recordFile.absolutePath}.'${'$'}slot
         then
-          ${if (standardOutput.isEmpty()) "" else "printf '%s\\n' '$standardOutput'"}
           exit $exitCode
         fi
         slot=${'$'}((slot + 1))
@@ -136,7 +134,7 @@ class PnpmStub(private val directory: File) {
     return script
   }
 
-  private fun installBatchFile(exitCode: Int, standardOutput: String): File {
+  private fun installBatchFile(exitCode: Int): File {
     // Every argument is recorded as one raw command line rather than through %1/shift, because
     // cmd.exe splits batch parameters on '=' as well, which would turn "--max-warnings=0" into two
     // arguments.
@@ -171,7 +169,6 @@ class PnpmStub(private val directory: File) {
       :recorded
       for /f "delims=" %%v in ('set $ENVIRONMENT_PREFIX 2^>nul') do >>"%RECORD%.%SLOT%" echo env=%%v
       >>"%RECORD%.%SLOT%" echo ---
-      ${if (standardOutput.isEmpty()) "" else "echo $standardOutput"}
       exit /b $exitCode
       """
         .trimIndent()

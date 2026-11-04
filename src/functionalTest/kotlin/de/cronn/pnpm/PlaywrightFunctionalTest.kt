@@ -280,6 +280,4 @@ class PlaywrightFunctionalTest {
         sourceFiles = listOf("main.ts", "tests/login.spec.ts"),
         playwright = true,
       )
-
-  /** The invocation that ran the suite, as opposed to the one that installed the browsers. */
 }
