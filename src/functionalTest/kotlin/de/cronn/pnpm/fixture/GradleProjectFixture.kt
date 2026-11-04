@@ -1,6 +1,8 @@
 package de.cronn.pnpm.fixture
 
 import de.cronn.pnpm.fixture.ProjectFiles.PNPM_VERSION
+import de.cronn.pnpm.internal.check.EslintTasks
+import de.cronn.pnpm.internal.check.PrettierTasks
 import java.io.File
 import org.gradle.testkit.runner.GradleRunner
 
@@ -293,6 +295,16 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
     const val INHERITED_VARIABLE: String = "${PnpmStub.ENVIRONMENT_PREFIX}INHERITED"
 
     const val INHERITED_VALUE: String = "inherited"
+
+    /** The default includes of ESLint and Prettier, the way they reach the command line. */
+    val ESLINT_INCLUDES: Array<String> = EslintTasks.INCLUDES.toTypedArray()
+    val PRETTIER_INCLUDES: Array<String> = PrettierTasks.INCLUDES.toTypedArray()
+
+    /** The default includes, after the option every ESLint and Prettier task passes by default. */
+    val ESLINT_ARGUMENTS: Array<String> =
+      arrayOf("--no-error-on-unmatched-pattern", *ESLINT_INCLUDES)
+    val PRETTIER_ARGUMENTS: Array<String> =
+      arrayOf("--no-error-on-unmatched-pattern", *PRETTIER_INCLUDES)
 
     /**
      * Id of the convention plugin every project of [writeWorkspaceWithConventionPlugins] applies.

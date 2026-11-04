@@ -1,8 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
-import de.cronn.pnpm.internal.check.EslintTasks
-import de.cronn.pnpm.internal.check.PrettierTasks
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.ESLINT_ARGUMENTS
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.PRETTIER_ARGUMENTS
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.testkit.runner.TaskOutcome
@@ -27,7 +27,7 @@ class PnpmPackageFunctionalTest {
         "prettier",
         *fixture.configArguments("frontend/prettier.config.ts"),
         "--check",
-        *PRETTIER_PATTERNS,
+        *PRETTIER_ARGUMENTS,
       )
     assertThat(File(prettier.workingDirectory).canonicalFile)
       .isEqualTo(fixture.directory("frontend").canonicalFile)
@@ -59,7 +59,7 @@ class PnpmPackageFunctionalTest {
           "prettier",
           *fixture.configArguments("frontend/prettier.config.ts"),
           "--check",
-          *PRETTIER_PATTERNS,
+          *PRETTIER_ARGUMENTS,
         ),
         listOf(
           "exec",
@@ -67,7 +67,7 @@ class PnpmPackageFunctionalTest {
           *fixture.configArguments("frontend/eslint.config.ts"),
           "--max-warnings",
           "0",
-          *ESLINT_PATTERNS,
+          *ESLINT_ARGUMENTS,
         ),
       )
   }
@@ -92,7 +92,7 @@ class PnpmPackageFunctionalTest {
           "--fix",
           "--max-warnings",
           "0",
-          *ESLINT_PATTERNS,
+          *ESLINT_ARGUMENTS,
         ),
         listOf(
           "exec",
@@ -100,7 +100,7 @@ class PnpmPackageFunctionalTest {
           *fixture.configArguments("frontend/prettier.config.ts"),
           "--write",
           "--list-different",
-          *PRETTIER_PATTERNS,
+          *PRETTIER_ARGUMENTS,
         ),
       )
   }
@@ -145,7 +145,7 @@ class PnpmPackageFunctionalTest {
           "prettier",
           *fixture.configArguments("frontend/prettier.config.ts"),
           "--check",
-          *PRETTIER_PATTERNS,
+          *PRETTIER_ARGUMENTS,
           "--cache",
         ),
       )
@@ -298,7 +298,7 @@ class PnpmPackageFunctionalTest {
         *fixture.configArguments("frontend/eslint.config.ts"),
         "--max-warnings",
         "0",
-        *ESLINT_PATTERNS,
+        *ESLINT_ARGUMENTS,
       )
   }
 
@@ -608,12 +608,4 @@ class PnpmPackageFunctionalTest {
       .writeWorkspaceWithPackage(
         packageBuildScript = packageBuildScript,
       )
-
-  private companion object {
-    /** The default patterns of each tool, the way they reach its command line. */
-    val ESLINT_PATTERNS: Array<String> =
-      arrayOf("--no-error-on-unmatched-pattern", *EslintTasks.INCLUDES.toTypedArray())
-    val PRETTIER_PATTERNS: Array<String> =
-      arrayOf("--no-error-on-unmatched-pattern", *PrettierTasks.INCLUDES.toTypedArray())
-  }
 }
