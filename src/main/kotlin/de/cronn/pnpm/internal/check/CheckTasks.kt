@@ -26,7 +26,17 @@ internal abstract class CheckTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
    * config file for the tool. `null` means the tool contributes none.
    */
   fun register(): RegisteredCheckTasks? {
-    if (!configureTasks()) {
+    val discovered = configureTasks()
+
+    target.tasks.withType(taskType).configureEach { task ->
+      // A task with no declared output is never up to date. The optional outputs of the tool task
+      // types already count as declared ones, so this only guards a task type without any. It
+      // holds for a fix task as well: its inputs are fingerprinted before it rewrites them, so it
+      // is only skipped when the sources are exactly what it saw on its last run.
+      task.outputs.upToDateWhen { true }
+    }
+
+    if (!discovered) {
       return null
     }
     return RegisteredCheckTasks(check = registerCheckTask(), fix = registerFixTask())
@@ -37,20 +47,6 @@ internal abstract class CheckTasks<T : PnpmSourceTask, E : PnpmSourceExtension>(
 
   /** The task of this tool that takes part in `fix`, if it has one. */
   protected open fun registerFixTask(): TaskProvider<T>? = null
-
-  protected fun registerPredefinedTask(
-    name: String,
-    description: String,
-    configure: (T) -> Unit = {},
-  ): TaskProvider<T> =
-    registerTask(name, description) { task ->
-      configure(task)
-      // The task declares no output location, which would otherwise keep it from ever being up to
-      // date. This holds for a fix task as well: its inputs are fingerprinted before it rewrites
-      // them, so it is only skipped when the sources are exactly what it saw on its last run, and
-      // runs once more after it changed a file.
-      task.outputs.upToDateWhen { true }
-    }
 
   companion object {
     /** The TypeScript sources every tool looks at. */

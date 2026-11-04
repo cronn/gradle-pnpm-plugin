@@ -40,13 +40,13 @@ internal class EslintTasks(target: Project, eslint: EslintExtension) :
   }
 
   override fun registerCheckTask(): TaskProvider<EslintTask> =
-    registerPredefinedTask(
+    registerTask(
       name = "eslintCheck",
       description = "Checks the sources with ESLint",
     )
 
   override fun registerFixTask(): TaskProvider<EslintTask> =
-    registerPredefinedTask(
+    registerTask(
       name = "eslintFix",
       description = "Applies the automatic fixes of ESLint to the sources",
     ) { task ->
