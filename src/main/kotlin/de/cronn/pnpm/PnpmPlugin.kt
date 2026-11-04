@@ -71,8 +71,6 @@ public class PnpmPlugin : Plugin<Project> {
     }
     val resolution = resolution(target, workspace, platform)
 
-    target.extensions.add(PnpmResolution::class.java, RESOLUTION_NAME, resolution)
-
     val lockfile = workspaceLockfile(target, layout)
     target.tasks.withType(PnpmTask::class.java).configureEach { task ->
       task.executable.convention(resolution.executable)
@@ -362,7 +360,6 @@ public class PnpmPlugin : Plugin<Project> {
     const val PLAYWRIGHT_EXTENSION_NAME: String = "playwright"
     const val VITEST_EXTENSION_NAME: String = "vitest"
     const val TASK_GROUP: String = "pnpm"
-    const val RESOLUTION_NAME: String = "pnpmResolution"
     const val DEFAULT_PNPM_VERSION: String = "11.28.8"
     private const val LOCKFILE = "pnpm-lock.yaml"
     private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")
