@@ -1,6 +1,6 @@
 package de.cronn.pnpm
 
-import de.cronn.pnpm.internal.extension.PnpmCheckExtension
+import de.cronn.pnpm.internal.extension.PnpmSourceExtension
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
@@ -9,7 +9,7 @@ import org.gradle.api.provider.Property
  *
  * Pre-defined tasks are registered only when the project contains an `eslint.config.*` file.
  */
-public abstract class EslintExtension : PnpmCheckExtension() {
+public abstract class EslintExtension : PnpmSourceExtension() {
 
   /**
    * The number of warnings above which ESLint fails, as `--max-warnings`. Defaults to `0`, so that

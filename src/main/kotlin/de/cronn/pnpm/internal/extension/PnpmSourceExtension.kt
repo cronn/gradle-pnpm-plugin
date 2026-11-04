@@ -18,7 +18,11 @@ public abstract class PnpmSourceExtension {
    */
   public abstract val includes: ListProperty<String>
 
-  /** Ant-style patterns excluded from this tool's inputs. */
+  /**
+   * Ant-style patterns excluded from this tool's inputs. ESLint and Prettier are handed them as
+   * well, so an exclude naming a directory needs the trailing globstar an Ant pattern can leave
+   * out. A pattern only one of Gradle and the tool understands fails the build.
+   */
   public abstract val excludes: ListProperty<String>
 
   /**
