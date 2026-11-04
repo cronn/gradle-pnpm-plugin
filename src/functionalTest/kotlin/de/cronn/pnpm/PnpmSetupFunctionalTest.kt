@@ -24,9 +24,7 @@ class PnpmSetupFunctionalTest {
   fun `resolves and extracts the pinned pnpm version`() {
     val fixture = workspaceWithLocalRelease()
 
-    val result = fixture.runner("pnpmSetup").build()
-
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":pnpmSetup")).isEqualTo(TaskOutcome.SUCCESS)
     val installed = fixture.installedPnpm()
     assertThat(installed).isFile()
     if (!PnpmStub.isWindows) {
@@ -110,9 +108,7 @@ class PnpmSetupFunctionalTest {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace()
 
-    val result = fixture.runner("pnpmSetup").build()
-
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(fixture.outcomeOf(":pnpmSetup")).isEqualTo(TaskOutcome.SKIPPED)
   }
 
   /** A pnpm on the `PATH` is never used: the build always runs the pnpm it provisions. */
@@ -140,11 +136,8 @@ class PnpmSetupFunctionalTest {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace(repositoryUrl = "https://127.0.0.1:1/unreachable")
 
-    val first = fixture.runner("pnpmSetup").build()
-    val second = fixture.runner("pnpmSetup").build()
-
-    assertThat(first.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
-    assertThat(second.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(fixture.outcomeOf(":pnpmSetup")).isEqualTo(TaskOutcome.SKIPPED)
+    assertThat(fixture.outcomeOf(":pnpmSetup")).isEqualTo(TaskOutcome.SKIPPED)
   }
 
   @Test
@@ -199,9 +192,7 @@ class PnpmSetupFunctionalTest {
         firstRepositories = ivyRepository(decoyUrl),
       )
 
-    val result = fixture.runner("pnpmSetup").build()
-
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":pnpmSetup")).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(
         fixture.installedPnpm(),
       )
@@ -268,9 +259,7 @@ class PnpmSetupFunctionalTest {
       pnpmConfiguration = "",
     )
 
-    val result = fixture.runner("pnpmSetup").build()
-
-    assertThat(result.task(":pnpmSetup")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":pnpmSetup")).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(fixture.directory("settings.gradle.kts")).content().doesNotContain("de.cronn")
   }
 

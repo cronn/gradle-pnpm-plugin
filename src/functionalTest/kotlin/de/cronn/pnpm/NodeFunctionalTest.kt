@@ -15,9 +15,7 @@ class NodeFunctionalTest {
   fun `runs the entry point through pnpm exec node in the package directory`() {
     val fixture = workspaceWithFrontend()
 
-    val result = fixture.runner(":frontend:generate").build()
-
-    assertThat(result.task(":frontend:generate")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:generate")).isEqualTo(TaskOutcome.SUCCESS)
     val run = fixture.stub.lastInvocationOf("node")
     assertThat(run.arguments).containsExactly("exec", "node", entryPoint(fixture))
     assertThat(File(run.workingDirectory).canonicalFile)
@@ -62,15 +60,12 @@ class NodeFunctionalTest {
   fun `tracks the entry point as an input`() {
     val fixture = workspaceWithFrontend(taskConfiguration = """outputs.upToDateWhen { true }""")
 
-    assertThat(fixture.runner(":frontend:generate").build().task(":frontend:generate")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(fixture.runner(":frontend:generate").build().task(":frontend:generate")?.outcome)
-      .isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:generate")).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:generate")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("frontend/scripts/generate.mjs", "console.log(2)")
 
-    assertThat(fixture.runner(":frontend:generate").build().task(":frontend:generate")?.outcome)
-      .isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:generate")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test

@@ -15,9 +15,7 @@ class TypescriptFunctionalTest {
   fun `passes the detected tsconfig as the project`() {
     val fixture = workspaceWithFrontend()
 
-    val result = fixture.runner(":frontend:compileTypescript").build()
-
-    assertThat(result.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:compileTypescript")).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(fixture.stub.lastInvocationOf("tsc").arguments)
       .containsExactly("exec", "tsc", *projectArguments(fixture, "frontend/tsconfig.json"))
   }

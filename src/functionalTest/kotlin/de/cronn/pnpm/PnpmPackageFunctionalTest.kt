@@ -17,9 +17,7 @@ class PnpmPackageFunctionalTest {
   fun `runs prettier through pnpm exec in the package directory`() {
     val fixture = workspaceWithFrontend()
 
-    val result = fixture.runner(":frontend:prettierCheck").build()
-
-    assertThat(result.task(":frontend:prettierCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:prettierCheck")).isEqualTo(TaskOutcome.SUCCESS)
     val prettier = fixture.stub.invocations().single { it.arguments.contains("prettier") }
     assertThat(prettier.arguments)
       .containsExactly(
@@ -156,12 +154,10 @@ class PnpmPackageFunctionalTest {
     val fixture = workspaceWithFrontend()
 
     fixture.runner(":frontend:eslintCheck").build()
-    val second = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("frontend/main.ts", "export const changed = true")
-    val third = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(third.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -211,13 +207,11 @@ class PnpmPackageFunctionalTest {
     fixture.write("frontend/build/generated.ts", "export const generated = 1")
 
     fixture.runner(":frontend:eslintCheck").build()
-    val second = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("frontend/node_modules/dependency/index.ts", "export const dependency = 2")
     fixture.write("frontend/build/generated.ts", "export const generated = 2")
-    val third = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(third.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   @Test
@@ -236,18 +230,15 @@ class PnpmPackageFunctionalTest {
     fixture.write("frontend/sources/generated/api.ts", "export const api = 1")
 
     fixture.runner(":frontend:eslintCheck").build()
-    val second = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     // An excluded file is not an input, so touching it must not invalidate the task.
     fixture.write("frontend/sources/generated/api.ts", "export const api = 2")
-    val third = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(third.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     // An included file is.
     fixture.write("frontend/sources/app.ts", "export const app = 2")
-    val fourth = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(fourth.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -278,8 +269,7 @@ class PnpmPackageFunctionalTest {
 
     // main.ts matches a default pattern, which the configured includes replaced.
     fixture.write("frontend/main.ts", "export const main = 2")
-    val second = fixture.runner(":frontend:eslintCheck").build()
-    assertThat(second.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   @Test
@@ -359,11 +349,9 @@ class PnpmPackageFunctionalTest {
   fun `runs a tool whose patterns match only in part`() {
     val fixture = workspaceWithFrontend()
 
-    val result = fixture.runner(":frontend:eslintCheck").build()
-
     // The frontend has no .tsx file, so the default pattern for one matches nothing. Only a tool
     // told to tolerate that keeps going instead of failing over a pattern the plugin contributed.
-    assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.SUCCESS)
     val eslint = fixture.stub.invocations().single { it.arguments.contains("eslint") }
     assertThat(eslint.arguments).contains("--no-error-on-unmatched-pattern")
   }
@@ -378,10 +366,8 @@ class PnpmPackageFunctionalTest {
           """,
       )
 
-    val result = fixture.runner(":frontend:eslintCheck").build()
-
     // Invoking eslint without any file operand would fail instead of doing nothing.
-    assertThat(result.task(":frontend:eslintCheck")?.outcome).isEqualTo(TaskOutcome.NO_SOURCE)
+    assertThat(fixture.outcomeOf(":frontend:eslintCheck")).isEqualTo(TaskOutcome.NO_SOURCE)
     assertThat(fixture.stub.invocations()).noneSatisfy { invocation ->
       assertThat(invocation.arguments).contains("eslint")
     }
@@ -437,9 +423,8 @@ class PnpmPackageFunctionalTest {
     fixture.write("frontend/docs/example.ts", "export const example = true")
 
     fixture.runner(":frontend:eslintDocs").build()
-    val second = fixture.runner(":frontend:eslintDocs").build()
 
-    assertThat(second.task(":frontend:eslintDocs")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:eslintDocs")).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   @Test
@@ -490,13 +475,10 @@ class PnpmPackageFunctionalTest {
 
     // The configured file replaces the detected one as an input as well.
     fixture.write("frontend/tsconfig.json", """{ "compilerOptions": {} }""")
-    val second = fixture.runner(":frontend:compileTypescript").build()
-    assertThat(second.task(":frontend:compileTypescript")?.outcome)
-      .isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:compileTypescript")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("frontend/tsconfig.build.json", """{ "compilerOptions": {} }""")
-    val third = fixture.runner(":frontend:compileTypescript").build()
-    assertThat(third.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:compileTypescript")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -584,9 +566,7 @@ class PnpmPackageFunctionalTest {
     fixture.write("frontend/src/app.ts", "export const app = 1")
     fixture.write("frontend/src/generated/api.ts", "export const api = 1")
 
-    val result = fixture.runner(":frontend:compileTypescript").build()
-
-    assertThat(result.task(":frontend:compileTypescript")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":frontend:compileTypescript")).isEqualTo(TaskOutcome.SUCCESS)
     // tsc reads its file set from the tsconfig.json, so the patterns stay Gradle inputs only.
     val tsc = fixture.stub.invocations().single { it.arguments.contains("tsc") }
     assertThat(tsc.arguments)
@@ -598,9 +578,7 @@ class PnpmPackageFunctionalTest {
 
     // The excluded directory is no input, so changing a file in it leaves the task up to date.
     fixture.write("frontend/src/generated/api.ts", "export const api = 2")
-    val second = fixture.runner(":frontend:compileTypescript").build()
-    assertThat(second.task(":frontend:compileTypescript")?.outcome)
-      .isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":frontend:compileTypescript")).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   private fun workspaceWithFrontend(packageBuildScript: String = ""): GradleProjectFixture =

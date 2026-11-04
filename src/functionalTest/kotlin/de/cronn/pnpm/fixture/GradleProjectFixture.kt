@@ -5,6 +5,7 @@ import de.cronn.pnpm.internal.check.EslintTasks
 import de.cronn.pnpm.internal.check.PrettierTasks
 import java.io.File
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
 
 /** Builds a pnpm workspace on disk and runs Gradle against it, with a stub as its pnpm. */
 class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
@@ -258,6 +259,10 @@ class GradleProjectFixture(rootDirectory: File) : TestKitBuild(rootDirectory) {
     injectPluginClasspath: Boolean = true,
   ): GradleRunner =
     gradleRunner(arguments.toList(), environmentWith(pnpmOnPath), injectPluginClasspath)
+
+  /** Runs [task] with [arguments] and returns its outcome, or `null` when it did not run at all. */
+  fun outcomeOf(task: String, vararg arguments: String): TaskOutcome? =
+    runner(task, *arguments).build().task(task)?.outcome
 
   /** The pnpm executable the plugin installs for [version] with the default install directory. */
   fun installedPnpm(version: String = PNPM_VERSION): File =

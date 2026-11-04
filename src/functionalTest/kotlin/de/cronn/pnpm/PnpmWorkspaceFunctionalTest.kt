@@ -17,9 +17,7 @@ class PnpmWorkspaceFunctionalTest {
     val fixture = GradleProjectFixture(projectDirectory)
     fixture.writeWorkspace()
 
-    val result = fixture.runner("pnpmInstall").build()
-
-    assertThat(result.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":pnpmInstall")).isEqualTo(TaskOutcome.SUCCESS)
     assertThat(fixture.stub.invocations()).hasSize(1)
     val invocation = fixture.stub.invocations().single()
     assertThat(invocation.arguments).containsExactly("install")
@@ -33,9 +31,8 @@ class PnpmWorkspaceFunctionalTest {
     fixture.writeWorkspace()
 
     fixture.runner("pnpmInstall").build()
-    val second = fixture.runner("pnpmInstall").build()
 
-    assertThat(second.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":pnpmInstall")).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   @Test
@@ -45,9 +42,8 @@ class PnpmWorkspaceFunctionalTest {
 
     fixture.runner("pnpmInstall").build()
     fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
-    val second = fixture.runner("pnpmInstall").build()
 
-    assertThat(second.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":pnpmInstall")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -57,9 +53,8 @@ class PnpmWorkspaceFunctionalTest {
 
     fixture.runner("pnpmInstall").build()
     fixture.write("frontend/package.json", "{}\n")
-    val second = fixture.runner("pnpmInstall").build()
 
-    assertThat(second.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":pnpmInstall")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -70,9 +65,8 @@ class PnpmWorkspaceFunctionalTest {
 
     fixture.runner(":pnpmInstall").build()
     fixture.write("tools/package.json", "{}\n")
-    val second = fixture.runner(":pnpmInstall").build()
 
-    assertThat(second.task(":pnpmInstall")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":pnpmInstall")).isEqualTo(TaskOutcome.UP_TO_DATE)
   }
 
   @Test

@@ -15,9 +15,7 @@ class PlaywrightFunctionalTest {
   fun `runs the suite through pnpm exec in the package directory`() {
     val fixture = workspaceWithE2e()
 
-    val result = fixture.runner(":e2e:playwrightTest").build()
-
-    assertThat(result.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.SUCCESS)
     val test = fixture.stub.lastInvocationOf("test")
     assertThat(test.arguments).startsWith("exec", "playwright", "test")
     assertThat(File(test.workingDirectory).canonicalFile)
@@ -163,11 +161,10 @@ class PlaywrightFunctionalTest {
     val fixture = workspaceWithE2e()
 
     fixture.runner(":e2e:playwrightTest").build()
-    val second = fixture.runner(":e2e:playwrightTest").build()
 
     // A browser suite reaches a backend no Gradle input describes, so unchanged inputs are no
     // reason to believe the last result still holds.
-    assertThat(second.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -193,12 +190,10 @@ class PlaywrightFunctionalTest {
       )
 
     fixture.runner(":e2e:playwrightTest").build()
-    val second = fixture.runner(":e2e:playwrightTest").build()
-    assertThat(second.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("e2e/tests/login.spec.ts", "export const changed = true")
-    val third = fixture.runner(":e2e:playwrightTest").build()
-    assertThat(third.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -212,12 +207,10 @@ class PlaywrightFunctionalTest {
       )
 
     fixture.runner(":e2e:playwrightTest").build()
-    val second = fixture.runner(":e2e:playwrightTest").build()
-    assertThat(second.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("e2e/playwright.config.ts", "export default { testDir: \"tests\", retries: 1 }")
-    val third = fixture.runner(":e2e:playwrightTest").build()
-    assertThat(third.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -231,12 +224,10 @@ class PlaywrightFunctionalTest {
       )
 
     fixture.runner(":e2e:playwrightTest").build()
-    val second = fixture.runner(":e2e:playwrightTest").build()
-    assertThat(second.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
-    val third = fixture.runner(":e2e:playwrightTest").build()
-    assertThat(third.task(":e2e:playwrightTest")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":e2e:playwrightTest")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
@@ -244,12 +235,10 @@ class PlaywrightFunctionalTest {
     val fixture = workspaceWithE2e()
 
     fixture.runner(":e2e:playwrightInstall").build()
-    val second = fixture.runner(":e2e:playwrightInstall").build()
-    assertThat(second.task(":e2e:playwrightInstall")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+    assertThat(fixture.outcomeOf(":e2e:playwrightInstall")).isEqualTo(TaskOutcome.UP_TO_DATE)
 
     fixture.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n# changed")
-    val third = fixture.runner(":e2e:playwrightInstall").build()
-    assertThat(third.task(":e2e:playwrightInstall")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+    assertThat(fixture.outcomeOf(":e2e:playwrightInstall")).isEqualTo(TaskOutcome.SUCCESS)
   }
 
   @Test
