@@ -1,7 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
-import de.cronn.pnpm.internal.check.EslintTasks
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.ESLINT_ARGUMENTS
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.ESLINT_INCLUDES
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -25,7 +26,7 @@ class EslintFunctionalTest {
         *fixture.configArguments("frontend/eslint.strict.config.ts"),
         "--max-warnings",
         "0",
-        *ESLINT_PATTERNS,
+        *ESLINT_ARGUMENTS,
       )
   }
 
@@ -63,7 +64,7 @@ class EslintFunctionalTest {
         "--suppressions-location",
         fixture.directory("frontend/eslint-suppressions.json").canonicalPath,
         "--pass-on-no-patterns",
-        *ESLINT_PATTERNS,
+        *ESLINT_ARGUMENTS,
       )
   }
 
@@ -92,7 +93,7 @@ class EslintFunctionalTest {
         "0",
         "--suppress-all",
         "--prune-suppressions",
-        *SOURCE_PATTERNS,
+        *ESLINT_INCLUDES,
       )
   }
 
@@ -123,7 +124,7 @@ class EslintFunctionalTest {
         "10",
         "--cache-location",
         fixture.directory("frontend/build/eslint-cache").canonicalPath,
-        *SOURCE_PATTERNS,
+        *ESLINT_INCLUDES,
       )
   }
 
@@ -133,11 +134,4 @@ class EslintFunctionalTest {
       .writeWorkspaceWithPackage(
         packageBuildScript = packageBuildScript,
       )
-
-  private companion object {
-    /** The default patterns of ESLint, the way they reach its command line. */
-    val SOURCE_PATTERNS: Array<String> = EslintTasks.INCLUDES.toTypedArray()
-    val ESLINT_PATTERNS: Array<String> =
-      arrayOf("--no-error-on-unmatched-pattern", *SOURCE_PATTERNS)
-  }
 }

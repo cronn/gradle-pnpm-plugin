@@ -1,7 +1,8 @@
 package de.cronn.pnpm
 
 import de.cronn.pnpm.fixture.GradleProjectFixture
-import de.cronn.pnpm.internal.check.PrettierTasks
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.PRETTIER_ARGUMENTS
+import de.cronn.pnpm.fixture.GradleProjectFixture.Companion.PRETTIER_INCLUDES
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -24,7 +25,7 @@ class PrettierFunctionalTest {
         "prettier",
         *fixture.configArguments("frontend/prettier.strict.config.ts"),
         "--check",
-        *PRETTIER_PATTERNS,
+        *PRETTIER_ARGUMENTS,
       )
   }
 
@@ -52,7 +53,7 @@ class PrettierFunctionalTest {
         "--cache",
         "--cache-location",
         fixture.directory("frontend/build/prettier-cache").canonicalPath,
-        *SOURCE_PATTERNS,
+        *PRETTIER_INCLUDES,
       )
   }
 
@@ -77,7 +78,7 @@ class PrettierFunctionalTest {
         "prettier",
         *fixture.configArguments("frontend/prettier.config.ts"),
         "--list-different",
-        *SOURCE_PATTERNS,
+        *PRETTIER_INCLUDES,
       )
   }
 
@@ -108,7 +109,7 @@ class PrettierFunctionalTest {
         "--ignore-unknown",
         "--cache-location",
         fixture.directory("frontend/build/prettier-cache").canonicalPath,
-        *SOURCE_PATTERNS,
+        *PRETTIER_INCLUDES,
       )
   }
 
@@ -118,11 +119,4 @@ class PrettierFunctionalTest {
       .writeWorkspaceWithPackage(
         packageBuildScript = packageBuildScript,
       )
-
-  private companion object {
-    /** The default patterns of Prettier, the way they reach its command line. */
-    val SOURCE_PATTERNS: Array<String> = PrettierTasks.INCLUDES.toTypedArray()
-    val PRETTIER_PATTERNS: Array<String> =
-      arrayOf("--no-error-on-unmatched-pattern", *SOURCE_PATTERNS)
-  }
 }
