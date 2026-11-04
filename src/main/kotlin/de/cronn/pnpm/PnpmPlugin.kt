@@ -242,35 +242,31 @@ public class PnpmPlugin : Plugin<Project> {
         .fileContents(packageJson)
         .asText
         .map(PackageJsonPnpmVersion::parse)
-        .orElse(PackageJsonPnpmVersion.Absent("it does not exist"))
+        .orElse(PackageJsonPnpmVersion.Fallback("it does not exist"))
 
     return declared.zip(extension.version) { version, configured ->
-      val reason =
-        when (version) {
-          is PackageJsonPnpmVersion.Fixed -> {
-            logger.debug(
-              "pnpm: {} bootstraps pnpm {}, the fixed version in devEngines.packageManager of {}",
-              projectPath,
-              version.version,
-              packageJsonPath,
-            )
-            return@zip version.version
-          }
-          is PackageJsonPnpmVersion.Range ->
-            "its devEngines.packageManager declares the range ${version.spec}"
-          is PackageJsonPnpmVersion.Unsupported ->
-            "its devEngines.packageManager declares pnpm ${version.version}, which predates pnpm 11"
-          is PackageJsonPnpmVersion.Absent -> version.reason
+      when (version) {
+        is PackageJsonPnpmVersion.Fixed -> {
+          logger.debug(
+            "pnpm: {} bootstraps pnpm {}, the fixed version in devEngines.packageManager of {}",
+            projectPath,
+            version.version,
+            packageJsonPath,
+          )
+          version.version
         }
-      logger.debug(
-        "pnpm: {} pins no fixed pnpm version to bootstrap because {}, so {} bootstraps pnpm {} " +
-          "from pnpm.version or the version pinned by the plugin",
-        packageJsonPath,
-        reason,
-        projectPath,
-        configured,
-      )
-      configured
+        is PackageJsonPnpmVersion.Fallback -> {
+          logger.debug(
+            "pnpm: {} pins no fixed pnpm version to bootstrap because {}, so {} bootstraps pnpm {} " +
+              "from pnpm.version or the version pinned by the plugin",
+            packageJsonPath,
+            version.reason,
+            projectPath,
+            configured,
+          )
+          configured
+        }
+      }
     }
   }
 

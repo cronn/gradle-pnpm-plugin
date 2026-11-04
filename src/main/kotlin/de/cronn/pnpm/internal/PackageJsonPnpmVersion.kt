@@ -15,14 +15,11 @@ internal sealed interface PackageJsonPnpmVersion {
   /** A fixed version, which is the one the plugin bootstraps. */
   data class Fixed(val version: String) : PackageJsonPnpmVersion
 
-  /** A SemVer range, or anything else that is not a fixed version. */
-  data class Range(val spec: String) : PackageJsonPnpmVersion
-
-  /** A fixed version older than any the plugin can provision. */
-  data class Unsupported(val version: String) : PackageJsonPnpmVersion
-
-  /** No pnpm version is declared, or the `package.json` cannot be read. */
-  data class Absent(val reason: String) : PackageJsonPnpmVersion
+  /**
+   * No version the plugin can bootstrap, so it falls back to the version configured in the `pnpm`
+   * extension, and the [reason] why.
+   */
+  data class Fallback(val reason: String) : PackageJsonPnpmVersion
 
   companion object {
 
@@ -36,9 +33,9 @@ internal sealed interface PackageJsonPnpmVersion {
         try {
           JsonSlurper().parseText(packageJson)
         } catch (e: JsonException) {
-          return Absent("it is not valid JSON (${e.message})")
+          return Fallback("it is not valid JSON (${e.message})")
         } catch (e: IllegalArgumentException) {
-          return Absent("it is empty")
+          return Fallback("it is empty")
         }
 
       val packageManager =
@@ -54,14 +51,22 @@ internal sealed interface PackageJsonPnpmVersion {
         }
       val pnpm =
         entries.firstOrNull { it["name"] == "pnpm" }
-          ?: return Absent("it declares no pnpm in devEngines.packageManager")
+          ?: return Fallback("it declares no pnpm in devEngines.packageManager")
       val version =
         (pnpm["version"] as? String)?.trim()?.takeIf { it.isNotEmpty() }
-          ?: return Absent("its pnpm entry in devEngines.packageManager has no version")
+          ?: return Fallback("its pnpm entry in devEngines.packageManager has no version")
 
-      val match = FIXED_VERSION.matchEntire(version) ?: return Range(version)
+      val match =
+        FIXED_VERSION.matchEntire(version)
+          ?: return Fallback("its devEngines.packageManager declares the range $version")
       val major = match.groupValues[1].toIntOrNull() ?: Int.MAX_VALUE
-      return if (major < MINIMUM_MAJOR_VERSION) Unsupported(version) else Fixed(version)
+      if (major < MINIMUM_MAJOR_VERSION) {
+        return Fallback(
+          "its devEngines.packageManager declares pnpm $version, which predates pnpm " +
+            MINIMUM_MAJOR_VERSION,
+        )
+      }
+      return Fixed(version)
     }
   }
 }
