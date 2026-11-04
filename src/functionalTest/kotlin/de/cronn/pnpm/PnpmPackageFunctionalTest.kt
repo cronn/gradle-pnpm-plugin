@@ -424,6 +424,25 @@ class PnpmPackageFunctionalTest {
   }
 
   @Test
+  fun `a tool task registered by the build script is up to date when its sources are unchanged`() {
+    val fixture =
+      workspaceWithFrontend(
+        packageBuildScript =
+          """
+          import de.cronn.pnpm.task.EslintTask
+
+          tasks.register<EslintTask>("eslintDocs") { includes = listOf("docs/**/*.ts") }
+          """,
+      )
+    fixture.write("frontend/docs/example.ts", "export const example = true")
+
+    fixture.runner(":frontend:eslintDocs").build()
+    val second = fixture.runner(":frontend:eslintDocs").build()
+
+    assertThat(second.task(":frontend:eslintDocs")?.outcome).isEqualTo(TaskOutcome.UP_TO_DATE)
+  }
+
+  @Test
   fun `configures a tool task of the build script where the tool has no config file`() {
     val fixture =
       workspaceWithFrontend(

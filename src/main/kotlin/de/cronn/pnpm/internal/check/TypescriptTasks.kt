@@ -23,7 +23,7 @@ internal class TypescriptTasks(target: Project, typescript: TypescriptExtension)
   }
 
   override fun registerCheckTask(): TaskProvider<TypescriptTask> =
-    registerPredefinedTask(
+    registerTask(
       name = "compileTypescript",
       description = "Checks the TypeScript sources with tsc",
     )

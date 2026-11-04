@@ -29,7 +29,7 @@ internal class PrettierTasks(target: Project, prettier: PrettierExtension) :
   }
 
   override fun registerCheckTask(): TaskProvider<PrettierTask> =
-    registerPredefinedTask(
+    registerTask(
       name = "prettierCheck",
       description = "Checks the formatting of the sources with Prettier",
     ) { task ->
@@ -37,7 +37,7 @@ internal class PrettierTasks(target: Project, prettier: PrettierExtension) :
     }
 
   override fun registerFixTask(): TaskProvider<PrettierTask> =
-    registerPredefinedTask(
+    registerTask(
       name = "prettierFix",
       description = "Reformats the sources with Prettier",
     ) { task ->
