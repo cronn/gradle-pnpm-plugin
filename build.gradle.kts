@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 buildscript { configurations.classpath { resolutionStrategy.activateDependencyLocking() } }
 
 plugins {
-  `java-test-fixtures`
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.plugin.publish)
   alias(libs.plugins.spotless)
@@ -73,19 +72,16 @@ dependencies {
   testRuntimeOnly(libs.junit.platform.launcher)
 }
 
+// Shared by all test source sets. A plain source set instead of java-test-fixtures, whose variants
+// would be published with the plugin.
+val testFixtures: SourceSet = sourceSets.create("testFixtures")
+
 dependencies {
   // gradleTestKit() is only added to the test source sets of java-gradle-plugin, and the fixtures
   // shared by them build on it.
-  testFixturesImplementation(gradleTestKit())
-  testFixturesImplementation(libs.kotlin.stdlib)
-  testImplementation(testFixtures(project))
-}
-
-// The test fixtures are no part of the published plugin.
-listOf(configurations.testFixturesApiElements, configurations.testFixturesRuntimeElements).forEach {
-  (components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(it.get()) {
-    skip()
-  }
+  testFixtures.implementationConfigurationName(gradleTestKit())
+  testFixtures.implementationConfigurationName(libs.kotlin.stdlib)
+  testImplementation(testFixtures.output)
 }
 
 /** A TestKit source set whose tests see the internals of the plugin and the shared fixtures. */
