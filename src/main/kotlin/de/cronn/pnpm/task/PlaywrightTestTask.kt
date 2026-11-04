@@ -133,7 +133,7 @@ public abstract class PlaywrightTestTask : PnpmTestTask() {
    * An interactive run must never be skipped as up to date: there is a person waiting for the
    * window it opens.
    */
-  override fun rerunRequested(): Boolean =
+  internal override fun rerunRequested(): Boolean =
     super.rerunRequested() || ui.getOrElse(false) || headed.getOrElse(false)
 
   override fun contribute(commandLine: CommandLine) {
