@@ -20,7 +20,6 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.PathSensitivity
-import org.gradle.util.GradleVersion
 
 /**
  * Provisions pnpm and integrates a pnpm workspace into the Gradle build.
@@ -56,8 +55,6 @@ import org.gradle.util.GradleVersion
 public class PnpmPlugin : Plugin<Project> {
 
   override fun apply(target: Project) {
-    requireSupportedGradleVersion()
-
     val layout = PnpmWorkspaceLayout.discover(target)
     val platform = PnpmPlatform.current()
     val workspace = createWorkspaceExtension(target, layout)
@@ -338,15 +335,6 @@ public class PnpmPlugin : Plugin<Project> {
     return lockfile
   }
 
-  private fun requireSupportedGradleVersion() {
-    if (GradleVersion.current() < MINIMUM_GRADLE_VERSION) {
-      throw GradleException(
-        "The $PLUGIN_ID plugin requires Gradle $MINIMUM_GRADLE_VERSION or later, " +
-          "but this build uses ${GradleVersion.current().version}",
-      )
-    }
-  }
-
   internal companion object {
     const val PLUGIN_ID: String = "de.cronn.gradle-pnpm-plugin"
     const val EXTENSION_NAME: String = "pnpm"
@@ -358,6 +346,5 @@ public class PnpmPlugin : Plugin<Project> {
     const val TASK_GROUP: String = "pnpm"
     const val DEFAULT_PNPM_VERSION: String = "11.28.8"
     private const val LOCKFILE = "pnpm-lock.yaml"
-    private val MINIMUM_GRADLE_VERSION = GradleVersion.version("9.0")
   }
 }
