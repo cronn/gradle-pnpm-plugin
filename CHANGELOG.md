@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.0
+
+### Minor Changes
+
+- 66304d9: **Breaking Change**: The plugin now requires Java 25 and Gradle 9.1, the first Gradle version that runs on Java 25
+
+### Patch Changes
+
+- 4fd69bb: Hide `PnpmSetupTask`, `PnpmTestTask.rerunRequested()` and `PnpmCheckTask.NO_ERROR_ON_UNMATCHED_PATTERN`, which were not API
+- c5381f6: Remove the empty `PnpmCheckExtension` base class of `EslintExtension` and `PrettierExtension`
+- f2f251b: Stop registering the internal `pnpmResolution` extension
+
 ## 0.13.0
 
 ### Minor Changes
