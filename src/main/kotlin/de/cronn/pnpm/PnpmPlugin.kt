@@ -341,7 +341,7 @@ public class PnpmPlugin : Plugin<Project> {
     const val PLAYWRIGHT_EXTENSION_NAME: String = "playwright"
     const val VITEST_EXTENSION_NAME: String = "vitest"
     const val TASK_GROUP: String = "pnpm"
-    const val DEFAULT_PNPM_VERSION: String = "11.28.8"
+    const val DEFAULT_PNPM_VERSION: String = "11.28.9"
     private const val LOCKFILE = "pnpm-lock.yaml"
   }
 }
