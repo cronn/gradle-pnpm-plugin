@@ -45,7 +45,7 @@ downloads enabled:
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.28.8",
+      "version": "11.28.9",
       "onFail": "download"
     },
     "runtime": {
