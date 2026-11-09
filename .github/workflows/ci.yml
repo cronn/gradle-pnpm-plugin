@@ -44,7 +44,7 @@ jobs:
           distribution: temurin
 
       # Validates the Gradle wrapper checksums by default.
-      - uses: gradle/actions/setup-gradle@v6.4.0
+      - uses: gradle/actions/setup-gradle@v6.4.1
 
       # The integration tests install the workspace in src/integrationTest/workspace with the real
       # pnpm, which downloads Node.js into its store. Every path is listed for every OS; the ones
