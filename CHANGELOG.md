@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0
+
+### Minor Changes
+
+- d6bfb53: Add `--lastFailed` option to `VitestRunTask` to run only the tests that failed last time (requires Vitest 5.1)
+
+### Patch Changes
+
+- cf00a6e: Update default pnpm version to 11.28.12
+
 ## 0.14.0
 
 ### Minor Changes
