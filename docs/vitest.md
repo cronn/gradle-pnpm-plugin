@@ -61,10 +61,12 @@ tasks.vitestTest { configFile = file("vitest.ci.config.ts") }
 | `--outputFile=<file>`              | `outputFile`               | `--outputFile`                |
 | `--passWithNoTests`                | `passWithNoTests`          | `--passWithNoTests`           |
 | `--bail=<n>`                       | `bail`                     | `--bail`                      |
+| `--lastFailed`                     | `lastFailed`               | `--lastFailed`                |
 
 ```bash
 ./gradlew vitestTest --coverage
 ./gradlew vitestTest --testNamePattern=login --bail=1
+./gradlew vitestTest --lastFailed
 ```
 
 ## Custom tasks

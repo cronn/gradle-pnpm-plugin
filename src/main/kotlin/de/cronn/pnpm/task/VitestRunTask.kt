@@ -21,6 +21,7 @@ import org.gradle.work.DisableCachingByDefault
  * ./gradlew :frontend:vitestTest --coverage
  * ./gradlew :frontend:vitestTest --update
  * ./gradlew :frontend:vitestTest --testNamePattern=login --bail=1
+ * ./gradlew :frontend:vitestTest --lastFailed
  * ```
  *
  * Any other option goes into the [arguments] of the task, or into the `extraArguments` of the
@@ -97,6 +98,12 @@ public abstract class VitestRunTask : PnpmTestTask() {
   @get:Option(option = "bail", description = "Stops the suite after this number of failed tests")
   public abstract val bail: Property<Int>
 
+  /** Runs only the tests that failed in the previous run, passed as `--lastFailed`. */
+  @get:Input
+  @get:Optional
+  @get:Option(option = "lastFailed", description = "Runs only the tests that failed last time")
+  public abstract val lastFailed: Property<Boolean>
+
   /**
    * `run`, because a bare `vitest` starts the watch mode, which would never hand the build back.
    */
@@ -122,5 +129,6 @@ public abstract class VitestRunTask : PnpmTestTask() {
     commandLine.option("--outputFile", outputFile, joined = true)
     commandLine.flag("--passWithNoTests", passWithNoTests)
     commandLine.option("--bail", bail, joined = true)
+    commandLine.flag("--lastFailed", lastFailed)
   }
 }

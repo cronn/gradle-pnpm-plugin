@@ -111,6 +111,7 @@ class VitestFunctionalTest {
         "--outputFile=build/vitest.xml",
         "--passWithNoTests",
         "--bail=1",
+        "--lastFailed",
       )
       .build()
 
@@ -126,6 +127,7 @@ class VitestFunctionalTest {
         "--outputFile=" + fixture.directory("frontend/build/vitest.xml").canonicalPath,
         "--passWithNoTests",
         "--bail=1",
+        "--lastFailed",
       )
   }
 
