@@ -45,7 +45,7 @@ downloads enabled:
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.28.11",
+      "version": "11.28.12",
       "onFail": "download"
     },
     "runtime": {
@@ -110,9 +110,9 @@ commit `gradle/verification-metadata.xml`. Dependency locking applies to the
 ```kotlin
 pnpm {
   // The version downloaded unless an executable is set or package.json declares a fixed version
-  version = "11.28.5"
+  version = "11.28.12"
   // Defaults to <workspaceRootDir>/.gradle/pnpm/<version>
-  installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.28.5")
+  installDirectory = layout.projectDirectory.dir(".gradle/pnpm/11.28.12")
   // Skips provisioning entirely
   executable = "/usr/local/bin/pnpm"
   // Where the pnpm distribution is downloaded from
